@@ -2397,7 +2397,7 @@ def CrearNuevoUsuario(request):
 
 @api_view(["GET"])
 @csrf_exempt
-# @authentication_classes([TokenAuthentication])
+@authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def ObtenerMenu(request):
     menus = { 'router': 'root', 'children': []}
