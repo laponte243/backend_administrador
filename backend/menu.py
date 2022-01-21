@@ -20,7 +20,7 @@ modelosMENU = {'modelos':[
     {"router": "ListaPrecio",           "parent":7,"orden":6}, # -Ventas id:11
     {"router": "Pedido",                "parent":10,"orden":3}, # -Ventas id:12
     {"router": "Proforma",              "parent":10,"orden":4}, # -Ventas id:13
-    #{"router": "Factura",               "parent":10,"orden":4}, # -Ventas id:14
+    {"router": "Factura",               "parent":10,"orden":4}, # -Ventas id:14
     # {"router": "ContactoCliente",       "parent":8,"orden":1},
     # {"router": "DetallePedido",         "parent":12,"orden":1},
     # {"router": "DetalleProforma",       "parent":13,"orden":1},
