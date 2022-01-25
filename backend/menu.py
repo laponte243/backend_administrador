@@ -3,7 +3,7 @@ modelosMENU = {'modelos':[
     {"router": "-Inicio",               "parent":None,"orden":0}, # Principal id:1
     {"router": "Dashboard",             "parent":1,"orden":1}, # -dashboard id:2
 
-    {"router": "-Inventario",           "parent":None,"orden":1}, # Principal id:3
+    {"router": "-Inventarios",           "parent":None,"orden":1}, # Principal id:3
     {"router": "Almacenes",             "parent":3,"orden":1}, # -Inventarios id:4
     {"router": "Productos",             "parent":3,"orden":2}, # -Inventarios id:5
     {"router": "Inventario",            "parent":3,"orden":3}, # -Inventarios id:6

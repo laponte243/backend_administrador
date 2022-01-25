@@ -167,15 +167,9 @@ class ProductoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Producto
         fields = '__all__'
-    nombreEmpresa = serializers.SerializerMethodField('LoadNombreEmpresa')
-    def LoadNombreEmpresa(self, obj):
-        return obj.empresa.nombre
     nombremarca = serializers.SerializerMethodField('LoadNombremarca')
     def LoadNombremarca(self, obj):
         return obj.marca.nombre
-    nombreservicio = serializers.SerializerMethodField('LoadNombreservicio')
-    def LoadNombreservicio(self, obj):
-        return obj.servicio.nombre
     nombreInstancia = serializers.SerializerMethodField('LoadNombreInstancia')
     def LoadNombreInstancia(self, obj):
         return obj.instancia.nombre
