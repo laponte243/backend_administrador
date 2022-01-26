@@ -160,7 +160,7 @@ class Producto(models.Model):
     nombre = models.TextField(max_length=150, null=True, blank=True, help_text="Nombre del producto")
     sku = models.TextField(max_length=150, null=False, blank=False, help_text="SKU del producto")
     servicio = models.BooleanField(default=False, help_text="¿Es un servicio?")
-    lote_producto = models.BooleanField(default=False, help_text="¿Esta en un lote?")
+    MovimientoInventario_producto = models.BooleanField(default=False, help_text="¿Esta en un MovimientoInventario?")
     #datos financieros
     costo = models.FloatField(null=True, help_text="Costo del producto")
     exonerado = models.BooleanField(default=False, help_text="¿Esta exonerado el impuesto?")
@@ -178,12 +178,12 @@ class ProductoImagen(models.Model):
     principal = models.BooleanField(default=False, help_text="Es la imagen principal del producto?")
     history = HistoricalRecords()
 
-class Lote(models.Model):
+class MovimientoInventario(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
-    producto = models.ForeignKey(Producto, null=False, on_delete=models.DO_NOTHING, help_text="Producto base del lote")
+    producto = models.ForeignKey(Producto, null=False, on_delete=models.DO_NOTHING, help_text="Producto base del Movimiento Inventario")
     cantidad_recepcion = models.FloatField(null=True, help_text="Cantidad de recepcion del producto")
-    fecha_vencimiento = models.DateField(null=False, help_text="Fecha de vencimiento del producto")
-    numero_lote = models.IntegerField(null=True, help_text="Numero de lote del producto")
+    fecha_vencimiento = models.DateField(null=True, blank=True help_text="Fecha de vencimiento del producto")
+    lote = models.TextField(null=True, blank=True help_text="Numero de lote del producto")
     cantida_disponible = models.FloatField(null=False, help_text="Cantidad disponible del producto")
     history = HistoricalRecords() # colocar como registro
 
@@ -288,7 +288,7 @@ class DetalleProforma(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     proforma = models.ForeignKey(Proforma, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="proforma asociada")
     producto = models.ForeignKey(Producto, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="detallepedido asociada")
-    lote_producto = models.ForeignKey(Lote, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Lote del producto asociado")
+    MovimientoInventario_producto = models.ForeignKey(MovimientoInventario, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="MovimientoInventario del producto asociado")
 
     descripcion = models.TextField(max_length=150, blank=False, null=True, help_text="En caso de no tener un producto asociado se puede colocar una descripcion del rublo acá")
     precio = models.TextField(null=False, default=0, blank=False, help_text="precio del producto o servicio a vender")
@@ -348,12 +348,12 @@ class Factura(models.Model):
 class DetalleFactura(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     factura = models.ForeignKey(Factura, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="venta asociada")
-    lote = models.ForeignKey(Lote, null=False, blank=False, on_delete=DO_NOTHING, help_text="Lote asociado del producto")
+    MovimientoInventario = models.ForeignKey(MovimientoInventario, null=False, blank=False, on_delete=DO_NOTHING, help_text="MovimientoInventario asociado del producto")
     #Datos fijos
-    lote_producto = models.TextField(
-        max_length=150, null=True, blank=False, help_text="Lote fijo asociado del producto asociado")
+    MovimientoInventario_producto = models.TextField(
+        max_length=150, null=True, blank=False, help_text="MovimientoInventario fijo asociado del producto asociado")
     fecha_vencimiento = models.TextField(
-        max_length=150, null=True, blank=False, help_text="Fecha de vencimiento del lote")
+        max_length=150, null=True, blank=False, help_text="Fecha de vencimiento del MovimientoInventario")
     producto = models.TextField(
         max_length=150, null=False, blank=False, help_text="producto asociado")
     descripcion = models.TextField(
