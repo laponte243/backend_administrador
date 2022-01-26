@@ -182,9 +182,9 @@ class ProductoImagenSerializer(serializers.ModelSerializer):
     def LoadNombreProducto(self, obj):
         return obj.producto.nombre
 
-class LoteSerializer(serializers.ModelSerializer):
+class MovimientoInventarioSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Lote
+        model = MovimientoInventario
         fields = '__all__'
     nombreProducto = serializers.SerializerMethodField('LoadNombreProducto')
     def LoadNombreProducto(self, obj):
