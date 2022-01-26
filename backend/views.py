@@ -968,10 +968,75 @@ class ProductoImagenVS(viewsets.ModelViewSet):
         else:
             return ProductoImagen.objects.filter(instancia=perfil.instancia).order_by('producto', 'principal')
 
+class MovimientoInventarioVS(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    serializer_class = MovimientoInventarioSerializer
+
+    def create(self, request):
+        perfil = Perfil.objects.get(usuario=self.request.user)
+        datos = request.data
+        datos['instancia'] = perfil.instancia.id
+        if (perfil.tipo == 'S'):
+            serializer = self.get_serializer(data=datos)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        elif (perfil.tipo == 'A'): 
+            datos = request.data
+            datos['instancia'] = perfil.instancia.id
+            serializer = self.get_serializer(data=datos)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        else:
+                return Response(status=status.HTTP_403_FORBIDDEN)
+
+    def update(self, request, *args, **kwargs):
+        perfil = Perfil.objects.get(usuario=self.request.user)
+        if (perfil.tipo == 'S'):
+            partial = True # Here I change partial to True
+            instance = self.get_object()
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            if (str(request.data['instancia']) == str(perfil.instancia.id)):
+                partial = True  # Here I change partial to True
+                instance = self.get_object()
+                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer.is_valid(raise_exception=True)
+                self.perform_update(serializer)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                return Response(status=status.HTTP_403_FORBIDDEN)
+
+    def destroy(self, request, *args, **kwargs):
+        perfil = Perfil.objects.get(usuario=self.request.user)
+        instance = self.get_object()
+        if (perfil.tipo == 'S'):
+            instance.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            if (str(instance.instancia.id) == str(perfil.instancia.id)):
+                instance.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            else:
+                return Response(status=status.HTTP_403_FORBIDDEN)
+
+    def get_queryset(self):
+        perfil = Perfil.objects.get(usuario=self.request.user)
+        if (perfil.tipo=='S'):
+            return MovimientoInventario.objects.all().order_by('id')
+        else:
+            return MovimientoInventario.objects.filter(instancia=perfil.instancia).order_by('lote')
+
 class AlmacenVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
-    queryset = Almacen.objects.all().order_by('nombre')
     serializer_class = AlmacenSerializer
 
     def create(self, request):
