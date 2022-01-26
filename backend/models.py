@@ -184,6 +184,7 @@ class MovimientoInventario(models.Model):
     cantidad_recepcion = models.FloatField(null=True, help_text="Cantidad de recepcion del producto")
     fecha_vencimiento = models.DateField(null=True, blank=True help_text="Fecha de vencimiento del producto")
     lote = models.TextField(null=True, blank=True help_text="Numero de lote del producto")
+    descripcion = models.TextField(null=True, blank=True help_text="Descripción del movimiento")
     cantida_disponible = models.FloatField(null=False, help_text="Cantidad disponible del producto")
     history = HistoricalRecords() # colocar como registro
 
