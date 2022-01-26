@@ -2319,24 +2319,22 @@ def CrearAdmin(data):
 #@authentication_classes([TokenAuthentication])
 @permission_classes([AllowAny])
 def CreateSuperUser(request):
+    print(Menu.objects.get(id=1).parent.set)
     if (Instancia.objects.all().count() == 0):
         instancia = Instancia(nombre="Primera",activo=True,multiempresa=True,vencimiento=None)
         instancia.save()
         perfilS = Perfil(instancia=instancia,usuario_id=1,activo=True,avatar=None,tipo="S")
         perfilS.save()
-        # perfilA = Perfil(instancia=instancia,usuario_id=2,activo=True,avatar=None,tipo="A")
+        # admin = User.objects.create_user(username='admin',email='',password='admin')
+        # admin.save()
+        # perfilA = Perfil(instancia=instancia,usuario=admin,activo=True,avatar=None,tipo="A")
         # perfilA.save()
-        # for m in modelosMENU['modelos']:
-        #     menu = Menu(router=m['router'],parent=m['parent'],orden=m['orden'])
-        #     menu.save()
-        #     primermenuinstancia = MenuInstancia(instancia=instancia,menu=None,orden=m['orden'])
-        #     primermenuinstancia.save()
+        # for m in Menu.objects.all():
+        #     menuinstancia = MenuInstancia(intancia=instancia,menu=m,orden=m['orden'])
+        #     menuinstancia.save()
         #     if (m['parent'] != None):
-        #         value = json.dumps(m['parent'])
-        #         menu.parent = Menu.objects.filter(router__contains=value.replace('"', '')).first()
-        #         menu.save()
-        #         primermenuinstancia.parent = MenuInstancia.objects.get(menu_id=menu.parent.id)
-        #         primermenuinstancia.save()
+        #         menuinstancia.parent = MenuInstancia.objects.filter(menu=Menu.objects.get(id=m['parent'])).first()
+        #         menuinstancia.save()
         # for p in MenuInstancia.objects.filter(instancia=instancia):
         #     permiso = None
         #     permiso = Permiso(instancia=instancia,menuinstancia_id=p.id,perfil_id=2,crear=p['crear'],leer=p['leer'],editar=p['editar'],eliminar=p['eliminar'])
@@ -2344,6 +2342,7 @@ def CreateSuperUser(request):
         return Response("Super creado")
     else:
         return Response("Ya existe un superusuario")
+    return Response('Menu.objects.all()')
 
 
 @api_view(["GET"])

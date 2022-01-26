@@ -1,9 +1,23 @@
+# inicio = {'modelos':[
+#     {"router": "-Inicio",               "parent":None,"orden":0},
+#     {"router": "Dashboard",             "parent":0,"orden":1},]}
+# menu = {'modelos': []}
+# parent = 0
+# for i in inicio['modelos']:
+#     counter = 1
+#     if i['parent'] == None:
+#         parent = counter
+#     else:
+#         i['parent'] = parent
+#     menu['modelos'].append(i)
+#     counter += 1
+# print(menu)
 modelosMENU = {'modelos':[
     # Parents
     {"router": "-Inicio",               "parent":None,"orden":0}, # Principal id:1
     {"router": "Dashboard",             "parent":1,"orden":1}, # -dashboard id:2
 
-    {"router": "-Inventario",           "parent":None,"orden":1}, # Principal id:3
+    {"router": "-Inventarios",           "parent":None,"orden":1}, # Principal id:3
     {"router": "Almacenes",             "parent":3,"orden":1}, # -Inventarios id:4
     {"router": "Productos",             "parent":3,"orden":2}, # -Inventarios id:5
     {"router": "Inventario",            "parent":3,"orden":3}, # -Inventarios id:6
