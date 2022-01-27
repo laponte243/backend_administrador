@@ -178,9 +178,17 @@ class ProductoImagen(models.Model):
     principal = models.BooleanField(default=False, help_text="Es la imagen principal del producto?")
     history = HistoricalRecords()
 
+class Almacen(models.Model):
+    instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
+    nombre = models.TextField(max_length=220, blank=True, help_text="Nombre del almacen")
+    activo = models.BooleanField(default=False, help_text="El almacen esta activo?")
+    history = HistoricalRecords()
+
 class MovimientoInventario(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     producto = models.ForeignKey(Producto, null=False, on_delete=models.DO_NOTHING, help_text="Producto base del Movimiento Inventario")
+    almacen = models.ForeignKey(Almacen, null=False, on_delete=models.DO_NOTHING, help_text="Almacen asociado")
+    
     cantidad_recepcion = models.FloatField(null=True, help_text="Cantidad de recepcion del producto")
     fecha_vencimiento = models.DateField(null=True, blank=True, help_text="Fecha de vencimiento del producto")
     lote = models.TextField(null=True, blank=True, help_text="Numero de lote del producto")
@@ -188,11 +196,6 @@ class MovimientoInventario(models.Model):
     cantida_disponible = models.FloatField(null=False, help_text="Cantidad disponible del producto")
     history = HistoricalRecords() # colocar como registro
 
-class Almacen(models.Model):
-    instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
-    nombre = models.TextField(max_length=220, blank=True, help_text="Nombre del almacen")
-    activo = models.BooleanField(default=False, help_text="El almacen esta activo?")
-    history = HistoricalRecords()
 
 class Inventario(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")

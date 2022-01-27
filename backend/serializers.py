@@ -186,9 +186,15 @@ class MovimientoInventarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = MovimientoInventario
         fields = '__all__'
+    nombreInstancia = serializers.SerializerMethodField('LoadNombreInstancia')
+    def LoadNombreInstancia(self, obj):
+        return obj.instancia.nombre
     nombreProducto = serializers.SerializerMethodField('LoadNombreProducto')
     def LoadNombreProducto(self, obj):
         return obj.producto.nombre
+    nombreAlmacen = serializers.SerializerMethodField('LoadNombreAlmacen')
+    def LoadNombreAlmacen(self, obj):
+        return obj.almacen.nombre
 
 class AlmacenSerializer(serializers.ModelSerializer):
     class Meta:
