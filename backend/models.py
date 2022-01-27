@@ -170,6 +170,9 @@ class Producto(models.Model):
     menejo_inventario = models.BooleanField(default=True, help_text="¿Se manejara inventario del producto?")
     venta = models.BooleanField(default=True, help_text="¿Es un producto que se puede vender?")
     history = HistoricalRecords()
+    def __str__(self):
+        return self.nombre
+
 
 class ProductoImagen(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
@@ -183,18 +186,23 @@ class Almacen(models.Model):
     nombre = models.TextField(max_length=220, blank=True, help_text="Nombre del almacen")
     activo = models.BooleanField(default=False, help_text="El almacen esta activo?")
     history = HistoricalRecords()
+    def __str__(self):
+        return self.nombre
 
 class MovimientoInventario(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     producto = models.ForeignKey(Producto, null=False, on_delete=models.DO_NOTHING, help_text="Producto base del Movimiento Inventario")
     almacen = models.ForeignKey(Almacen, null=False, on_delete=models.DO_NOTHING, help_text="Almacen asociado")
-    
+
     cantidad_recepcion = models.FloatField(null=True, help_text="Cantidad de recepcion del producto")
     fecha_vencimiento = models.DateField(null=True, blank=True, help_text="Fecha de vencimiento del producto")
     lote = models.TextField(null=True, blank=True, help_text="Numero de lote del producto")
     descripcion = models.TextField(null=True, blank=True, help_text="Descripción del movimiento")
     cantida_disponible = models.FloatField(null=False, help_text="Cantidad disponible del producto")
     history = HistoricalRecords() # colocar como registro
+    def __str__(self):
+        return "%s - %s - %s" % (self.producto,self.almacen,self.cantida_disponible)
+
 
 
 class Inventario(models.Model):
@@ -207,6 +215,8 @@ class Inventario(models.Model):
     min = models.FloatField(null=True, help_text="Cantidad minima")
     max = models.FloatField(null=True, help_text="Cantidad maxima")
     history = HistoricalRecords()
+    def __str__(self):
+        return "%s - %s - %s" % (self.producto,self.almacen,self.disponible)
 
 #Ventas
 class Vendedor(models.Model):

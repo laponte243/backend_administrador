@@ -2384,7 +2384,6 @@ def CrearAdmin(data):
 #@authentication_classes([TokenAuthentication])
 @permission_classes([AllowAny])
 def CreateSuperUser(request):
-    print(Menu.objects.get(id=1).parent.set)
     if (Instancia.objects.all().count() == 0):
         instancia = Instancia(nombre="Primera",activo=True,multiempresa=True,vencimiento=None)
         instancia.save()
