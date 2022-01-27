@@ -52,6 +52,7 @@ REST_FRAMEWORK = {
         'knox.auth.TokenAuthentication'
     ),
     'DATETIME_FORMAT': "%d/%m/%Y %H:%M:%S",
+    'DATE_FORMAT': "%d/%m/%Y",
 
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated'
