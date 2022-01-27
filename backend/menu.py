@@ -22,10 +22,11 @@ modelosMENU = {'modelos':[
     {"router": "Productos",             "parent":3,"orden":2}, # -Inventarios id:5
     {"router": "Inventario",            "parent":3,"orden":3}, # -Inventarios id:6
     # {"router": "Marca",                 "parent":6,"orden":1},
-    # {"router": "Unidad",                "parent":6,"orden":1},
-    # {"router": "Producto",              "parent":6,"orden":2},
-    # {"router": "Almacen",               "parent":6,"orden":3},
-    # {"router": "ProductoImagen",        "parent":6,"orden":4},
+    # {"router": "Unidad",                "parent":6,"orden":2},
+    # {"router": "Producto",              "parent":6,"orden":3},
+    # {"router": "MovimientoInventario",  "parent":6,"orden":4},
+    # {"router": "Almacen",               "parent":6,"orden":5},
+    # {"router": "ProductoImagen",        "parent":6,"orden":6},
 
     {"router": "-Venta",                "parent":None,"orden":2}, # Principal id:7
     {"router": "Cliente",               "parent":7,"orden":1}, # -Ventas id:8
