@@ -205,7 +205,6 @@ class AlmacenSerializer(serializers.ModelSerializer):
         return obj.instancia.nombre
 
 class InventarioSerializer(serializers.ModelSerializer):
-    disponible = serializers.SerializerMethodField('SumatoriaCantidad')
     class Meta:
         model = Inventario
         fields = '__all__'
@@ -215,12 +214,6 @@ class InventarioSerializer(serializers.ModelSerializer):
     nombreAlmacen = serializers.SerializerMethodField('LoadNombreAlmacen')
     def LoadNombreAlmacen(self, obj):
         return obj.almacen.nombre
-    def SumatoriaCantidad(self, obj):
-        objetos = MovimientoInventario.objects.filter(producto=obj.producto,almacen=obj.almacen)
-        cantidad = 0
-        for o in objetos:
-            cantidad += o.cantida_disponible
-        return cantidad
 
 #ventas
 class VendedorSerializer(serializers.ModelSerializer):
