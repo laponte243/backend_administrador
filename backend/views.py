@@ -1036,7 +1036,7 @@ class AlmacenVS(viewsets.ModelViewSet):
 
 class MovimientoInventarioVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = MovimientoInventarioSerializer
 
     def create(self, request):
@@ -1046,22 +1046,24 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
         if (perfil.tipo == 'S'):
             serializer = self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
-            self.perform_create(serializer)
-            headers = self.get_success_headers(serializer.data)
             objeto = MovimientoInventario.objects.filter(instancia_id=datos['instancia'],producto_id=datos['producto'],almacen_id=datos['almacen'])
             if objeto.count() > 0:
-                disp = datos['cantida_disponible']
+                disp = float(datos['cantida_disponible'])
                 for o in objeto:
                     disp += o.cantida_disponible
                 inv = Inventario.objects.filter(instancia_id=datos['instancia'],producto_id=datos['producto'],almacen_id=datos['almacen'])
-                if inv != 0:
-                    inv.disponible = disp
-                    inv.bloqueado = 0
-                    inv.save()
+                print(inv)
+                if inv.first() != None:
+                    inven = inv.first()
+                    inven.disponible = disp
+                    inven.bloqueado = 0
+                    inven.save()
                 else:
                     Inventario.objects.create(instancia_id=datos['instancia'],producto_id=datos['producto'],almacen_id=datos['almacen'],disponible=disp,bloqueado=0)
             else:
                 Inventario.objects.create(instancia_id=datos['instancia'],producto_id=datos['producto'],almacen_id=datos['almacen'],disponible=datos['cantida_disponible'],bloqueado=0)
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         elif (perfil.tipo == 'A'):
             datos = request.data
@@ -1116,7 +1118,7 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
 
 class InventarioVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = InventarioSerializer
 
     def create(self, request):
