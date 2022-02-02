@@ -1,4 +1,5 @@
 # Rest framework imports
+from email import header
 from rest_framework import permissions
 from rest_framework import viewsets, status
 from rest_framework.authtoken.serializers import AuthTokenSerializer
@@ -7,6 +8,7 @@ from rest_framework.decorators import api_view, permission_classes, authenticati
 from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.utils import json
+from django_filters.rest_framework import DjangoFilterBackend
 # Django imports
 from django.apps import apps
 from django.db.models import Count
@@ -839,6 +841,8 @@ class ProductoVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
     serializer_class = ProductoSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['servicio','menejo_inventario', 'activo']
 
     def create(self, request):
         perfil = Perfil.objects.get(usuario=self.request.user)
@@ -1038,6 +1042,8 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
     serializer_class = MovimientoInventarioSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['producto', 'almacen']
 
     def create(self, request):
         perfil = Perfil.objects.get(usuario=self.request.user)
@@ -1781,7 +1787,7 @@ class DetalleFacturaVS(viewsets.ModelViewSet):
 
 class ListaPrecioVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = ListaPrecioSerializer
 
     def create(self, request):
@@ -1793,6 +1799,10 @@ class ListaPrecioVS(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
+            productos = Producto.objects.all()
+            for o in productos:
+                listad = DetalleListaPrecio.objects.create(instancia_id=datos['instancia'], producto=o, listaprecio_id=serializer.data['id'])
+                print(listad)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         elif (perfil.tipo == 'A'): 
             datos = request.data
@@ -1847,8 +1857,10 @@ class ListaPrecioVS(viewsets.ModelViewSet):
 
 class DetalleListaPrecioVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = DetalleListaPrecioSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['listaprecio']
 
     def create(self, request):
         perfil = Perfil.objects.get(usuario=self.request.user)
@@ -2553,6 +2565,20 @@ def ObtenerColumnas(request):
             }
             columnas.append(JsonCol)
         return Response(columnas)
+    except ObjectDoesNotExist as e:
+        return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(["POST"])
+@csrf_exempt
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def crearlista(request):
+    data = json.loads(request.body)
+    try:
+        print(data)
+        lista = ListaPrecio(nombre= data['nombre'], activo=data['activo'])
+        lista.save()
+        return Response('exitoso')
     except ObjectDoesNotExist as e:
         return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_404_NOT_FOUND)
 

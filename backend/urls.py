@@ -44,6 +44,7 @@ router.register(r'proforma', views.ProformaVS, basename='proforma')
 router.register(r'proforma-detalle', views.DetalleProformaVS, basename='proforma-detalle')
 router.register(r'factura', views.FacturaVS, basename='factura')
 router.register(r'factura-detalle', views.DetalleFacturaVS, basename='factura-detalle')
+router.register(r'lista-precio', views.ListaPrecioVS, basename='lista-precio')
 router.register(r'lista-precio-detalle', views.DetalleListaPrecioVS, basename='lista-precio-detalle')
 router.register(r'factura-impuesto', views.ImpuestosFacturaVS, basename='factura-impuesto')
 router.register(r'factura-numerologia', views.NumerologiaFacturaVS, basename='factura-numerologia')
@@ -65,6 +66,7 @@ urlpatterns = [
     path('menu-get/', views.ObtenerMenu),
     path('historico-get/', views.ObtenerHistorico),
     path('user-creator/', views.CrearNuevoUsuario),
+    path('crear-lista/', views.crearlista),
     # Login
     path('auth/login/', LoginView.as_view(), name='knox_login'),
     path('auth/logout/', knox_views.LogoutView.as_view(), name='knox_logout'),
