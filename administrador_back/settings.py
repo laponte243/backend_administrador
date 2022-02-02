@@ -52,6 +52,8 @@ REST_FRAMEWORK = {
         'knox.auth.TokenAuthentication'
     ),
     'DATETIME_FORMAT': "%d/%m/%Y %H:%M:%S",
+    'DATE_INPUT_FORMATS': ["%d-%m-%Y",'%Y-%m-%d'],
+    'DATE_FORMAT':["%d-%m-%Y",'%Y-%m-%d'],
 
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated'
@@ -74,7 +76,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
+DATE_INPUT_FORMATS = ('%d-%m-%Y','%Y-%m-%d')
+DATE_FORMAT = ('%d-%m-%Y','%Y-%m-%d')
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 RESET_PASSWORD_ROUTE = 'http://localhost:8080/reset-password/'

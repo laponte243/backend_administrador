@@ -167,15 +167,9 @@ class ProductoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Producto
         fields = '__all__'
-    nombreEmpresa = serializers.SerializerMethodField('LoadNombreEmpresa')
-    def LoadNombreEmpresa(self, obj):
-        return obj.empresa.nombre
     nombremarca = serializers.SerializerMethodField('LoadNombremarca')
     def LoadNombremarca(self, obj):
         return obj.marca.nombre
-    nombreservicio = serializers.SerializerMethodField('LoadNombreservicio')
-    def LoadNombreservicio(self, obj):
-        return obj.servicio.nombre
     nombreInstancia = serializers.SerializerMethodField('LoadNombreInstancia')
     def LoadNombreInstancia(self, obj):
         return obj.instancia.nombre
@@ -188,13 +182,19 @@ class ProductoImagenSerializer(serializers.ModelSerializer):
     def LoadNombreProducto(self, obj):
         return obj.producto.nombre
 
-class LoteSerializer(serializers.ModelSerializer):
+class MovimientoInventarioSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Lote
+        model = MovimientoInventario
         fields = '__all__'
+    nombreInstancia = serializers.SerializerMethodField('LoadNombreInstancia')
+    def LoadNombreInstancia(self, obj):
+        return obj.instancia.nombre
     nombreProducto = serializers.SerializerMethodField('LoadNombreProducto')
     def LoadNombreProducto(self, obj):
         return obj.producto.nombre
+    nombreAlmacen = serializers.SerializerMethodField('LoadNombreAlmacen')
+    def LoadNombreAlmacen(self, obj):
+        return obj.almacen.nombre
 
 class AlmacenSerializer(serializers.ModelSerializer):
     class Meta:
