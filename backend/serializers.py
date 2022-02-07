@@ -262,6 +262,9 @@ class DetallePedidoSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetallePedido
         fields = '__all__'
+    nombreProducto = serializers.SerializerMethodField('LoadNombreProducto')
+    def LoadNombreProducto(self, obj):
+       return obj.producto.nombre 
 
 class ProformaSerializer(serializers.ModelSerializer):
     class Meta:

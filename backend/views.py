@@ -375,7 +375,7 @@ class PermisoVS(viewsets.ModelViewSet):
 # Empresa
 class EmpresaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    #authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = EmpresaSerializer
 
     def create(self, request):
@@ -1191,8 +1191,10 @@ class InventarioVS(viewsets.ModelViewSet):
 # ventas
 class VendedorVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = VendedorSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['activo']
 
     def create(self, request):
         perfil = Perfil.objects.get(usuario=self.request.user)
@@ -1257,8 +1259,10 @@ class VendedorVS(viewsets.ModelViewSet):
 
 class ClienteVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = ClienteSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['activo']
 
     def create(self, request):
         perfil = Perfil.objects.get(usuario=self.request.user)
@@ -1390,7 +1394,7 @@ class ContactoClienteVS(viewsets.ModelViewSet):
 
 class PedidoVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = PedidoSerializer
 
     def create(self, request):
@@ -1456,8 +1460,10 @@ class PedidoVS(viewsets.ModelViewSet):
 
 class DetallePedidoVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = DetallePedidoSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['pedido']
 
     def create(self, request):
         perfil = Perfil.objects.get(usuario=self.request.user)
@@ -1925,7 +1931,7 @@ class DetalleListaPrecioVS(viewsets.ModelViewSet):
 
 class ImpuestosFacturaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = ImpuestosFacturaSerializer
 
     def create(self, request):
@@ -2606,3 +2612,30 @@ def ObtenerHistorico(request):
     except Exception as e:
         print(e)
         return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+@api_view(["POST"])
+@csrf_exempt
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def actualiza_pedido(request):
+    payload = json.loads(request.body)
+    try:
+        pedido_id = Pedido.objects.get(id=payload['idpedido'])
+        DetallePedido.objects.filter(pedido=pedido_id).delete()
+        for i in payload['data']:
+            perfil = Perfil.objects.get(usuario=request.user)
+            producto = Producto.objects.get(id=i["producto"])
+            instancia = Instancia.objects.get(perfil=perfil.instancia_id)
+            cantidad = int(i["cantidad"])
+            pedido = pedido_id
+            nuevo_componente = DetallePedido(instancia_id=instancia.id,pedido=pedido,cantidad=cantidad,producto=producto)
+            nuevo_componente.save()
+        return JsonResponse({'exitoso': 'exitoso'}, safe=False, status=status.HTTP_200_OK)
+    except ObjectDoesNotExist as e:
+        return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(e)
+        return JsonResponse({'error': e}, safe=False,
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)

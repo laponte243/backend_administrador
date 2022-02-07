@@ -266,16 +266,13 @@ class Pedido(models.Model): # Pedido
     cliente = models.ForeignKey(Cliente, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="cliente asociado")
     vendedor = models.ForeignKey(Vendedor, null=True, blank=False, on_delete=models.DO_NOTHING, help_text="vendedor asociado")
     fecha_pedido = models.DateTimeField(auto_now_add=True, help_text="fecha de generacion del pedido")
-
     history = HistoricalRecords()
 
 class DetallePedido(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     pedido = models.ForeignKey(Pedido, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="pedido asociado")
-
     producto = models.ForeignKey(Producto, null=True, blank=False, on_delete=models.DO_NOTHING, help_text="producto asociado")
     cantidad = models.FloatField(null=False, default=0, blank=False, help_text="Cantidad vendida")
-    
     history = HistoricalRecords()
 
 class Proforma(models.Model):

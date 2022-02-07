@@ -67,6 +67,7 @@ urlpatterns = [
     path('historico-get/', views.ObtenerHistorico),
     path('user-creator/', views.CrearNuevoUsuario),
     path('crear-lista/', views.crearlista),
+    path('actualiza-pedido/', views.actualiza_pedido),
     # Login
     path('auth/login/', LoginView.as_view(), name='knox_login'),
     path('auth/logout/', knox_views.LogoutView.as_view(), name='knox_logout'),
