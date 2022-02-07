@@ -170,6 +170,9 @@ class ProductoSerializer(serializers.ModelSerializer):
     nombremarca = serializers.SerializerMethodField('LoadNombremarca')
     def LoadNombremarca(self, obj):
         return obj.marca.nombre
+    nombreCodigo = serializers.SerializerMethodField('nombreCodigoo')
+    def nombreCodigoo(self, obj):
+        return obj.sku + ' ' + '-'+ ' ' + obj.nombre
     nombreInstancia = serializers.SerializerMethodField('LoadNombreInstancia')
     def LoadNombreInstancia(self, obj):
         return obj.instancia.nombre
@@ -265,6 +268,7 @@ class DetallePedidoSerializer(serializers.ModelSerializer):
     nombreProducto = serializers.SerializerMethodField('LoadNombreProducto')
     def LoadNombreProducto(self, obj):
        return obj.producto.nombre 
+    
 
 class ProformaSerializer(serializers.ModelSerializer):
     class Meta:
