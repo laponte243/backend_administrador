@@ -2589,32 +2589,6 @@ def crearlista(request):
         return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_404_NOT_FOUND)
 
 
-@api_view(["GET"])
-@csrf_exempt
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def ObtenerHistorico(request):
-    from django.db.models import CharField, Value
-    df = pd.DataFrame()
-    payload = json.loads(request.body)
-    try:
-        uid = User.objects.get(username=payload['username'])
-        uid = 1
-        if uid is not None:
-            for model in apps.get_app_config('backend').get_models():
-                if('Historical' not in str(model)):
-                    df = pd.DataFrame.append(df,list(model.history.all().values('history_user_id', 'history_date', 'history_type').annotate(modelo=Value(str(model).replace('backend.models.',''), output_field=CharField())).order_by('-id')))
-                    df.reset_index(drop=True, inplace=True)
-            dfx = df.sort_values(by=['history_date']).head(10)
-        return JsonResponse({'mensaje': dfx.to_json()}, safe=False, status=status.HTTP_200_OK)
-    except ObjectDoesNotExist as e:
-        return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-        print(e)
-        return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-
 @api_view(["POST"])
 @csrf_exempt
 @authentication_classes([TokenAuthentication])
@@ -2627,7 +2601,7 @@ def actualiza_pedido(request):
         for i in payload['data']:
             perfil = Perfil.objects.get(usuario=request.user)
             producto = Producto.objects.get(id=i["producto"])
-            instancia = Instancia.objects.get(perfil=perfil.instancia_id)
+            instancia = Instancia.objects.get(perfil=perfil.id)
             cantidad = int(i["cantidad"])
             pedido = pedido_id
             nuevo_componente = DetallePedido(instancia_id=instancia.id,pedido=pedido,cantidad=cantidad,producto=producto)
@@ -2639,3 +2613,41 @@ def actualiza_pedido(request):
         print(e)
         return JsonResponse({'error': e}, safe=False,
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+@api_view(["GET"])
+@csrf_exempt
+@authentication_classes([TokenAuthentication])
+def ObtenerHistorico(request):
+    from django.db.models import CharField, Value
+    df = pd.DataFrame()
+    try:
+        #uid = User.objects.get(username=payload['username'])
+        uid = request.user
+        #modelo = payload['model']
+#        modelo = apps.get_model(app_label='backend', model_name=payload['model'])
+        #uid = 1
+        betados = ["<class 'backend.models.Modulo'>"]
+        if uid is not None:
+            for model in apps.get_app_config('backend').get_models():
+                if('Historical' not in str(model) and str(model) not in betados):
+                    df = pd.DataFrame.append(df,list(model.history.all().values('history_date', 'history_type','history_user_id').annotate(modelo=Value(str(model).replace('backend.models.',''), output_field=CharField())).order_by('-id')))
+                    df.reset_index(drop=True, inplace=True)
+                    dfx = df.sort_values(by='history_date', ascending=False).head(5)
+                    data = []
+                    for index, row in dfx.iterrows():
+                        tipo = ""
+                        if(row["history_type"]=="+"):
+                            tipo = 'Creado'
+                        elif(row["history_type"]=="-"):
+                            tipo = 'Eliminado'
+                        else:
+                            tipo = 'Editado'
+                        data.append({'date':row['history_date'],'type':tipo, 'model':str(row['modelo']).replace("<class '",'').replace("'>",'')})
+        return JsonResponse({'mensaje': data}, safe=False, status=status.HTTP_200_OK)
+    except ObjectDoesNotExist as e:
+        return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(e)
+        return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

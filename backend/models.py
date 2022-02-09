@@ -107,6 +107,7 @@ class ContactoEmpresa(models.Model):
     nombre = models.TextField(max_length=150, blank=False, null=False, help_text="nombre del contacto")
     telefono = models.TextField(max_length=150, blank=False, null=False, help_text="telefono del contacto")
     mail = models.TextField(max_length=150, blank=False, null=False, help_text="correo electronico del contacto")
+    history = HistoricalRecords()
 
 class ConfiguracionPapeleria(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
@@ -121,6 +122,7 @@ class ConfiguracionPapeleria(models.Model):
     formato = models.TextField(max_length=20, blank=True, null=True, help_text="formato de numero con 0 adelante 0000000")
     valor = models.IntegerField(blank=False, null=False, help_text="valor actual del numero")
     tipo = models.CharField(max_length=1, choices=TIPO, default='F', help_text="tipo de numero")
+    history = HistoricalRecords()
 
 #Inventario
 
@@ -128,6 +130,7 @@ class TasaConversion(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     fecha_tasa = models.DateTimeField(auto_now_add=True, help_text="tasa de conversion del dia")
     valor = models.FloatField(blank=False, null=False, help_text="valor de la tasa de conversion")
+    history = HistoricalRecords()
 
 class Impuestos(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
@@ -245,11 +248,13 @@ class ContactoCliente(models.Model):
     nombre = models.TextField(max_length=150, blank=False, null=False, help_text="Nombre del contacto")
     telefono = models.TextField(max_length=150, blank=False, null=False, help_text="telefono del contacto")
     mail = models.TextField(max_length=150, blank=False, null=False, help_text="correo electronico del contacto")
+    history = HistoricalRecords()
 
 class ListaPrecio(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     nombre = models.TextField(max_length=150, blank=False, null=True, help_text="nombre de la lista de precios?")
     activo = models.BooleanField(default=True, help_text="esta lista de precios esta activa?")
+    history = HistoricalRecords()
 
 class DetalleListaPrecio(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")

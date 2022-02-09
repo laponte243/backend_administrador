@@ -260,6 +260,12 @@ class PedidoSerializer(serializers.ModelSerializer):
     nombreVendedor = serializers.SerializerMethodField('LoadNombreVendedor')
     def LoadNombreVendedor(self, obj):
        return obj.vendedor.nombre 
+    date =  serializers.SerializerMethodField('LoadDate')
+    def LoadDate(self, obj):
+       return obj.fecha_pedido.date()
+    time =  serializers.SerializerMethodField('Loadtime')
+    def Loadtime(self, obj):
+       return obj.fecha_pedido.time()
 
 class DetallePedidoSerializer(serializers.ModelSerializer):
     class Meta:
