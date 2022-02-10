@@ -158,7 +158,7 @@ class Unidad(models.Model):
 class Producto(models.Model):
     #datos basicos
     instancia = models.ForeignKey(Instancia, null=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
-    unidad = models.ForeignKey(Unidad, null=True, on_delete=models.DO_NOTHING, help_text="Unidad de medida del producto")
+    unidad = models.ForeignKey(Unidad, null=True, default= None, on_delete=models.DO_NOTHING, help_text="Unidad de medida del producto")
     marca = models.ForeignKey(Marca, null=True, on_delete=models.DO_NOTHING, help_text="Marca asociada al producto")
     nombre = models.TextField(max_length=150, null=True, blank=True, help_text="Nombre del producto")
     sku = models.TextField(max_length=150, null=False, blank=False, help_text="SKU del producto")
@@ -254,6 +254,8 @@ class ListaPrecio(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     nombre = models.TextField(max_length=150, blank=False, null=True, help_text="nombre de la lista de precios?")
     activo = models.BooleanField(default=True, help_text="esta lista de precios esta activa?")
+    predeterminada = models.BooleanField(default=False, help_text="esta lista es la predeterminada?")
+    porcentaje = models.FloatField(null= False, blank=False, help_text="Porcentaje de la lista de precio")
     history = HistoricalRecords()
 
 class DetalleListaPrecio(models.Model):
