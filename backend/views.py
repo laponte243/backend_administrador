@@ -1807,7 +1807,8 @@ class ListaPrecioVS(viewsets.ModelViewSet):
             headers = self.get_success_headers(serializer.data)
             productos = Producto.objects.all()
             for o in productos:
-                listad = DetalleListaPrecio.objects.create(instancia_id=datos['instancia'], producto=o, listaprecio_id=serializer.data['id'])
+                costo_final = o.costo + (o.costo * (serializer.data['porcentaje'] /100))
+                listad = DetalleListaPrecio.objects.create(instancia_id=datos['instancia'], producto=o,precio=costo_final, listaprecio_id=serializer.data['id'])
                 print(listad)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         elif (perfil.tipo == 'A'): 
@@ -1823,12 +1824,21 @@ class ListaPrecioVS(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
+        datos = request.data
+        datos['instancia'] = perfil.instancia.id
         if (perfil.tipo == 'S'):
             partial = True # Here I change partial to True
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
+            print(serializer.data['id'])
+            DetalleListaPrecio.objects.filter(listaprecio=serializer.data['id']).delete()
+            productos = Producto.objects.all()
+            for o in productos:
+                costo_final = o.costo + (o.costo * (serializer.data['porcentaje'] /100))
+                listad = DetalleListaPrecio.objects.create(instancia_id=datos['instancia'], producto=o,precio=costo_final, listaprecio_id=serializer.data['id'])
+                print(listad)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
@@ -1866,7 +1876,7 @@ class DetalleListaPrecioVS(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
     serializer_class = DetalleListaPrecioSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['listaprecio']
+    filterset_fields = ['listaprecio' ,'producto__activo']
 
     def create(self, request):
         perfil = Perfil.objects.get(usuario=self.request.user)
@@ -1923,6 +1933,7 @@ class DetalleListaPrecioVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
 
     def get_queryset(self):
+        print(self.request)
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo=='S'):
             return DetalleListaPrecio.objects.all().order_by('producto', '-precio')

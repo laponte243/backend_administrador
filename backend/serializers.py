@@ -321,6 +321,9 @@ class DetalleListaPrecioSerializer(serializers.ModelSerializer):
     nombreProducto = serializers.SerializerMethodField('LoadNombreProducto')
     def LoadNombreProducto(self, obj):
         return obj.producto.nombre
+    estadoProducto = serializers.SerializerMethodField('LoadEstadoProducto')
+    def LoadEstadoProducto(self, obj):
+        return obj.producto.activo
     precioproducto = serializers.SerializerMethodField('nprecioproducto')
     def nprecioproducto(self, obj):
        return obj.producto.costo 
