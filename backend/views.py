@@ -34,6 +34,7 @@ from django.urls import reverse
 from django.template.loader import render_to_string
 # Import pandas
 import pandas as pd
+import csv
 
 # Utiles
 """Rceiver for reset password"""
@@ -2662,3 +2663,16 @@ def ObtenerHistorico(request):
     except Exception as e:
         print(e)
         return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def export_users_csv(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="lista.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Codigo', 'Marca del producto' , 'Producto', 'Costo del producto', 'Precio en lista'])
+    registros   = DetalleListaPrecio.objects.all()
+    for registro in registros:
+        writer.writerow([registro.producto.sku, registro.producto.marca.nombre, registro.producto.nombre, registro.producto.costo, registro.precio])
+
+    return response

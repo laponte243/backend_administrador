@@ -271,6 +271,7 @@ class DetallePedidoSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetallePedido
         fields = '__all__'
+    
     nombreProducto = serializers.SerializerMethodField('LoadNombreProducto')
     def LoadNombreProducto(self, obj):
        return obj.producto.nombre 
@@ -327,6 +328,12 @@ class DetalleListaPrecioSerializer(serializers.ModelSerializer):
     precioproducto = serializers.SerializerMethodField('nprecioproducto')
     def nprecioproducto(self, obj):
        return obj.producto.costo 
+    skuProductoo = serializers.SerializerMethodField('skuProducto')
+    def skuProducto(self, obj):
+       return obj.producto.sku 
+    marcaProductoo = serializers.SerializerMethodField('marcaProducto')
+    def marcaProducto(self, obj):
+       return obj.producto.marca.nombre
 
 class ImpuestosFacturaSerializer(serializers.ModelSerializer):
     class Meta:
