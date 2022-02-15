@@ -2668,11 +2668,20 @@ def ObtenerHistorico(request):
 def export_users_csv(request):
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="lista.csv"'
-
-    writer = csv.writer(response)
-    writer.writerow(['Codigo', 'Marca del producto' , 'Producto', 'Costo del producto', 'Precio en lista'])
-    registros   = DetalleListaPrecio.objects.all()
-    for registro in registros:
-        writer.writerow([registro.producto.sku, registro.producto.marca.nombre, registro.producto.nombre, registro.producto.costo, registro.precio])
-
+    marcas = Marca.objects.all()
+    writer = csv.writer(response)  
+    for m in marcas:
+        writer.writerow(['Marca:' , m.nombre])
+        titulos = ['Codigo', 'Producto', 'Costo']
+        listas = ListaPrecio.objects.filter(activo=True).order_by('id')
+        for lista in listas:
+            titulos.append(lista.nombre) 
+        writer.writerow(titulos)
+        productos = Producto.objects.filter(activo=True,venta=True, marca=m)
+        for p in productos:
+            texto = [p.sku, p.nombre, p.costo]
+            precios = DetalleListaPrecio.objects.filter(producto= p).order_by('listaprecio__id')
+            for precio in precios:
+                texto.append(precio.precio)
+            writer.writerow(texto)
     return response
