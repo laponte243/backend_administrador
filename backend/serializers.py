@@ -198,6 +198,9 @@ class MovimientoInventarioSerializer(serializers.ModelSerializer):
     nombreAlmacen = serializers.SerializerMethodField('LoadNombreAlmacen')
     def LoadNombreAlmacen(self, obj):
         return obj.almacen.nombre
+    date =  serializers.SerializerMethodField('LoadDate')
+    def LoadDate(self, obj):
+       return obj.fecha_vencimiento.date()
 
 class AlmacenSerializer(serializers.ModelSerializer):
     class Meta:
