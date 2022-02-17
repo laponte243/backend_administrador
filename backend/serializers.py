@@ -236,7 +236,10 @@ class ClienteSerializer(serializers.ModelSerializer):
         fields = '__all__'
     nombreVendedor = serializers.SerializerMethodField('LoadNombreVendedor')
     def LoadNombreVendedor(self, obj):
-        return obj.vendedor.nombre
+        return obj.vendedor.nombre + ' ' +'-' + ' ' + obj.vendedor.identificador
+    nombreEmpresa = serializers.SerializerMethodField('LoadNombreEmpresa')
+    def LoadNombreEmpresa(self, obj):
+        return obj.empresa.nombre
     nombreInstancia = serializers.SerializerMethodField('LoadNombreInstancia')
     def LoadNombreInstancia(self, obj):
         return obj.instancia.nombre
@@ -260,9 +263,18 @@ class PedidoSerializer(serializers.ModelSerializer):
     nombreCliente = serializers.SerializerMethodField('LoadNombreCliente')
     def LoadNombreCliente(self, obj):
        return obj.cliente.nombre 
+    identificador_fiscal = serializers.SerializerMethodField('LoadIdentificadorCliente')
+    def LoadIdentificadorCliente(self, obj):
+       return obj.cliente.identificador 
     nombreVendedor = serializers.SerializerMethodField('LoadNombreVendedor')
     def LoadNombreVendedor(self, obj):
        return obj.vendedor.nombre 
+    Cliente_direccion = serializers.SerializerMethodField('nombreCliente_Vendedoor')
+    def nombreCliente_Vendedoor(self, obj):
+       return obj.cliente.ubicacion 
+    Cliente_telefono = serializers.SerializerMethodField('Cliente_telefonoo')
+    def Cliente_telefonoo(self, obj):
+       return obj.cliente.telefono 
     date =  serializers.SerializerMethodField('LoadDate')
     def LoadDate(self, obj):
        return obj.fecha_pedido.date()
