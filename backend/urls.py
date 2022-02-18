@@ -33,7 +33,7 @@ router.register(r'producto', views.ProductoVS, basename='producto')
 router.register(r'producto-imagen', views.ProductoImagenVS, basename='producto-imagen')
 router.register(r'movimiento-inventario', views.MovimientoInventarioVS, basename='Movimiento-inventario')
 router.register(r'almecen', views.AlmacenVS, basename='almecen')
-router.register(r'inventario', views.InventarioVS, basename='inventario')
+router.register(r'inventario-detalle', views.DetalleInventarioVS, basename='inventario-detalle')
 # Ventas
 router.register(r'vendedor', views.VendedorVS, basename='vendedor')
 router.register(r'cliente', views.ClienteVS, basename='cliente')
@@ -69,6 +69,7 @@ urlpatterns = [
     path('crear-lista/', views.crearlista),
     path('actualiza-pedido/', views.actualiza_pedido),
     path('excel_lista/', views.export_users_csv),
+    path('inventario/', views.Inven),
     # Login
     path('auth/login/', LoginView.as_view(), name='knox_login'),
     path('auth/logout/', knox_views.LogoutView.as_view(), name='knox_logout'),

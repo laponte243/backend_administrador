@@ -201,17 +201,17 @@ class MovimientoInventario(models.Model):
     fecha_vencimiento = models.DateTimeField(null=True, blank=True, help_text="Fecha de vencimiento del producto")
     lote = models.TextField(null=True, blank=True, help_text="Numero de lote del producto")
     descripcion = models.TextField(null=True, blank=True, help_text="Descripción del movimiento")
-    cantida_disponible = models.FloatField(null=False, help_text="Cantidad disponible del producto")
     history = HistoricalRecords() # colocar como registro
     def __str__(self):
         return "%s - %s - %s" % (self.producto,self.almacen,self.cantida_disponible)
-
 
 
 class Inventario(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     producto = models.ForeignKey(Producto, null=False, on_delete=models.DO_NOTHING, help_text="producto asociado")
     almacen = models.ForeignKey(Almacen, null=True, on_delete=models.DO_NOTHING, help_text="almacen asociado")
+    lote = models.TextField(null=True, blank=True, help_text="Numero de lote del producto")
+    fecha_vencimiento = models.DateTimeField(null=True, blank=True, help_text="Fecha de vencimiento del producto")
     disponible = models.FloatField(null=False, default=0, blank=False, help_text="cantidad disponible")
     transito = models.FloatField(null=False, default=0, blank=False, help_text="cantidad en transito")
     bloqueado = models.FloatField(null=False, default=0, blank=False, help_text="cantidad bloqueada")

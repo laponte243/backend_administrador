@@ -11,8 +11,7 @@ from rest_framework.utils import json
 from django_filters.rest_framework import DjangoFilterBackend
 # Django imports
 from django.apps import apps
-from django.db.models import Count
-from django.db.models import Q
+from django.db.models import Count, Q, Sum
 from django.contrib.auth import login
 from django.core import serializers as sr
 from django.core.exceptions import ObjectDoesNotExist
@@ -1123,9 +1122,9 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
         else:
             return MovimientoInventario.objects.filter(instancia=perfil.instancia).order_by('lote')
 
-class InventarioVS(viewsets.ModelViewSet):
+class DetalleInventarioVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
     serializer_class = InventarioSerializer
 
     def create(self, request):
@@ -1188,6 +1187,17 @@ class InventarioVS(viewsets.ModelViewSet):
             return Inventario.objects.all().order_by('almacen', 'producto')
         else:
             return Inventario.objects.filter(instancia=perfil.instancia).order_by('almacen', 'producto')
+
+@api_view(["GET"])
+@csrf_exempt
+# @authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def Inven(request):
+    perfil = Perfil.objects.get(usuario=request.user)
+    if perfil:
+        objeto_inventario = Inventario.objects.filter(instancia=perfil.instancia).values('almacen', 'producto').annotate(sum_disponible=Sum('disponible'),sum_bloqueado=Sum('bloqueado'))
+        print(objeto_inventario)
+        return Response(objeto_inventario,status=status.HTTP_200_OK)
 
 # ventas
 class VendedorVS(viewsets.ModelViewSet):
