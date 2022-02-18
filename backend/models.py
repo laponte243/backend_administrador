@@ -233,8 +233,11 @@ class Vendedor(models.Model):
 
 class Cliente(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
+    empresa = models.ForeignKey(Empresa, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="empresa asociada")
     vendedor = models.ForeignKey(Vendedor, null=True, blank=False, on_delete=models.DO_NOTHING, help_text="vendedor asociado")
     nombre = models.TextField(max_length=150, blank=True, help_text="Razon social del cliente")
+    telefono = models.TextField(max_length=150, blank=False, null=False, help_text="telefono del contacto")
+    mail = models.TextField(max_length=150, blank=False, null=False, help_text="correo electronico del contacto")
     identificador = models.TextField(max_length=150, blank=True, help_text="Numero de indentificacion fiscal")
     ubicacion = models.TextField(max_length=150, blank=True, help_text="Ubicacion o direccion del cliente")
     credito = models.BooleanField(default=False, help_text="Se le puede vender a credito?")
