@@ -1196,7 +1196,6 @@ def Inven(request):
     perfil = Perfil.objects.get(usuario=request.user)
     if perfil:
         objeto_inventario = Inventario.objects.filter(instancia=perfil.instancia).values('almacen', 'producto').annotate(sum_disponible=Sum('disponible'),sum_bloqueado=Sum('bloqueado'))
-        print(objeto_inventario)
         return Response(objeto_inventario,status=status.HTTP_200_OK)
 
 # ventas
