@@ -847,23 +847,36 @@ class ProductoVS(viewsets.ModelViewSet):
     def create(self, request):
         perfil = Perfil.objects.get(usuario=self.request.user)
         datos = request.data
-        datos['instancia'] = perfil.instancia.id
         if (perfil.tipo == 'S'):
+            _mutable = datos._mutable
+            datos._mutable = True
+            datos['instancia'] = str(perfil.instancia.id)
+            datos._mutable = _mutable
             serializer = self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
+            for lp in ListaPrecio.objects.filter(instancia_id=perfil.instancia.id):
+                pro = Producto.objects.get(id=serializer.data['id'])
+                detalle = DetalleListaPrecio(instancia=perfil.instancia, listaprecio=lp, producto=pro, precio=serializer.data['costo'])
+                detalle.save()
             headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+            return Response('serializer.data', status=status.HTTP_201_CREATED, headers=headers)
         elif (perfil.tipo == 'A'): 
-            datos = request.data
-            datos['instancia'] = perfil.instancia.id
+            _mutable = datos._mutable
+            datos._mutable = True
+            datos['instancia'] = str(perfil.instancia.id)
+            datos._mutable = _mutable
             serializer = self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
+            for lp in ListaPrecio.objects.filter(instancia_id=perfil.instancia.id):
+                pro = Producto.objects.get(id=serializer.data['id'])
+                detalle = DetalleListaPrecio(instancia=perfil.instancia, listaprecio=lp, producto=pro, precio=serializer.data['costo'])
+                detalle.save()
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         else:
-                return Response(status=status.HTTP_403_FORBIDDEN)
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
@@ -1803,27 +1816,32 @@ class DetalleFacturaVS(viewsets.ModelViewSet):
 
 class ListaPrecioVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
     serializer_class = ListaPrecioSerializer
 
     def create(self, request):
         perfil = Perfil.objects.get(usuario=self.request.user)
         datos = request.data
-        datos['instancia'] = perfil.instancia.id
         if (perfil.tipo == 'S'):
+            _mutable = datos._mutable
+            datos._mutable = True
+            datos['instancia'] = str(perfil.instancia.id)
+            datos._mutable = _mutable
             serializer = self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
-            productos = Producto.objects.all()
+            productos = Producto.objects.filter(instancia_id=perfil.instancia.id)
             for o in productos:
                 costo_final = o.costo + (o.costo * (serializer.data['porcentaje'] /100))
                 listad = DetalleListaPrecio.objects.create(instancia_id=datos['instancia'], producto=o,precio=costo_final, listaprecio_id=serializer.data['id'])
                 print(listad)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         elif (perfil.tipo == 'A'): 
-            datos = request.data
-            datos['instancia'] = perfil.instancia.id
+            _mutable = datos._mutable
+            datos._mutable = True
+            datos['instancia'] = str(perfil.instancia.id)
+            datos._mutable = _mutable
             serializer = self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -1835,23 +1853,28 @@ class ListaPrecioVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         datos = request.data
-        datos['instancia'] = perfil.instancia.id
         if (perfil.tipo == 'S'):
+            _mutable = datos._mutable
+            datos._mutable = True
+            datos['instancia'] = str(perfil.instancia.id)
+            datos._mutable = _mutable
             partial = True # Here I change partial to True
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
-            print(serializer.data['id'])
-            DetalleListaPrecio.objects.filter(listaprecio=serializer.data['id']).delete()
-            productos = Producto.objects.all()
+            DetalleListaPrecio.objects.filter(instancia_id=perfil.instancia.id, listaprecio=serializer.data['id']).delete()
+            productos = Producto.objects.filter(instancia_id=perfil.instancia.id)
             for o in productos:
                 costo_final = o.costo + (o.costo * (serializer.data['porcentaje'] /100))
                 listad = DetalleListaPrecio.objects.create(instancia_id=datos['instancia'], producto=o,precio=costo_final, listaprecio_id=serializer.data['id'])
-                print(listad)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
+                _mutable = datos._mutable
+                datos._mutable = True
+                datos['instancia'] = str(perfil.instancia.id)
+                datos._mutable = _mutable
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
                 serializer = self.get_serializer(instance, data=request.data, partial=partial)
@@ -1887,20 +1910,24 @@ class DetalleListaPrecioVS(viewsets.ModelViewSet):
     serializer_class = DetalleListaPrecioSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['listaprecio' ,'producto__activo']
-
     def create(self, request):
         perfil = Perfil.objects.get(usuario=self.request.user)
         datos = request.data
-        datos['instancia'] = perfil.instancia.id
         if (perfil.tipo == 'S'):
+            _mutable = datos._mutable
+            datos._mutable = True
+            datos['instancia'] = str(perfil.instancia.id)
+            datos._mutable = _mutable
             serializer = self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         elif (perfil.tipo == 'A'): 
-            datos = request.data
-            datos['instancia'] = perfil.instancia.id
+            _mutable = datos._mutable
+            datos._mutable = True
+            datos['instancia'] = str(perfil.instancia.id)
+            datos._mutable = _mutable
             serializer = self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -1912,6 +1939,10 @@ class DetalleListaPrecioVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
+            _mutable = datos._mutable
+            datos._mutable = True
+            datos['instancia'] = str(perfil.instancia.id)
+            datos._mutable = _mutable
             partial = True # Here I change partial to True
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data, partial=partial)
@@ -1920,6 +1951,10 @@ class DetalleListaPrecioVS(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
+                _mutable = datos._mutable
+                datos._mutable = True
+                datos['instancia'] = str(perfil.instancia.id)
+                datos._mutable = _mutable
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
                 serializer = self.get_serializer(instance, data=request.data, partial=partial)

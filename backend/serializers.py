@@ -167,8 +167,8 @@ class ProductoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Producto
         fields = '__all__'
-    nombremarca = serializers.SerializerMethodField('LoadNombremarca')
-    def LoadNombremarca(self, obj):
+    nombreMarca = serializers.SerializerMethodField('LoadNombreMarca')
+    def LoadNombreMarca(self, obj):
         return obj.marca.nombre
     nombreCodigo = serializers.SerializerMethodField('nombreCodigoo')
     def nombreCodigoo(self, obj):
