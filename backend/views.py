@@ -847,23 +847,36 @@ class ProductoVS(viewsets.ModelViewSet):
     def create(self, request):
         perfil = Perfil.objects.get(usuario=self.request.user)
         datos = request.data
-        datos['instancia'] = perfil.instancia.id
         if (perfil.tipo == 'S'):
+            _mutable = datos._mutable
+            datos._mutable = True
+            datos['instancia'] = str(perfil.instancia.id)
+            datos._mutable = _mutable
             serializer = self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
+            for lp in ListaPrecio.objects.filter(instancia_id=perfil.instancia.id):
+                pro = Producto.objects.get(id=serializer.data['id'])
+                detalle = DetalleListaPrecio(instancia=perfil.instancia, listaprecio=lp, producto=pro, precio=serializer.data['costo'])
+                detalle.save()
             headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+            return Response('serializer.data', status=status.HTTP_201_CREATED, headers=headers)
         elif (perfil.tipo == 'A'): 
-            datos = request.data
-            datos['instancia'] = perfil.instancia.id
+            _mutable = datos._mutable
+            datos._mutable = True
+            datos['instancia'] = str(perfil.instancia.id)
+            datos._mutable = _mutable
             serializer = self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
+            for lp in ListaPrecio.objects.filter(instancia_id=perfil.instancia.id):
+                pro = Producto.objects.get(id=serializer.data['id'])
+                detalle = DetalleListaPrecio(instancia=perfil.instancia, listaprecio=lp, producto=pro, precio=serializer.data['costo'])
+                detalle.save()
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         else:
-                return Response(status=status.HTTP_403_FORBIDDEN)
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
@@ -1058,7 +1071,6 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
                 for o in objeto:
                     disp += o.cantidad_recepcion
                 inv = Inventario.objects.filter(instancia_id=datos['instancia'],producto_id=datos['producto'],almacen_id=datos['almacen'], lote=datos['lote'])
-                print(inv)
                 if inv.first() != None:
                     inven = inv.first()
                     inven.disponible = disp
@@ -1804,7 +1816,7 @@ class DetalleFacturaVS(viewsets.ModelViewSet):
 
 class ListaPrecioVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
     serializer_class = ListaPrecioSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['activo']
@@ -1812,49 +1824,70 @@ class ListaPrecioVS(viewsets.ModelViewSet):
     def create(self, request):
         perfil = Perfil.objects.get(usuario=self.request.user)
         datos = request.data
-        datos['instancia'] = perfil.instancia.id
         if (perfil.tipo == 'S'):
+            _mutable = datos._mutable
+            datos._mutable = True
+            datos['instancia'] = str(perfil.instancia.id)
+            if (datos['predeterminada'] == 'true'):
+                if ListaPrecio.objects.filter(predeterminada=True).exists():
+                    return Response({'error': 'Ya existe una lista predeterminada'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            datos._mutable = _mutable
             serializer = self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
-            productos = Producto.objects.all()
+            productos = Producto.objects.filter(instancia_id=perfil.instancia.id)
             for o in productos:
                 costo_final = o.costo + (o.costo * (serializer.data['porcentaje'] /100))
                 listad = DetalleListaPrecio.objects.create(instancia_id=datos['instancia'], producto=o,precio=costo_final, listaprecio_id=serializer.data['id'])
-                print(listad)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         elif (perfil.tipo == 'A'): 
-            datos = request.data
-            datos['instancia'] = perfil.instancia.id
+            _mutable = datos._mutable
+            datos._mutable = True
+            datos['instancia'] = str(perfil.instancia.id)
+            if datos['predeterminada'] == 'true':
+                if ListaPrecio.objects.filter(predeterminada=True).exists():
+                    return Response({'error': 'Ya existe una lista predeterminada'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            datos._mutable = _mutable
             serializer = self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         else:
-                return Response(status=status.HTTP_403_FORBIDDEN)
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         datos = request.data
-        datos['instancia'] = perfil.instancia.id
         if (perfil.tipo == 'S'):
+            _mutable = datos._mutable
+            datos._mutable = True
+            datos['instancia'] = str(perfil.instancia.id)
+            if datos['predeterminada'] == 'true':
+                if ListaPrecio.objects.filter(predeterminada=True).exists():
+                    return Response({'error': 'Ya existe una lista predeterminada'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            datos._mutable = _mutable
             partial = True # Here I change partial to True
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
-            print(serializer.data['id'])
-            DetalleListaPrecio.objects.filter(listaprecio=serializer.data['id']).delete()
-            productos = Producto.objects.all()
+            DetalleListaPrecio.objects.filter(instancia_id=perfil.instancia.id, listaprecio=serializer.data['id']).delete()
+            productos = Producto.objects.filter(instancia_id=perfil.instancia.id)
             for o in productos:
                 costo_final = o.costo + (o.costo * (serializer.data['porcentaje'] /100))
                 listad = DetalleListaPrecio.objects.create(instancia_id=datos['instancia'], producto=o,precio=costo_final, listaprecio_id=serializer.data['id'])
-                print(listad)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
+                _mutable = datos._mutable
+                datos._mutable = True
+                datos['instancia'] = str(perfil.instancia.id)
+                if datos['predeterminada'] == 'true':
+                    if ListaPrecio.objects.filter(predeterminada=True).exists():
+                        return Response({'error': 'Ya existe una lista predeterminada'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                datos._mutable = _mutable
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
                 serializer = self.get_serializer(instance, data=request.data, partial=partial)
@@ -1879,10 +1912,18 @@ class ListaPrecioVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
+        listas = ListaPrecio.objects.filter(instancia=perfil.instancia, predeterminada=True)
+        if listas.exists() and listas.count() > 1:
+            for l in listas:
+                l.predeterminada = False
+                l.save()
+            lista = ListaPrecio.objects.filter(instancia=perfil.instancia, activo=True).first()
+            lista.predeterminada = True
+            lista.save()
         if (perfil.tipo=='S'):
-            return ListaPrecio.objects.all().order_by('nombre')
+            return ListaPrecio.objects.all().order_by('id')
         else:
-            return ListaPrecio.objects.filter(instancia=perfil.instancia).order_by('nombre')
+            return ListaPrecio.objects.filter(instancia=perfil.instancia).order_by('id')
 
 class DetalleListaPrecioVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -1890,20 +1931,24 @@ class DetalleListaPrecioVS(viewsets.ModelViewSet):
     serializer_class = DetalleListaPrecioSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['listaprecio' ,'producto__activo']
-
     def create(self, request):
         perfil = Perfil.objects.get(usuario=self.request.user)
         datos = request.data
-        datos['instancia'] = perfil.instancia.id
         if (perfil.tipo == 'S'):
+            _mutable = datos._mutable
+            datos._mutable = True
+            datos['instancia'] = str(perfil.instancia.id)
+            datos._mutable = _mutable
             serializer = self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         elif (perfil.tipo == 'A'): 
-            datos = request.data
-            datos['instancia'] = perfil.instancia.id
+            _mutable = datos._mutable
+            datos._mutable = True
+            datos['instancia'] = str(perfil.instancia.id)
+            datos._mutable = _mutable
             serializer = self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -1915,6 +1960,10 @@ class DetalleListaPrecioVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
+            _mutable = datos._mutable
+            datos._mutable = True
+            datos['instancia'] = str(perfil.instancia.id)
+            datos._mutable = _mutable
             partial = True # Here I change partial to True
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data, partial=partial)
@@ -1923,6 +1972,10 @@ class DetalleListaPrecioVS(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
+                _mutable = datos._mutable
+                datos._mutable = True
+                datos['instancia'] = str(perfil.instancia.id)
+                datos._mutable = _mutable
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
                 serializer = self.get_serializer(instance, data=request.data, partial=partial)
@@ -1946,7 +1999,6 @@ class DetalleListaPrecioVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
 
     def get_queryset(self):
-        print(self.request)
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo=='S'):
             return DetalleListaPrecio.objects.all().order_by('producto', '-precio')
@@ -2605,7 +2657,6 @@ def ObtenerColumnas(request):
 def crearlista(request):
     data = json.loads(request.body)
     try:
-        print(data)
         lista = ListaPrecio(nombre= data['nombre'], activo=data['activo'])
         lista.save()
         return Response('exitoso')
@@ -2634,7 +2685,6 @@ def actualiza_pedido(request):
     except ObjectDoesNotExist as e:
         return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        print(e)
         return JsonResponse({'error': e}, safe=False,
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -2673,7 +2723,6 @@ def ObtenerHistorico(request):
     except ObjectDoesNotExist as e:
         return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        print(e)
         return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
