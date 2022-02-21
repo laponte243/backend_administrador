@@ -1054,10 +1054,10 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             objeto = MovimientoInventario.objects.filter(instancia_id=datos['instancia'],producto_id=datos['producto'],almacen_id=datos['almacen'])
             if objeto.count() > 0:
-                disp = float(datos['cantida_disponible'])
+                disp = float(datos['cantidad_recepcion'])
                 for o in objeto:
-                    disp += o.cantida_disponible
-                inv = Inventario.objects.filter(instancia_id=datos['instancia'],producto_id=datos['producto'],almacen_id=datos['almacen'])
+                    disp += o.cantidad_recepcion
+                inv = Inventario.objects.filter(instancia_id=datos['instancia'],producto_id=datos['producto'],almacen_id=datos['almacen'], lote=datos['lote'])
                 print(inv)
                 if inv.first() != None:
                     inven = inv.first()
@@ -1067,7 +1067,7 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
                 else:
                     Inventario.objects.create(instancia_id=datos['instancia'],producto_id=datos['producto'],almacen_id=datos['almacen'],disponible=disp,bloqueado=0)
             else:
-                Inventario.objects.create(instancia_id=datos['instancia'],producto_id=datos['producto'],almacen_id=datos['almacen'],disponible=datos['cantida_disponible'],bloqueado=0)
+                Inventario.objects.create(instancia_id=datos['instancia'],producto_id=datos['producto'],almacen_id=datos['almacen'],disponible=datos['cantidad_recepcion'],bloqueado=0)
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
@@ -1124,8 +1124,10 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
 
 class DetalleInventarioVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = InventarioSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['producto', 'almacen']
 
     def create(self, request):
         perfil = Perfil.objects.get(usuario=self.request.user)
@@ -1190,7 +1192,7 @@ class DetalleInventarioVS(viewsets.ModelViewSet):
 
 @api_view(["GET"])
 @csrf_exempt
-# @authentication_classes([TokenAuthentication])
+@authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def Inven(request):
     perfil = Perfil.objects.get(usuario=request.user)
