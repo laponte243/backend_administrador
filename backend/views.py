@@ -848,10 +848,7 @@ class ProductoVS(viewsets.ModelViewSet):
         perfil = Perfil.objects.get(usuario=self.request.user)
         datos = request.data
         if (perfil.tipo == 'S'):
-            _mutable = datos._mutable
-            datos._mutable = True
             datos['instancia'] = str(perfil.instancia.id)
-            datos._mutable = _mutable
             serializer = self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -862,10 +859,7 @@ class ProductoVS(viewsets.ModelViewSet):
             headers = self.get_success_headers(serializer.data)
             return Response('serializer.data', status=status.HTTP_201_CREATED, headers=headers)
         elif (perfil.tipo == 'A'): 
-            _mutable = datos._mutable
-            datos._mutable = True
             datos['instancia'] = str(perfil.instancia.id)
-            datos._mutable = _mutable
             serializer = self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -1816,7 +1810,7 @@ class DetalleFacturaVS(viewsets.ModelViewSet):
 
 class ListaPrecioVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = ListaPrecioSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['activo']
@@ -1825,13 +1819,12 @@ class ListaPrecioVS(viewsets.ModelViewSet):
         perfil = Perfil.objects.get(usuario=self.request.user)
         datos = request.data
         if (perfil.tipo == 'S'):
-            _mutable = datos._mutable
-            datos._mutable = True
             datos['instancia'] = str(perfil.instancia.id)
-            if (datos['predeterminada'] == 'true'):
+            if (datos['predeterminada'] == True):
                 if ListaPrecio.objects.filter(predeterminada=True).exists():
-                    return Response({'error': 'Ya existe una lista predeterminada'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            datos._mutable = _mutable
+                    error = 'Ya existe una lista predeterminada'
+                    print(error)
+                    return Response( error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             serializer = self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -1845,9 +1838,11 @@ class ListaPrecioVS(viewsets.ModelViewSet):
             _mutable = datos._mutable
             datos._mutable = True
             datos['instancia'] = str(perfil.instancia.id)
-            if datos['predeterminada'] == 'true':
+            if datos['predeterminada'] == True:
                 if ListaPrecio.objects.filter(predeterminada=True).exists():
-                    return Response({'error': 'Ya existe una lista predeterminada'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    error = 'Ya existe una lista predeterminada'
+                    print(error)
+                    return Response(error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             datos._mutable = _mutable
             serializer = self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
@@ -1861,13 +1856,13 @@ class ListaPrecioVS(viewsets.ModelViewSet):
         perfil = Perfil.objects.get(usuario=self.request.user)
         datos = request.data
         if (perfil.tipo == 'S'):
-            _mutable = datos._mutable
-            datos._mutable = True
             datos['instancia'] = str(perfil.instancia.id)
-            if datos['predeterminada'] == 'true':
-                if ListaPrecio.objects.filter(predeterminada=True).exists():
-                    return Response({'error': 'Ya existe una lista predeterminada'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            datos._mutable = _mutable
+            if datos['predeterminada'] == True:
+                print(kwargs)
+                if ListaPrecio.objects.filter(predeterminada=True).exclude(id=kwargs['pk']).exists():
+                    error = 'Ya existe una lista predeterminada'
+                    print(error)
+                    return Response( error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             partial = True # Here I change partial to True
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=request.data, partial=partial)
@@ -1881,13 +1876,10 @@ class ListaPrecioVS(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
-                _mutable = datos._mutable
-                datos._mutable = True
                 datos['instancia'] = str(perfil.instancia.id)
-                if datos['predeterminada'] == 'true':
+                if datos['predeterminada'] == True:
                     if ListaPrecio.objects.filter(predeterminada=True).exists():
                         return Response({'error': 'Ya existe una lista predeterminada'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                datos._mutable = _mutable
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
                 serializer = self.get_serializer(instance, data=request.data, partial=partial)
