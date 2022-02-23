@@ -73,13 +73,13 @@ class LoginView(KnoxLoginView):
 
 class GroupVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     queryset = Group.objects.all().order_by('name')
     serializer_class = GroupMSerializer
 
 class PermissionVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     queryset = Permission.objects.all().order_by('name')
     serializer_class = PermissionMSerializer
 
@@ -120,7 +120,7 @@ class UserVS(viewsets.ModelViewSet):
 
 class ModuloVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = ModuloSerializer
     
     def create(self, request, *args, **kwargs):
@@ -145,7 +145,7 @@ class ModuloVS(viewsets.ModelViewSet):
 
 class MenuVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = MenuSerializer
 
     def create(self, request, *args, **kwargs):
@@ -222,7 +222,7 @@ class InstanciaVS(viewsets.ModelViewSet):
 
 class MenuInstanciaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = MenuInstanciaSerializer
 
     def create(self, request):
@@ -282,7 +282,7 @@ class MenuInstanciaVS(viewsets.ModelViewSet):
             
 class PerfilVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = PerfilSerializer
 
     def create(self, request):
@@ -357,7 +357,7 @@ class PerfilVS(viewsets.ModelViewSet):
 
 class PermisoVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = PermisoSerializer
 
     def get_queryset(self):
@@ -857,10 +857,11 @@ class ProductoVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             for lp in ListaPrecio.objects.filter(instancia_id=perfil.instancia.id):
                 pro = Producto.objects.get(id=serializer.data['id'])
-                detalle = DetalleListaPrecio(instancia=perfil.instancia, listaprecio=lp, producto=pro, precio=serializer.data['costo'])
+                costo_final = pro.costo + (pro.costo * (lp.porcentaje /100))
+                detalle = DetalleListaPrecio(instancia=perfil.instancia, listaprecio=lp, producto=pro, precio=costo_final)
                 detalle.save()
             headers = self.get_success_headers(serializer.data)
-            return Response('serializer.data', status=status.HTTP_201_CREATED, headers=headers)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         elif (perfil.tipo == 'A'): 
             _mutable = datos._mutable
             datos._mutable = True
@@ -871,7 +872,8 @@ class ProductoVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             for lp in ListaPrecio.objects.filter(instancia_id=perfil.instancia.id):
                 pro = Producto.objects.get(id=serializer.data['id'])
-                detalle = DetalleListaPrecio(instancia=perfil.instancia, listaprecio=lp, producto=pro, precio=serializer.data['costo'])
+                costo_final = pro.costo + (pro.costo * (lp.porcentaje /100))
+                detalle = DetalleListaPrecio(instancia=perfil.instancia, listaprecio=lp, producto=pro, precio=costo_final)
                 detalle.save()
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
@@ -886,6 +888,10 @@ class ProductoVS(viewsets.ModelViewSet):
             serializer = self.get_serializer(instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
+            for lp in DetalleListaPrecio.objects.filter(instancia_id=perfil.instancia.id, producto_id=serializer.data['id']):
+                costo_final = serializer.data['costo'] + (serializer.data['costo'] * (lp.listaprecio.porcentaje /100))
+                lp.precio = costo_final
+                lp.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
@@ -894,6 +900,10 @@ class ProductoVS(viewsets.ModelViewSet):
                 serializer = self.get_serializer(instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
+                for lp in DetalleListaPrecio.objects.filter(instancia_id=perfil.instancia.id, producto_id=serializer.data['id']):
+                    costo_final = serializer.data['costo'] + (serializer.data['costo'] * (lp.porcentaje /100))
+                    lp.precio = costo_final
+                    lp.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
@@ -914,9 +924,9 @@ class ProductoVS(viewsets.ModelViewSet):
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo=='S'):
-            return Producto.objects.all().order_by('nombre')
+            return Producto.objects.all().order_by('id')
         else:
-            return Producto.objects.filter(instancia=perfil.instancia).order_by('nombre')
+            return Producto.objects.filter(instancia=perfil.instancia).order_by('id')
 
 class ProductoImagenVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -1351,7 +1361,7 @@ class ClienteVS(viewsets.ModelViewSet):
 
 class ContactoClienteVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = ContactoClienteSerializer
 
     def create(self, request):
@@ -1552,7 +1562,7 @@ class DetallePedidoVS(viewsets.ModelViewSet):
 
 class ProformaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = ProformaSerializer
 
     def create(self, request):
@@ -1618,7 +1628,7 @@ class ProformaVS(viewsets.ModelViewSet):
 
 class DetalleProformaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = DetalleProformaSerializer
 
     def create(self, request):
@@ -1684,7 +1694,7 @@ class DetalleProformaVS(viewsets.ModelViewSet):
 
 class FacturaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = FacturaSerializer
 
     def create(self, request):
@@ -1750,7 +1760,7 @@ class FacturaVS(viewsets.ModelViewSet):
 
 class DetalleFacturaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = DetalleFacturaSerializer
 
     def create(self, request):
@@ -1817,7 +1827,7 @@ class DetalleFacturaVS(viewsets.ModelViewSet):
 
 class ListaPrecioVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = ListaPrecioSerializer
 
     def create(self, request):
@@ -2072,7 +2082,7 @@ class ImpuestosFacturaVS(viewsets.ModelViewSet):
 
 class NumerologiaFacturaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = NumerologiaFacturaSerializer
 
     def create(self, request):
@@ -2138,7 +2148,7 @@ class NumerologiaFacturaVS(viewsets.ModelViewSet):
 
 class NotaFacturaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = NotaFacturaSerializer
 
     def create(self, request):
@@ -2205,7 +2215,7 @@ class NotaFacturaVS(viewsets.ModelViewSet):
 # Compras
 class ProveedorVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = ProveedorSerializer
 
     def create(self, request):
@@ -2271,7 +2281,7 @@ class ProveedorVS(viewsets.ModelViewSet):
 
 class CompraVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = CompraSerializer
 
     def create(self, request):
@@ -2337,7 +2347,7 @@ class CompraVS(viewsets.ModelViewSet):
 
 class DetalleCompraVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = DetalleCompraSerializer
 
     def create(self, request):
@@ -2403,7 +2413,7 @@ class DetalleCompraVS(viewsets.ModelViewSet):
 
 class NotaCompraVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     serializer_class = NotaCompraSerializer
 
     def create(self, request):
@@ -2745,3 +2755,5 @@ def export_users_csv(request):
                 texto.append(precio.precio)
             writer.writerow(texto)
     return response
+
+
