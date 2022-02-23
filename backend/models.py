@@ -282,6 +282,7 @@ class Pedido(models.Model): # Pedido
 class DetallePedido(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     pedido = models.ForeignKey(Pedido, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="pedido asociado")
+    lista_precio = models.ForeignKey(ListaPrecio, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="pedido asociado")
     producto = models.ForeignKey(Producto, null=True, blank=False, on_delete=models.DO_NOTHING, help_text="producto asociado")
     cantidad = models.FloatField(null=False, default=0, blank=False, help_text="Cantidad vendida")
     total_producto = models.FloatField(null=False, default=0, blank=False, help_text="total por producto")
