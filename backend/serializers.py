@@ -293,6 +293,12 @@ class DetallePedidoSerializer(serializers.ModelSerializer):
     nombreProducto = serializers.SerializerMethodField('LoadNombreProducto')
     def LoadNombreProducto(self, obj):
        return obj.producto.nombre 
+    nombreListaPrecio = serializers.SerializerMethodField('LoadNombreListaPrecio')
+    def LoadNombreListaPrecio(self, obj):
+       return obj.lista_precio.nombre
+    almacen = serializers.SerializerMethodField('LoadNombreAlmacen')
+    def LoadNombreAlmacen(self, obj):
+       return obj.inventario.almacen.id
     
 
 class ProformaSerializer(serializers.ModelSerializer):

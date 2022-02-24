@@ -1538,6 +1538,11 @@ class DetallePedidoVS(viewsets.ModelViewSet):
         instance = self.get_object()
         if (perfil.tipo == 'S'):
             instance.delete()
+            print(instance.__dict__)
+            inventario = Inventario.objects.get(id=instance.inventario.id)
+            inventario.bloqueado = inventario.bloqueado - instance.cantidada
+            inventario.disponible = inventario.disponible + instance.cantidada
+            inventario.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             if (str(instance.instancia.id) == str(perfil.instancia.id)):
@@ -2673,16 +2678,24 @@ def crearlista(request):
 def actualiza_pedido(request):
     payload = json.loads(request.body)
     try:
+        print(payload)
         pedido_id = Pedido.objects.get(id=payload['idpedido'])
         DetallePedido.objects.filter(pedido=pedido_id).delete()
         for i in payload['data']:
             perfil = Perfil.objects.get(usuario=request.user)
+            lista_precio = ListaPrecio.objects.get(id=i['lista_precio'])
+            print(i['inventario'])
+            inventario = Inventario.objects.get(id=i['inventario'])
             producto = Producto.objects.get(id=i["producto"])
             instancia = Instancia.objects.get(perfil=perfil.id)
-            cantidad = int(i["cantidad"])
+            cantidad = int(i["cantidada"])
+            totalp = cantidad * (producto.costo + (producto.costo * (lista_precio.porcentaje /100)))
             pedido = pedido_id
-            nuevo_componente = DetallePedido(instancia_id=instancia.id,pedido=pedido,cantidad=cantidad,producto=producto)
+            nuevo_componente = DetallePedido(lote=i["lote"],total_producto=totalp,lista_precio=lista_precio,instancia_id=instancia.id,pedido=pedido,cantidada=cantidad,producto=producto,inventario=inventario)
             nuevo_componente.save()
+            inventario.disponible = int(inventario.disponible) - cantidad
+            inventario.bloqueado = int(inventario.bloqueado) + cantidad
+            inventario.save()
         return JsonResponse({'exitoso': 'exitoso'}, safe=False, status=status.HTTP_200_OK)
     except ObjectDoesNotExist as e:
         return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_404_NOT_FOUND)
