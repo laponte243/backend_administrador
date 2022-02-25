@@ -203,7 +203,7 @@ class MovimientoInventario(models.Model):
     descripcion = models.TextField(null=True, blank=True, help_text="Descripción del movimiento")
     history = HistoricalRecords() # colocar como registro
     def __str__(self):
-        return "%s - %s - %s" % (self.producto,self.almacen,self.cantida_disponible)
+        return "%s - %s - %s" % (self.producto,self.almacen,self.cantidad_recepcion)
 
 
 class Inventario(models.Model):

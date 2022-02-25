@@ -37,39 +37,47 @@ import csv
 
 # Utiles
 """Rceiver for reset password"""
+
+
 @receiver(reset_password_token_created)
 def password_reset_token_created(sender, instance, reset_password_token, *args, **kwargs):
 
     RESET_PASSWORD_ROUTE = getattr(settings, "RESET_PASSWORD_ROUTE", None)
     # email_plaintext_message = "{}?token={}".format(reverse('password_reset:reset-password-request'), reset_password_token.key)
     # import html message.html file
-    context = ({"url": RESET_PASSWORD_ROUTE + '#/passwordset?token=' + reset_password_token.key})
+    context = ({"url": RESET_PASSWORD_ROUTE +
+               '#/passwordset?token=' + reset_password_token.key})
     resetPasswordTemplate = 'user_reset_password.html'
     reset_password_message = render_to_string(resetPasswordTemplate, context)
     # send email
-    subject, from_email, to = "Password Reset for {title}".format(title="DataVisualizer"), 'noreply@somehost.local', reset_password_token.user.email
+    subject, from_email, to = "Password Reset for {title}".format(
+        title="DataVisualizer"), 'noreply@somehost.local', reset_password_token.user.email
     text_content = ''
     html_content = reset_password_message
     msg = EmailMessage(subject, html_content, from_email, [to])
-    msg.content_subtype = "html" # Main content is now text/html
+    msg.content_subtype = "html"  # Main content is now text/html
     msg.send()
+
 
 """Overwrite knox's login view"""
 
+
 class LoginView(KnoxLoginView):
     permission_classes = (permissions.AllowAny,)
+
     def post(self, request, format=None):
         serializer = AuthTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
         login(request, user)
-        #return super(LoginView, self).post(request, format=None)
-        temp_list=super(LoginView, self).post(request, format=None)
-        temp_list.data["user_id"]=user.id
-        temp_list.data["first_name"]=user.first_name
-        temp_list.data["last_name"]=user.last_name
-        temp_list.data["last_login"]=user.last_login
-        return Response({"data":temp_list.data})
+        # return super(LoginView, self).post(request, format=None)
+        temp_list = super(LoginView, self).post(request, format=None)
+        temp_list.data["user_id"] = user.id
+        temp_list.data["first_name"] = user.first_name
+        temp_list.data["last_name"] = user.last_name
+        temp_list.data["last_login"] = user.last_login
+        return Response({"data": temp_list.data})
+
 
 class GroupVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -77,11 +85,13 @@ class GroupVS(viewsets.ModelViewSet):
     queryset = Group.objects.all().order_by('name')
     serializer_class = GroupMSerializer
 
+
 class PermissionVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
     queryset = Permission.objects.all().order_by('name')
     serializer_class = PermissionMSerializer
+
 
 class UserVS(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
@@ -118,30 +128,33 @@ class UserVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
+
 class ModuloVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
     serializer_class = ModuloSerializer
-    
+
     def create(self, request, *args, **kwargs):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return Modulo.objects.all().order_by('nombre')
-        if (perfil.tipo=='A'):
+        if (perfil.tipo == 'A'):
             modulos = []
             for m in perfil.instancia.modulo:
                 modulos.append(m)
             return modulos
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
+
     def update(self, request, *args, **kwargs):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def destroy(self, request, *args, **kwargs):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
 
 class MenuVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -154,7 +167,7 @@ class MenuVS(viewsets.ModelViewSet):
     def get_queryset(self):
         if (Menu.objects.all().count() == 0):
             for m in modelosMENU['modelos']:
-                menu = Menu(router=m['router'],orden=m['orden'])
+                menu = Menu(router=m['router'], orden=m['orden'])
                 menu.save()
                 if (m['parent'] != None):
                     menu.parent = Menu.objects.get(id=m['parent'])
@@ -168,9 +181,10 @@ class MenuVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
        perfil = Perfil.objects.get(usuario=self.request.user)
        if (perfil.tipo == 'S'):
-           partial = True # Here I change partial to True
+           partial = True  # Here I change partial to True
            instance = self.get_object()
-           serializer = self.get_serializer(instance, data=request.data, partial=partial)
+           serializer = self.get_serializer(
+               instance, data=request.data, partial=partial)
            serializer.is_valid(raise_exception=True)
            self.perform_update(serializer)
            return Response(serializer.data, status=status.HTTP_200_OK)
@@ -181,6 +195,8 @@ class MenuVS(viewsets.ModelViewSet):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 # Instancia
+
+
 class InstanciaVS(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser, IsAuthenticated]
     serializer_class = InstanciaSerializer
@@ -200,7 +216,7 @@ class InstanciaVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return Instancia.objects.all().order_by('nombre')
         else:
             return None
@@ -208,17 +224,19 @@ class InstanciaVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response({'error':'Forbidden, user no have permissions'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'error': 'Forbidden, user no have permissions'}, status=status.HTTP_403_FORBIDDEN)
 
     def destroy(self, request, *args, **kwargs):
         return Response(False, status=status.HTTP_403_FORBIDDEN)
+
 
 class MenuInstanciaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -248,24 +266,25 @@ class MenuInstanciaVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return MenuInstancia.objects.all().order_by('id')
         elif (perfil.tipo == 'A'):
             return MenuInstancia.objects.filter(instancia=perfil.instancia).order_by('id')
         else:
-            return JsonResponse({"error": "Forbidden, can't you see",}, status=status.HTTP_403_FORBIDDEN)
+            return JsonResponse({"error": "Forbidden, can't you see", }, status=status.HTTP_403_FORBIDDEN)
 
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response(status=status.HTTP_403_FORBIDDEN) # Change
+            return Response(status=status.HTTP_403_FORBIDDEN)  # Change
 
     def destroy(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
@@ -276,10 +295,11 @@ class MenuInstanciaVS(viewsets.ModelViewSet):
         else:
             if (str(instance.instancia.id) == str(perfil.instancia.id)):
                 instance.delete()
-                return Response(status=status.HTTP_204_NO_CONTENT) # Change
+                return Response(status=status.HTTP_204_NO_CONTENT)  # Change
             else:
-                return Response(status=status.HTTP_403_FORBIDDEN) # Change
-            
+                return Response(status=status.HTTP_403_FORBIDDEN)  # Change
+
+
 class PerfilVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -308,7 +328,7 @@ class PerfilVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return Perfil.objects.all().order_by('usuario')
         elif (perfil.tipo == 'A'):
             return Perfil.objects.filter(instancia=perfil.instancia).order_by('usuario')
@@ -318,21 +338,24 @@ class PerfilVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
         elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=datos, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=datos, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
-            return Response(serializer.data, status=status.HTTP_200_OK) # Change
+            # Change
+            return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             try:
                 objeto = Perfil.objects.get(usuario=self.request.user)
@@ -340,7 +363,7 @@ class PerfilVS(viewsets.ModelViewSet):
                 self.perform_update(objeto)
                 return Response(objeto, status=status.HTTP_200_OK)
             except:
-                return Response({'error':'Problem with user or selected avatar'}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response({'error': 'Problem with user or selected avatar'}, status=status.HTTP_401_UNAUTHORIZED)
 
     def destroy(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
@@ -351,9 +374,10 @@ class PerfilVS(viewsets.ModelViewSet):
         else:
             if (str(instance.instancia.id) == str(perfil.instancia.id)):
                 instance.delete()
-                return Response(status=status.HTTP_204_NO_CONTENT) # Change
+                return Response(status=status.HTTP_204_NO_CONTENT)  # Change
             else:
-                return Response(status=status.HTTP_403_FORBIDDEN) # Change
+                return Response(status=status.HTTP_403_FORBIDDEN)  # Change
+
 
 class PermisoVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -362,7 +386,7 @@ class PermisoVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return Permiso.objects.all().order_by('id')
         elif (perfil.tipo == 'A'):
             return Permiso.objects.filter(instancia=perfil.instancia).order_by('perfil')
@@ -370,9 +394,12 @@ class PermisoVS(viewsets.ModelViewSet):
             return Permiso.objects.filter(perfil=perfil.id)
 
     def update(self):
-        return JsonResponse({"error": "No authorized"}, status=status.HTTP_403_FORBIDDEN) #Change status
+        # Change status
+        return JsonResponse({"error": "No authorized"}, status=status.HTTP_403_FORBIDDEN)
 
 # Empresa
+
+
 class EmpresaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -402,9 +429,10 @@ class EmpresaVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -412,7 +440,8 @@ class EmpresaVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -434,10 +463,11 @@ class EmpresaVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return Empresa.objects.all().order_by('nombre')
         else:
             return Empresa.objects.filter(instancia=perfil.instancia).order_by('nombre')
+
 
 class ContactoEmpresaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -468,9 +498,10 @@ class ContactoEmpresaVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -478,7 +509,8 @@ class ContactoEmpresaVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -500,10 +532,11 @@ class ContactoEmpresaVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return ContactoEmpresa.objects.all().order_by('nombre')
         else:
             return ContactoEmpresa.objects.filter(instancia=perfil.instancia).order_by('nombre')
+
 
 class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -520,7 +553,7 @@ class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -534,9 +567,10 @@ class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -544,7 +578,8 @@ class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -563,15 +598,17 @@ class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
-                
+
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return ConfiguracionPapeleria.objects.all().order_by('valor', 'empresa')
         else:
             return ConfiguracionPapeleria.objects.filter(instancia=perfil.instancia).order_by('valor', 'empresa')
 
 # Inventario
+
+
 class TasaConversionVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -587,7 +624,7 @@ class TasaConversionVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -601,9 +638,10 @@ class TasaConversionVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -611,7 +649,8 @@ class TasaConversionVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -633,10 +672,11 @@ class TasaConversionVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return TasaConversion.objects.all().order_by('nombre')
         else:
             return TasaConversion.objects.filter(instancia=perfil.instancia).order_by('nombre')
+
 
 class ImpuestosVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -653,7 +693,7 @@ class ImpuestosVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -667,9 +707,10 @@ class ImpuestosVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -677,7 +718,8 @@ class ImpuestosVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -699,10 +741,11 @@ class ImpuestosVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return Impuestos.objects.all().order_by('nombre')
         else:
             return Impuestos.objects.filter(instancia=perfil.instancia).order_by('nombre')
+
 
 class MarcaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -719,7 +762,7 @@ class MarcaVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -733,9 +776,10 @@ class MarcaVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -743,7 +787,8 @@ class MarcaVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -765,10 +810,11 @@ class MarcaVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return Marca.objects.all().order_by('nombre')
         else:
             return Marca.objects.filter(instancia=perfil.instancia).order_by('nombre')
+
 
 class UnidadVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -786,7 +832,7 @@ class UnidadVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -800,9 +846,10 @@ class UnidadVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -810,7 +857,8 @@ class UnidadVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -832,17 +880,18 @@ class UnidadVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return Unidad.objects.all().order_by('nombre')
         else:
             return Unidad.objects.filter(instancia=perfil.instancia).order_by('nombre')
+
 
 class ProductoVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
     serializer_class = ProductoSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['servicio','menejo_inventario', 'activo']
+    filterset_fields = ['servicio', 'menejo_inventario', 'activo']
 
     def create(self, request):
         perfil = Perfil.objects.get(usuario=self.request.user)
@@ -854,20 +903,22 @@ class ProductoVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             for lp in ListaPrecio.objects.filter(instancia_id=perfil.instancia.id):
                 pro = Producto.objects.get(id=serializer.data['id'])
-                costo_final = pro.costo + (pro.costo * (lp.porcentaje /100))
-                detalle = DetalleListaPrecio(instancia=perfil.instancia, listaprecio=lp, producto=pro, precio=costo_final)
+                costo_final = pro.costo + (pro.costo * (lp.porcentaje / 100))
+                detalle = DetalleListaPrecio(
+                    instancia=perfil.instancia, listaprecio=lp, producto=pro, precio=costo_final)
                 detalle.save()
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos['instancia'] = str(perfil.instancia.id)
             serializer = self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
             for lp in ListaPrecio.objects.filter(instancia_id=perfil.instancia.id):
                 pro = Producto.objects.get(id=serializer.data['id'])
-                costo_final = pro.costo + (pro.costo * (lp.porcentaje /100))
-                detalle = DetalleListaPrecio(instancia=perfil.instancia, listaprecio=lp, producto=pro, precio=costo_final)
+                costo_final = pro.costo + (pro.costo * (lp.porcentaje / 100))
+                detalle = DetalleListaPrecio(
+                    instancia=perfil.instancia, listaprecio=lp, producto=pro, precio=costo_final)
                 detalle.save()
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
@@ -877,13 +928,15 @@ class ProductoVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             for lp in DetalleListaPrecio.objects.filter(instancia_id=perfil.instancia.id, producto_id=serializer.data['id']):
-                costo_final = serializer.data['costo'] + (serializer.data['costo'] * (lp.listaprecio.porcentaje /100))
+                costo_final = serializer.data['costo'] + (
+                    serializer.data['costo'] * (lp.listaprecio.porcentaje / 100))
                 lp.precio = costo_final
                 lp.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -891,11 +944,13 @@ class ProductoVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 for lp in DetalleListaPrecio.objects.filter(instancia_id=perfil.instancia.id, producto_id=serializer.data['id']):
-                    costo_final = serializer.data['costo'] + (serializer.data['costo'] * (lp.porcentaje /100))
+                    costo_final = serializer.data['costo'] + \
+                        (serializer.data['costo'] * (lp.porcentaje / 100))
                     lp.precio = costo_final
                     lp.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -917,10 +972,11 @@ class ProductoVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return Producto.objects.all().order_by('id')
         else:
             return Producto.objects.filter(instancia=perfil.instancia).order_by('id')
+
 
 class ProductoImagenVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -938,7 +994,7 @@ class ProductoImagenVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -952,9 +1008,10 @@ class ProductoImagenVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -962,7 +1019,8 @@ class ProductoImagenVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -984,10 +1042,11 @@ class ProductoImagenVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return ProductoImagen.objects.all().order_by('producto', 'principal')
         else:
             return ProductoImagen.objects.filter(instancia=perfil.instancia).order_by('producto', 'principal')
+
 
 class AlmacenVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -1004,7 +1063,7 @@ class AlmacenVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -1018,9 +1077,10 @@ class AlmacenVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1028,7 +1088,8 @@ class AlmacenVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1050,10 +1111,11 @@ class AlmacenVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return Almacen.objects.all().order_by('nombre')
         else:
             return Almacen.objects.filter(instancia=perfil.instancia).order_by('nombre')
+
 
 class MovimientoInventarioVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -1069,21 +1131,14 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
         if (perfil.tipo == 'S'):
             serializer = self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
-            objeto = MovimientoInventario.objects.filter(instancia_id=datos['instancia'],producto_id=datos['producto'],almacen_id=datos['almacen'])
+            objeto = MovimientoInventario.objects.filter(
+                instancia_id=datos['instancia'], producto_id=datos['producto'], almacen_id=datos['almacen'])
             if objeto.count() > 0:
-                disp = float(datos['cantidad_recepcion'])
-                for o in objeto:
-                    disp += o.cantidad_recepcion
-                inv = Inventario.objects.filter(instancia_id=datos['instancia'],producto_id=datos['producto'],almacen_id=datos['almacen'], lote=datos['lote'])
-                if inv.first() != None:
-                    inven = inv.first()
-                    inven.disponible = disp
-                    inven.bloqueado = 0
-                    inven.save()
-                else:
-                    Inventario.objects.create(instancia_id=datos['instancia'],producto_id=datos['producto'],almacen_id=datos['almacen'],disponible=disp,bloqueado=0,lote=datos['lote'],fecha_vencimiento=datos['fecha_vencimiento'])
+                    Inventario.objects.create(instancia_id=datos['instancia'], producto_id=datos['producto'], almacen_id=datos['almacen'],
+                                              disponible=datos['cantidad_recepcion'], bloqueado=0, lote=datos['lote'], fecha_vencimiento=datos['fecha_vencimiento'])
             else:
-                Inventario.objects.create(instancia_id=datos['instancia'],producto_id=datos['producto'],almacen_id=datos['almacen'],disponible=datos['cantidad_recepcion'],bloqueado=0,lote=datos['lote'],fecha_vencimiento=datos['fecha_vencimiento'])
+                Inventario.objects.create(instancia_id=datos['instancia'], producto_id=datos['producto'], almacen_id=datos['almacen'],
+                                          disponible=datos['cantidad_recepcion'], bloqueado=0, lote=datos['lote'], fecha_vencimiento=datos['fecha_vencimiento'])
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
@@ -1101,9 +1156,10 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1111,7 +1167,8 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1133,10 +1190,11 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return MovimientoInventario.objects.all().order_by('id')
         else:
             return MovimientoInventario.objects.filter(instancia=perfil.instancia).order_by('lote')
+
 
 class DetalleInventarioVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -1144,6 +1202,7 @@ class DetalleInventarioVS(viewsets.ModelViewSet):
     serializer_class = InventarioSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['producto', 'almacen']
+
     def create(self, request):
         perfil = Perfil.objects.get(usuario=self.request.user)
         datos = request.data
@@ -1154,7 +1213,7 @@ class DetalleInventarioVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -1168,9 +1227,10 @@ class DetalleInventarioVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1178,7 +1238,8 @@ class DetalleInventarioVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1200,10 +1261,11 @@ class DetalleInventarioVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return Inventario.objects.all().order_by('almacen', 'producto')
         else:
             return Inventario.objects.filter(instancia=perfil.instancia).order_by('almacen', 'producto')
+
 
 @api_view(["GET"])
 @csrf_exempt
@@ -1212,10 +1274,13 @@ class DetalleInventarioVS(viewsets.ModelViewSet):
 def Inven(request):
     perfil = Perfil.objects.get(usuario=request.user)
     if perfil:
-        objeto_inventario = Inventario.objects.filter(instancia=perfil.instancia).values('almacen','almacen__nombre', 'producto', 'producto__nombre').annotate(sum_disponible=Sum('disponible'),sum_bloqueado=Sum('bloqueado'))
-        return Response(objeto_inventario,status=status.HTTP_200_OK)
+        objeto_inventario = Inventario.objects.filter(instancia=perfil.instancia).values(
+            'almacen', 'almacen__nombre', 'producto', 'producto__nombre').annotate(sum_disponible=Sum('disponible'), sum_bloqueado=Sum('bloqueado'))
+        return Response(objeto_inventario, status=status.HTTP_200_OK)
 
 # ventas
+
+
 class VendedorVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -1233,7 +1298,7 @@ class VendedorVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -1247,9 +1312,10 @@ class VendedorVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1257,7 +1323,8 @@ class VendedorVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1279,10 +1346,11 @@ class VendedorVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return Vendedor.objects.all().order_by('nombre')
         else:
             return Vendedor.objects.filter(instancia=perfil.instancia).order_by('nombre')
+
 
 class ClienteVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -1301,7 +1369,7 @@ class ClienteVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -1315,9 +1383,10 @@ class ClienteVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1325,7 +1394,8 @@ class ClienteVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1347,10 +1417,11 @@ class ClienteVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return Cliente.objects.all().order_by('nombre')
         else:
             return Cliente.objects.filter(instancia=perfil.instancia).order_by('nombre')
+
 
 class ContactoClienteVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -1367,7 +1438,7 @@ class ContactoClienteVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -1381,9 +1452,10 @@ class ContactoClienteVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1391,7 +1463,8 @@ class ContactoClienteVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1413,7 +1486,7 @@ class ContactoClienteVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return ContactoCliente.objects.all().order_by('nombre')
         else:
             return ContactoCliente.objects.filter(instancia=perfil.instancia).order_by('nombre')
@@ -1434,7 +1507,7 @@ class PedidoVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -1448,9 +1521,10 @@ class PedidoVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1458,7 +1532,8 @@ class PedidoVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1480,10 +1555,11 @@ class PedidoVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return Pedido.objects.all()
         else:
             return Pedido.objects.filter(instancia=perfil.instancia)
+
 
 class DetallePedidoVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -1502,7 +1578,7 @@ class DetallePedidoVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -1516,9 +1592,10 @@ class DetallePedidoVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1526,7 +1603,8 @@ class DetallePedidoVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1538,7 +1616,6 @@ class DetallePedidoVS(viewsets.ModelViewSet):
         instance = self.get_object()
         if (perfil.tipo == 'S'):
             instance.delete()
-            print(instance.__dict__)
             inventario = Inventario.objects.get(id=instance.inventario.id)
             inventario.bloqueado = inventario.bloqueado - instance.cantidada
             inventario.disponible = inventario.disponible + instance.cantidada
@@ -1553,10 +1630,11 @@ class DetallePedidoVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return DetallePedido.objects.all()
         else:
             return DetallePedido.objects.filter(instancia=perfil.instancia)
+
 
 class ProformaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -1573,7 +1651,7 @@ class ProformaVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -1587,9 +1665,10 @@ class ProformaVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1597,7 +1676,8 @@ class ProformaVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1619,10 +1699,11 @@ class ProformaVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return Proforma.objects.all()
         else:
             return Proforma.objects.filter(instancia=perfil.instancia)
+
 
 class DetalleProformaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -1639,7 +1720,7 @@ class DetalleProformaVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -1653,9 +1734,10 @@ class DetalleProformaVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1663,7 +1745,8 @@ class DetalleProformaVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1685,10 +1768,11 @@ class DetalleProformaVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return DetalleProforma.objects.all()
         else:
             return DetalleProforma.objects.filter(instancia=perfil.instancia)
+
 
 class FacturaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -1705,7 +1789,7 @@ class FacturaVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -1719,9 +1803,10 @@ class FacturaVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1729,7 +1814,8 @@ class FacturaVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1751,10 +1837,11 @@ class FacturaVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return Factura.objects.all().order_by('empresa', 'cliente', 'vendedor')
         else:
             return Factura.objects.filter(instancia=perfil.instancia).order_by('empresa', 'cliente', 'vendedor')
+
 
 class DetalleFacturaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -1771,7 +1858,7 @@ class DetalleFacturaVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -1785,9 +1872,10 @@ class DetalleFacturaVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1795,7 +1883,8 @@ class DetalleFacturaVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1817,7 +1906,7 @@ class DetalleFacturaVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return DetalleFactura.objects.all()
         else:
             return DetalleFactura.objects.filter(instancia=perfil.instancia)
@@ -1838,27 +1927,25 @@ class ListaPrecioVS(viewsets.ModelViewSet):
             if (datos['predeterminada'] == True):
                 if ListaPrecio.objects.filter(predeterminada=True).exists():
                     error = 'Ya existe una lista predeterminada'
-                    print(error)
-                    return Response( error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    return Response(error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             serializer = self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
-            productos = Producto.objects.filter(instancia_id=perfil.instancia.id)
+            productos = Producto.objects.filter(
+                instancia_id=perfil.instancia.id)
             for o in productos:
-                costo_final = o.costo + (o.costo * (serializer.data['porcentaje'] /100))
-                listad = DetalleListaPrecio.objects.create(instancia_id=datos['instancia'], producto=o,precio=costo_final, listaprecio_id=serializer.data['id'])
+                costo_final = o.costo + \
+                    (o.costo * (serializer.data['porcentaje'] / 100))
+                listad = DetalleListaPrecio.objects.create(
+                    instancia_id=datos['instancia'], producto=o, precio=costo_final, listaprecio_id=serializer.data['id'])
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
-            _mutable = datos._mutable
-            datos._mutable = True
+        elif (perfil.tipo == 'A'):
             datos['instancia'] = str(perfil.instancia.id)
             if datos['predeterminada'] == True:
                 if ListaPrecio.objects.filter(predeterminada=True).exists():
                     error = 'Ya existe una lista predeterminada'
-                    print(error)
                     return Response(error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            datos._mutable = _mutable
             serializer = self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -1873,21 +1960,24 @@ class ListaPrecioVS(viewsets.ModelViewSet):
         if (perfil.tipo == 'S'):
             datos['instancia'] = str(perfil.instancia.id)
             if datos['predeterminada'] == True:
-                print(kwargs)
                 if ListaPrecio.objects.filter(predeterminada=True).exclude(id=kwargs['pk']).exists():
                     error = 'Ya existe una lista predeterminada'
-                    print(error)
-                    return Response( error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            partial = True # Here I change partial to True
+                    return Response(error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
-            DetalleListaPrecio.objects.filter(instancia_id=perfil.instancia.id, listaprecio=serializer.data['id']).delete()
-            productos = Producto.objects.filter(instancia_id=perfil.instancia.id)
+            DetalleListaPrecio.objects.filter(
+                instancia_id=perfil.instancia.id, listaprecio=serializer.data['id']).delete()
+            productos = Producto.objects.filter(
+                instancia_id=perfil.instancia.id)
             for o in productos:
-                costo_final = o.costo + (o.costo * (serializer.data['porcentaje'] /100))
-                listad = DetalleListaPrecio.objects.create(instancia_id=datos['instancia'], producto=o,precio=costo_final, listaprecio_id=serializer.data['id'])
+                costo_final = o.costo + \
+                    (o.costo * (serializer.data['porcentaje'] / 100))
+                listad = DetalleListaPrecio.objects.create(
+                    instancia_id=datos['instancia'], producto=o, precio=costo_final, listaprecio_id=serializer.data['id'])
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
@@ -1897,7 +1987,8 @@ class ListaPrecioVS(viewsets.ModelViewSet):
                         return Response({'error': 'Ya existe una lista predeterminada'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1919,25 +2010,29 @@ class ListaPrecioVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        listas = ListaPrecio.objects.filter(instancia=perfil.instancia, predeterminada=True)
+        listas = ListaPrecio.objects.filter(
+            instancia=perfil.instancia, predeterminada=True)
         if listas.exists() and listas.count() > 1:
             for l in listas:
                 l.predeterminada = False
                 l.save()
-            lista = ListaPrecio.objects.filter(instancia=perfil.instancia, activo=True).first()
+            lista = ListaPrecio.objects.filter(
+                instancia=perfil.instancia, activo=True).first()
             lista.predeterminada = True
             lista.save()
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return ListaPrecio.objects.all().order_by('id')
         else:
             return ListaPrecio.objects.filter(instancia=perfil.instancia).order_by('id')
+
 
 class DetalleListaPrecioVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
     serializer_class = DetalleListaPrecioSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['listaprecio' ,'producto__activo']
+    filterset_fields = ['listaprecio', 'producto__activo']
+
     def create(self, request):
         perfil = Perfil.objects.get(usuario=self.request.user)
         datos = request.data
@@ -1951,7 +2046,7 @@ class DetalleListaPrecioVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             _mutable = datos._mutable
             datos._mutable = True
             datos['instancia'] = str(perfil.instancia.id)
@@ -1967,13 +2062,10 @@ class DetalleListaPrecioVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            _mutable = datos._mutable
-            datos._mutable = True
-            datos['instancia'] = str(perfil.instancia.id)
-            datos._mutable = _mutable
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1985,7 +2077,8 @@ class DetalleListaPrecioVS(viewsets.ModelViewSet):
                 datos._mutable = _mutable
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -2007,10 +2100,11 @@ class DetalleListaPrecioVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return DetalleListaPrecio.objects.all().order_by('producto', '-precio')
         else:
             return DetalleListaPrecio.objects.filter(instancia=perfil.instancia).order_by('producto', '-precio')
+
 
 class ImpuestosFacturaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -2027,7 +2121,7 @@ class ImpuestosFacturaVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -2041,9 +2135,10 @@ class ImpuestosFacturaVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -2051,7 +2146,8 @@ class ImpuestosFacturaVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -2073,10 +2169,11 @@ class ImpuestosFacturaVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return ImpuestosFactura.objects.all().order_by('nombre')
         else:
             return ImpuestosFactura.objects.filter(instancia=perfil.instancia).order_by('nombre')
+
 
 class NumerologiaFacturaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -2093,7 +2190,7 @@ class NumerologiaFacturaVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -2107,9 +2204,10 @@ class NumerologiaFacturaVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -2117,7 +2215,8 @@ class NumerologiaFacturaVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -2139,10 +2238,11 @@ class NumerologiaFacturaVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return NumerologiaFactura.objects.all().order_by('tipo', 'valor')
         else:
             return NumerologiaFactura.objects.filter(instancia=perfil.instancia).order_by('tipo', 'valor')
+
 
 class NotaFacturaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -2159,7 +2259,7 @@ class NotaFacturaVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -2173,9 +2273,10 @@ class NotaFacturaVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -2183,7 +2284,8 @@ class NotaFacturaVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -2205,12 +2307,14 @@ class NotaFacturaVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return NotaFactura.objects.all().order_by('venta')
         else:
             return NotaFactura.objects.filter(instancia=perfil.instancia).order_by('venta')
 
 # Compras
+
+
 class ProveedorVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -2226,7 +2330,7 @@ class ProveedorVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -2240,9 +2344,10 @@ class ProveedorVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -2250,7 +2355,8 @@ class ProveedorVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -2272,10 +2378,11 @@ class ProveedorVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return Proveedor.objects.all().order_by('nombre')
         else:
             return Proveedor.objects.filter(instancia=perfil.instancia).order_by('nombre')
+
 
 class CompraVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -2292,7 +2399,7 @@ class CompraVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -2306,9 +2413,10 @@ class CompraVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -2316,7 +2424,8 @@ class CompraVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -2338,10 +2447,11 @@ class CompraVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return Compra.objects.all().order_by('empresa', 'Proveedor', 'total')
         else:
             return Compra.objects.filter(instancia=perfil.instancia).order_by('empresa', 'Proveedor', 'total')
+
 
 class DetalleCompraVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -2358,7 +2468,7 @@ class DetalleCompraVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -2372,9 +2482,10 @@ class DetalleCompraVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -2382,7 +2493,8 @@ class DetalleCompraVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -2404,10 +2516,11 @@ class DetalleCompraVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return DetalleCompra.objects.all().order_by('compra', 'producto', 'cantidad', 'precio')
         else:
             return DetalleCompra.objects.filter(instancia=perfil.instancia).order_by('compra', 'producto', 'cantidad', 'precio')
+
 
 class NotaCompraVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -2424,7 +2537,7 @@ class NotaCompraVS(viewsets.ModelViewSet):
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'): 
+        elif (perfil.tipo == 'A'):
             datos = request.data
             datos['instancia'] = perfil.instancia.id
             serializer = self.get_serializer(data=datos)
@@ -2438,9 +2551,10 @@ class NotaCompraVS(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            partial = True # Here I change partial to True
+            partial = True  # Here I change partial to True
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -2448,7 +2562,8 @@ class NotaCompraVS(viewsets.ModelViewSet):
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
                 partial = True  # Here I change partial to True
                 instance = self.get_object()
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer = self.get_serializer(
+                    instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -2470,26 +2585,31 @@ class NotaCompraVS(viewsets.ModelViewSet):
 
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo=='S'):
+        if (perfil.tipo == 'S'):
             return NotaCompra.objects.all().order_by('compra')
         else:
             return NotaCompra.objects.filter(instancia=perfil.instancia).order_by('compra')
 
 # Funciones
+
+
 def CrearAdmin(data):
     try:
         instan = data['instancia']
         nombreInstancia = instan['nombre'] + " ("+data['username']+")"
-        user = User(username=data['username'],email=data['email'],password=data['password'])
+        user = User(username=data['username'],
+                    email=data['email'], password=data['password'])
         user.save()
-        instancia = Instancia(nombre=nombreInstancia,activo=instan['activo'],multiempresa=instan['multiempresa'],vencimiento=instan['vencimiento'])
+        instancia = Instancia(
+            nombre=nombreInstancia, activo=instan['activo'], multiempresa=instan['multiempresa'], vencimiento=instan['vencimiento'])
         instancia.save()
-        perfil = Perfil(usuario=user,instancia=instancia,tipo='A')
+        perfil = Perfil(usuario=user, instancia=instancia, tipo='A')
         perfil.save()
         for p in data['permisos']:
-            menuInstancia = MenuInstancia(instancia=instancia,menu=p['menu'])
+            menuInstancia = MenuInstancia(instancia=instancia, menu=p['menu'])
             menuInstancia.save()
-            permiso = Permiso(instancia=instancia,perfil=perfil,menuinstancia=menuInstancia,leer=p['leer'],escribir=p['escribir'],borrar=p['borrar'],actualizar=p['actualizar'])
+            permiso = Permiso(instancia=instancia, perfil=perfil, menuinstancia=menuInstancia,
+                              leer=p['leer'], escribir=p['escribir'], borrar=p['borrar'], actualizar=p['actualizar'])
             permiso.save()
         return JsonResponse({"error": "N/A"}, status=status.HTTP_201_CREATED)
     except Exception as e:
@@ -2498,9 +2618,16 @@ def CrearAdmin(data):
 
 @api_view(["GET"])
 @csrf_exempt
-#@authentication_classes([TokenAuthentication])
+# @authentication_classes([TokenAuthentication])
 @permission_classes([AllowAny])
 def CreateSuperUser(request):
+    if (Menu.objects.all().count() == 0):
+        for m in modelosMENU['modelos']:
+            menu = Menu(router=m['router'], orden=m['orden'])
+            menu.save()
+            if (m['parent'] != None):
+                menu.parent = Menu.objects.get(id=m['parent'])
+                menu.save()
     if (Instancia.objects.all().count() == 0):
         instancia = Instancia(nombre="Primera",activo=True,multiempresa=True,vencimiento=None)
         instancia.save()
@@ -2678,14 +2805,20 @@ def crearlista(request):
 def actualiza_pedido(request):
     payload = json.loads(request.body)
     try:
-        print(payload)
         pedido_id = Pedido.objects.get(id=payload['idpedido'])
-        DetallePedido.objects.filter(pedido=pedido_id).delete()
+        detashepedido = DetallePedido.objects.filter(pedido=pedido_id)
+        id_dpedidos = []
+        for dpedidos in detashepedido:
+            print('id pedidos = ', dpedidos.id)
+            id_dpedidos.append(dpedidos.id)
         for i in payload['data']:
+            inventario = Inventario.objects.get(id=i['inventario'])
+            if i['id'] != None:
+                print('Detalle pedido existente')
+                inventario.disponible += i['cantidada']
+                inventario.bloqueado -= i['cantidada']
             perfil = Perfil.objects.get(usuario=request.user)
             lista_precio = ListaPrecio.objects.get(id=i['lista_precio'])
-            print(i['inventario'])
-            inventario = Inventario.objects.get(id=i['inventario'])
             producto = Producto.objects.get(id=i["producto"])
             instancia = Instancia.objects.get(perfil=perfil.id)
             cantidad = int(i["cantidada"])
@@ -2696,6 +2829,7 @@ def actualiza_pedido(request):
             inventario.disponible = int(inventario.disponible) - cantidad
             inventario.bloqueado = int(inventario.bloqueado) + cantidad
             inventario.save()
+        DetallePedido.objects.filter(id__in=id_dpedidos).delete()
         return JsonResponse({'exitoso': 'exitoso'}, safe=False, status=status.HTTP_200_OK)
     except ObjectDoesNotExist as e:
         return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_404_NOT_FOUND)
@@ -2712,11 +2846,11 @@ def ObtenerHistorico(request):
     from django.db.models import CharField, Value
     df = pd.DataFrame()
     try:
-        #uid = User.objects.get(username=payload['username'])
+        # uid = User.objects.get(username=payload['username'])
         uid = request.user
-        #modelo = payload['model']
+        # modelo = payload['model']
 #        modelo = apps.get_model(app_label='backend', model_name=payload['model'])
-        #uid = 1
+        # uid = 1
         betados = ["<class 'backend.models.Modulo'>"]
         if uid is not None:
             for model in apps.get_app_config('backend').get_models():
