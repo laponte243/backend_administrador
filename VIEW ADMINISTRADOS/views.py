@@ -234,27 +234,27 @@ def eliminar_producto(request, id_orden):
         return JsonResponse({'error': 'Something terrible went wrong'}, safe=False,
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-from django_renderpdf.views import PDFView
-from django.contrib.auth.mixins import LoginRequiredMixin
-class detalle_pdf(PDFView):
-    template_name = 'orden_trabajo.html'
-    allow_force_html = True
-    def get_context_data(self, *args, **kwargs):
-        """Pass some extra context to the template."""
-        context = super().get_context_data(*args, **kwargs)
-        totalcosto = 0
-        total = 0
-        orden = Ordendetrabajo.objects.get(id=kwargs['id_orden'])
-        detalle = ordendetrabajo_detalle.objects.filter(ordendetrabajo=orden)
-        for producto in detalle:
-            total += producto.precio_venta * producto.cantidad_producto
-            totalcosto += producto.precio_compra * producto.cantidad_producto
-        total += orden.precio_manodeobra 
-        totalcosto = total - totalcosto
-        context['orden'] = orden
-        context['detalle'] = detalle
-        context['utilidad'] = totalcosto
-        return context
+# from django_renderpdf.views import PDFView
+# from django.contrib.auth.mixins import LoginRequiredMixin
+# class detalle_pdf(PDFView):
+#     template_name = 'orden_trabajo.html'
+#     allow_force_html = True
+#     def get_context_data(self, *args, **kwargs):
+#         """Pass some extra context to the template."""
+#         context = super().get_context_data(*args, **kwargs)
+#         totalcosto = 0
+#         total = 0
+#         orden = Ordendetrabajo.objects.get(id=kwargs['id_orden'])
+#         detalle = ordendetrabajo_detalle.objects.filter(ordendetrabajo=orden)
+#         for producto in detalle:
+#             total += producto.precio_venta * producto.cantidad_producto
+#             totalcosto += producto.precio_compra * producto.cantidad_producto
+#         total += orden.precio_manodeobra 
+#         totalcosto = total - totalcosto
+#         context['orden'] = orden
+#         context['detalle'] = detalle
+#         context['utilidad'] = totalcosto
+#         return context
 
 
 class nota_entrega(PDFView):

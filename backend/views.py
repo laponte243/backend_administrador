@@ -1,5 +1,6 @@
 # Rest framework imports
 from email import header
+from numpy import indices
 from rest_framework import permissions
 from rest_framework import viewsets, status
 from rest_framework.authtoken.serializers import AuthTokenSerializer
@@ -2809,14 +2810,20 @@ def actualiza_pedido(request):
         detashepedido = DetallePedido.objects.filter(pedido=pedido_id)
         id_dpedidos = []
         for dpedidos in detashepedido:
-            print('id pedidos = ', dpedidos.id)
             id_dpedidos.append(dpedidos.id)
         for i in payload['data']:
             inventario = Inventario.objects.get(id=i['inventario'])
             if i['id'] != None:
-                print('Detalle pedido existente')
-                inventario.disponible += i['cantidada']
-                inventario.bloqueado -= i['cantidada']
+                print(i['cantidada'], inventario.disponible)
+                indexpedido = None
+                for index, item in enumerate(detashepedido):
+                    if item.id == i['id']:
+                        indexpedido = index
+                cantidadanterior = detashepedido[indexpedido].cantidada
+                print(cantidadanterior)
+                nuevodisponible = i['cantidada'] - cantidadanterior
+                inventario.disponible -= nuevodisponible
+                inventario.bloqueado += nuevodisponible
             perfil = Perfil.objects.get(usuario=request.user)
             lista_precio = ListaPrecio.objects.get(id=i['lista_precio'])
             producto = Producto.objects.get(id=i["producto"])
@@ -2826,9 +2833,11 @@ def actualiza_pedido(request):
             pedido = pedido_id
             nuevo_componente = DetallePedido(lote=i["lote"],total_producto=totalp,lista_precio=lista_precio,instancia_id=instancia.id,pedido=pedido,cantidada=cantidad,producto=producto,inventario=inventario)
             nuevo_componente.save()
-            inventario.disponible = int(inventario.disponible) - cantidad
-            inventario.bloqueado = int(inventario.bloqueado) + cantidad
+            if i['id'] == None:
+                inventario.disponible = int(inventario.disponible) - cantidad
+                inventario.bloqueado = int(inventario.bloqueado) + cantidad
             inventario.save()
+            print(inventario.disponible) # 41 (37)
         DetallePedido.objects.filter(id__in=id_dpedidos).delete()
         return JsonResponse({'exitoso': 'exitoso'}, safe=False, status=status.HTTP_200_OK)
     except ObjectDoesNotExist as e:
