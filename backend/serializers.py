@@ -314,12 +314,24 @@ class ProformaSerializer(serializers.ModelSerializer):
     nombreVendedor = serializers.SerializerMethodField('LoadNombreVendedor')
     def LoadNombreVendedor(self, obj):
        return obj.vendedor.nombre 
+    date =  serializers.SerializerMethodField('LoadDate')
+    def LoadDate(self, obj):
+       return obj.fecha_proforma.date()
+
 
 class DetalleProformaSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetalleProforma
         fields = '__all__'
-
+    nombreProducto = serializers.SerializerMethodField('LoadNombreProducto')
+    def LoadNombreProducto(self, obj):
+       return obj.producto.nombre 
+    nombreListaPrecio = serializers.SerializerMethodField('LoadNombreListaPrecio')
+    def LoadNombreListaPrecio(self, obj):
+       return obj.lista_precio.nombre
+    almacen = serializers.SerializerMethodField('LoadNombreAlmacen')
+    def LoadNombreAlmacen(self, obj):
+       return obj.inventario.almacen.id
 class FacturaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Factura

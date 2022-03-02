@@ -1,5 +1,6 @@
 # Rest framework imports
 from email import header
+from urllib import response
 from numpy import indices
 from rest_framework import permissions
 from rest_framework import viewsets, status
@@ -2912,6 +2913,7 @@ def export_users_csv(request):
 def validacion_pedido(request):
     payload = json.loads(request.body)
     try:
+        print(payload)
         pedido = Pedido.objects.get(id=payload['idpedido'])
         decision = payload['decision']
         detashepedido = DetallePedido.objects.filter(pedido=pedido)
@@ -2921,8 +2923,11 @@ def validacion_pedido(request):
             pedido.estatus = 'C'
             pedido.save()
             for deta in detashepedido:
-                deta.inventario.disponible = deta.inventario.disponible + deta.cantidada
-                deta.inventario.bloqueado = deta.inventario.bloqueado - deta.cantidada
+                print(deta)
+                inventario = Inventario.objects.get(id=deta.inventario.id)
+                inventario.bloqueado = inventario.bloqueado - deta.cantidada
+                inventario.disponible = inventario.disponible + deta.cantidada
+                inventario.save()
             return JsonResponse({'exitoso': 'exitoso'}, safe=False, status=status.HTTP_200_OK)
         else:
             pedido.estatus = 'A'
@@ -2933,17 +2938,28 @@ def validacion_pedido(request):
             nueva_proforma.vendedor = pedido.vendedor
             nueva_proforma.empresa = pedido.empresa
             nueva_proforma.nombre_cliente = pedido.cliente.nombre
-            nueva_proforma.identificador_fiscal = pedido.cliente.identificador_fiscal
-            nueva_proforma.direccion_cliente = pedido.cliente.direccion
+            nueva_proforma.identificador_fiscal = pedido.cliente.identificador
+            nueva_proforma.direccion_cliente = pedido.cliente.ubicacion
             nueva_proforma.telefono_cliente = pedido.cliente.telefono
             nueva_proforma.total = pedido.total
             nueva_proforma.save()
-            ## Se crea el detalle de la proforma con la información asociada en el detalle pedido
+            print(nueva_proforma.__dict__)
+            # Se crea el detalle de la proforma con la información asociada en el detalle pedido
             for deta in detashepedido:
-                nuevo_detalle = DetalleProforma(proforma=nueva_proforma, inventario=deta.inventario, cantidad=deta.cantidada)
+                nuevo_detalle = DetalleProforma(proforma=nueva_proforma,
+                lista_precio = deta.lista_precio,
+                inventario=deta.inventario,
+                cantidada=deta.cantidada,
+                lote = deta.lote,
+                producto = deta.producto,
+                precio = deta.producto.costo,
+                total_producto = deta.total_producto,
+                instancia=instancia
+                )
                 nuevo_detalle.save()
-                deta.inventario.bloqueado = deta.inventario.bloqueado - deta.cantidada
-                deta.inventario.save()
+                inventario = Inventario.objects.get(id=deta.inventario.id)
+                inventario.bloqueado = inventario.bloqueado - deta.cantidada
+                inventario.save()
             return JsonResponse({'exitoso': 'exitoso'}, safe=False, status=status.HTTP_200_OK)
     except ObjectDoesNotExist as e:
         return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_404_NOT_FOUND)
