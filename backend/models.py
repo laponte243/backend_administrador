@@ -276,7 +276,7 @@ class Pedido(models.Model): # Pedido
         ('A', 'Aprobada'),
         ('C', 'Cancelada'),
     )
-    estatus = models.CharField(max_length=1, default='R' choices=ESTATUS)
+    estatus = models.CharField(max_length=1, default='R', choices=ESTATUS)
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     empresa = models.ForeignKey(Empresa, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="empresa asociada")
     cliente = models.ForeignKey(Cliente, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="cliente asociado")
