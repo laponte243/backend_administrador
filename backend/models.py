@@ -298,6 +298,7 @@ class DetallePedido(models.Model):
 
 class Proforma(models.Model):
     impreso = models.BooleanField(default=False, help_text="Esta impreso?")
+    instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     pedido = models.ForeignKey(Pedido, null=True, blank=False, on_delete=models.DO_NOTHING, help_text="pedido asociado")
     empresa = models.ForeignKey(Empresa, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="empresa asociada")
     cliente = models.ForeignKey(Cliente, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="cliente asociado")
@@ -308,8 +309,6 @@ class Proforma(models.Model):
     direccion_cliente = models.TextField(max_length=150, blank=False, null=False, help_text="telefono del cliente en la proforma")
     telefono_cliente = models.TextField(max_length=150, blank=False, null=False, help_text="fecha de generacion de la proforma")
 
-    subtotal = models.FloatField(null=False, default=0, blank=False, help_text="subtotal de la proforma")
-    monto_exento = models.FloatField(null=False, default=0, blank=False, help_text="monto exento de la proforma")
     total = models.FloatField(null=False, default=0, blank=False, help_text="total de la proforma")
     fecha_proforma = models.DateTimeField(auto_now_add=True, help_text="fecha de generacion del pedido")
 

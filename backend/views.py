@@ -2905,4 +2905,48 @@ def export_users_csv(request):
             writer.writerow(texto)
     return response
 
-
+@api_view(["POST"])
+@csrf_exempt
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def validacion_pedido(request):
+    payload = json.loads(request.body)
+    try:
+        pedido = Pedido.objects.get(id=payload['idpedido'])
+        decision = payload['decision']
+        detashepedido = DetallePedido.objects.filter(pedido=pedido)
+        perfil = Perfil.objects.get(usuario=request.user)
+        instancia = Instancia.objects.get(perfil=perfil.id)
+        if payload['decision'] == 'Rechazado':
+            pedido.estatus = 'C'
+            pedido.save()
+            for deta in detashepedido:
+                deta.inventario.disponible = deta.inventario.disponible + deta.cantidada
+                deta.inventario.bloqueado = deta.inventario.bloqueado - deta.cantidada
+            return JsonResponse({'exitoso': 'exitoso'}, safe=False, status=status.HTTP_200_OK)
+        else:
+            pedido.estatus = 'A'
+            pedido.save()
+            ## Se crea una nueva proforma, en base a los datos del pedido
+            nueva_proforma = Proforma(pedido=pedido,instancia=instancia)
+            nueva_proforma.cliente = pedido.cliente
+            nueva_proforma.vendedor = pedido.vendedor
+            nueva_proforma.empresa = pedido.empresa
+            nueva_proforma.nombre_cliente = pedido.cliente.nombre
+            nueva_proforma.identificador_fiscal = pedido.cliente.identificador_fiscal
+            nueva_proforma.direccion_cliente = pedido.cliente.direccion
+            nueva_proforma.telefono_cliente = pedido.cliente.telefono
+            nueva_proforma.total = pedido.total
+            nueva_proforma.save()
+            ## Se crea el detalle de la proforma con la información asociada en el detalle pedido
+            for deta in detashepedido:
+                nuevo_detalle = DetalleProforma(proforma=nueva_proforma, inventario=deta.inventario, cantidad=deta.cantidada)
+                nuevo_detalle.save()
+                deta.inventario.bloqueado = deta.inventario.bloqueado - deta.cantidada
+                deta.inventario.save()
+            return JsonResponse({'exitoso': 'exitoso'}, safe=False, status=status.HTTP_200_OK)
+    except ObjectDoesNotExist as e:
+        return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return JsonResponse({'error': e}, safe=False,
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
