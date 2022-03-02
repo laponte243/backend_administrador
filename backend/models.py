@@ -313,13 +313,13 @@ class Proforma(models.Model):
 class DetalleProforma(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     proforma = models.ForeignKey(Proforma, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="proforma asociada")
+    lista_precio = models.ForeignKey(ListaPrecio, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Lista de precio asociada")
     producto = models.ForeignKey(Producto, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="detallepedido asociada")
-    MovimientoInventario_producto = models.ForeignKey(MovimientoInventario, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="MovimientoInventario del producto asociado")
-
+    lote = models.TextField(max_length=150, blank=False, null=True, help_text="lote del producto")
+    cantidada = models.FloatField(null=False, default=0, blank=False, help_text="Cantidad vendida")
     descripcion = models.TextField(max_length=150, blank=False, null=True, help_text="En caso de no tener un producto asociado se puede colocar una descripcion del rublo acá")
     precio = models.TextField(null=False, default=0, blank=False, help_text="precio del producto o servicio a vender")
     subtotal = models.TextField(null=False, default=0, blank=False, help_text="Precio por la cantidad del producto")
-
     inventario = models.TextField(default=True, help_text="La venta afecta el inventario?")
     history = HistoricalRecords()
 
