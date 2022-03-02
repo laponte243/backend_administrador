@@ -271,6 +271,12 @@ class DetalleListaPrecio(models.Model):
     history = HistoricalRecords()
 
 class Pedido(models.Model): # Pedido 
+    ESTATUS = (
+        ('R', 'Revision'),
+        ('A', 'Aprobada'),
+        ('C', 'Cancelada'),
+    )
+    estatus = models.CharField(max_length=1, default='R' choices=ESTATUS)
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     empresa = models.ForeignKey(Empresa, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="empresa asociada")
     cliente = models.ForeignKey(Cliente, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="cliente asociado")
@@ -291,6 +297,7 @@ class DetallePedido(models.Model):
     history = HistoricalRecords()
 
 class Proforma(models.Model):
+    impreso = models.BooleanField(default=False, help_text="Esta impreso?")
     pedido = models.ForeignKey(Pedido, null=True, blank=False, on_delete=models.DO_NOTHING, help_text="pedido asociado")
     empresa = models.ForeignKey(Empresa, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="empresa asociada")
     cliente = models.ForeignKey(Cliente, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="cliente asociado")
@@ -303,10 +310,8 @@ class Proforma(models.Model):
 
     subtotal = models.FloatField(null=False, default=0, blank=False, help_text="subtotal de la proforma")
     monto_exento = models.FloatField(null=False, default=0, blank=False, help_text="monto exento de la proforma")
-    impuesto = models.FloatField(null=False, default=0, blank=False, help_text="impuesto")
     total = models.FloatField(null=False, default=0, blank=False, help_text="total de la proforma")
-    
-    nota_entrega = models.TextField(default=False, help_text="fecha de generacion una nota de entrega?")
+    fecha_proforma = models.DateTimeField(auto_now_add=True, help_text="fecha de generacion del pedido")
 
     history = HistoricalRecords()
 
@@ -324,6 +329,7 @@ class DetalleProforma(models.Model):
     history = HistoricalRecords()
 
 class Factura(models.Model):
+    impreso = models.BooleanField(default=False, help_text="Esta impreso?")
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     pedido = models.ForeignKey(Pedido, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="pedido asociado")
     proforma = models.ForeignKey(Proforma, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="proforma asociada")
