@@ -2923,7 +2923,6 @@ def validacion_pedido(request):
             pedido.estatus = 'C'
             pedido.save()
             for deta in detashepedido:
-                print(deta)
                 inventario = Inventario.objects.get(id=deta.inventario.id)
                 inventario.bloqueado = inventario.bloqueado - deta.cantidada
                 inventario.disponible = inventario.disponible + deta.cantidada
@@ -2943,7 +2942,6 @@ def validacion_pedido(request):
             nueva_proforma.telefono_cliente = pedido.cliente.telefono
             nueva_proforma.total = pedido.total
             nueva_proforma.save()
-            print(nueva_proforma.__dict__)
             # Se crea el detalle de la proforma con la información asociada en el detalle pedido
             for deta in detashepedido:
                 nuevo_detalle = DetalleProforma(proforma=nueva_proforma,
@@ -2961,6 +2959,54 @@ def validacion_pedido(request):
                 inventario.bloqueado = inventario.bloqueado - deta.cantidada
                 inventario.save()
             return JsonResponse({'exitoso': 'exitoso'}, safe=False, status=status.HTTP_200_OK)
+    except ObjectDoesNotExist as e:
+        return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return JsonResponse({'error': e}, safe=False,
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(["POST"])
+@csrf_exempt
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def actualiza_proforma(request):
+    payload = json.loads(request.body)
+    try:
+        print(payload)
+        proforma_id = Proforma.objects.get(id=payload['idproforma'])
+        print(proforma_id)
+        detasheproforma = DetalleProforma.objects.filter(proforma=proforma_id)
+        id_proformas = []
+        for dproformas in detasheproforma:
+            id_proformas.append(dproformas.id)
+        for i in payload['data']:
+            inventario = Inventario.objects.get(id=i['inventario'])
+            if i['id'] != None:
+                print(i['cantidada'], inventario.disponible)
+                indexpedido = None
+                for index, item in enumerate(detasheproforma):
+                    if item.id == i['id']:
+                        indexpedido = index
+                cantidadanterior = detasheproforma[indexpedido].cantidada
+                print(cantidadanterior)
+                nuevodisponible = i['cantidada'] - cantidadanterior
+                inventario.disponible -= nuevodisponible
+            perfil = Perfil.objects.get(usuario=request.user)
+            lista_precio = ListaPrecio.objects.get(id=i['lista_precio'])
+            producto = Producto.objects.get(id=i["producto"])
+            instancia = Instancia.objects.get(perfil=perfil.id)
+            cantidad = int(i["cantidada"])
+            totalp = cantidad * (producto.costo + (producto.costo * (lista_precio.porcentaje /100)))
+            proforma = proforma_id
+            nuevo_componente = DetalleProforma(proforma= proforma,lote=i["lote"],total_producto=totalp,lista_precio=lista_precio,instancia_id=instancia.id,cantidada=cantidad,producto=producto,inventario=inventario)
+            nuevo_componente.save()
+            if i['id'] == None:
+                inventario.disponible = int(inventario.disponible) - cantidad
+            inventario.save()
+            print(inventario.disponible) # 41 (37)
+        DetalleProforma.objects.filter(id__in=id_proformas).delete()
+        return JsonResponse({'exitoso': 'exitoso'}, safe=False, status=status.HTTP_200_OK)
     except ObjectDoesNotExist as e:
         return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:

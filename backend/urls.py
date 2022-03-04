@@ -68,6 +68,7 @@ urlpatterns = [
     path('user-creator/', views.CrearNuevoUsuario),
     path('crear-lista/', views.crearlista),
     path('actualiza-pedido/', views.actualiza_pedido),
+    path('actualiza-proforma/', views.actualiza_proforma),
     path('excel_lista/', views.export_users_csv),
     path('inventario/', views.Inven),
     path('validacion_pedido/', views.validacion_pedido),
