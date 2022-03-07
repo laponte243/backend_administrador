@@ -72,6 +72,7 @@ urlpatterns = [
     path('excel_lista/', views.export_users_csv),
     path('inventario/', views.Inven),
     path('validacion_pedido/', views.validacion_pedido),
+    path('generar_factura/', views.generar_factura),
     # Login
     path('auth/login/', LoginView.as_view(), name='knox_login'),
     path('auth/logout/', knox_views.LogoutView.as_view(), name='knox_logout'),

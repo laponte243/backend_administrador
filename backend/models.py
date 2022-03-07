@@ -330,9 +330,7 @@ class DetalleProforma(models.Model):
 class Factura(models.Model):
     impreso = models.BooleanField(default=False, help_text="Esta impreso?")
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
-    pedido = models.ForeignKey(Pedido, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="pedido asociado")
     proforma = models.ForeignKey(Proforma, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="proforma asociada")
-    #Datos fijos de la factura
     nombre_empresa = models.TextField(
         max_length=150, null=False, blank=False, help_text="empresa asociada")
     telefonocontacto_empresa = models.TextField(
@@ -354,8 +352,7 @@ class Factura(models.Model):
     telefono_vendedor = models.TextField(
         max_length=150, null=False, blank=False, help_text="empresa asociada")
     
-    fecha_factura = models.TextField(
-        max_length=150, blank=False, null=False, help_text="fecha de generacion de la venta")
+    fecha_factura = models.DateTimeField(auto_now_add=True, help_text="fecha de generacion del pedido")
     subtotal = models.TextField(
         max_length=150, null=False, default=0, blank=False, help_text="subtotal de la venta")
     monto_exento = models.TextField(
@@ -379,21 +376,22 @@ class Factura(models.Model):
 class DetalleFactura(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     factura = models.ForeignKey(Factura, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="venta asociada")
-    MovimientoInventario = models.ForeignKey(MovimientoInventario, null=False, blank=False, on_delete=DO_NOTHING, help_text="MovimientoInventario asociado del producto")
     #Datos fijos
-    MovimientoInventario_producto = models.TextField(
+    inventario = models.ForeignKey(Inventario, null=False, blank=False,on_delete=models.DO_NOTHING, help_text="Inventario asociado")
+    inventario_fijo = models.TextField(
         max_length=150, null=True, blank=False, help_text="MovimientoInventario fijo asociado del producto asociado")
     fecha_vencimiento = models.TextField(
         max_length=150, null=True, blank=False, help_text="Fecha de vencimiento del MovimientoInventario")
-    producto = models.TextField(
+    producto_fijo = models.TextField(
         max_length=150, null=False, blank=False, help_text="producto asociado")
+    producto = models.ForeignKey(Producto, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="detallepedido asociada")
+    lote = models.TextField(max_length=150, blank=False, null=True, help_text="lote del producto")
+    cantidada = models.FloatField(null=False, default=0, blank=False, help_text="Cantidad vendida")
     descripcion = models.TextField(
         max_length=150, blank=False, null=True, help_text="En caso de no tener un producto asociado se puede colocar una descripcion del rublo aca")
-    cantidad = models.TextField(
-        max_length=150, default=True, help_text="La venta afecta el inventario?")
     precio = models.TextField(
         max_length=150, null=False, default=0, blank=False, help_text="precio del producto o servicio a vender")
-    subtotal = models.TextField(
+    total_producto = models.TextField(
         max_length=150, null=False, default=0, blank=False, help_text="subtotal del producto")
     history = HistoricalRecords()
 

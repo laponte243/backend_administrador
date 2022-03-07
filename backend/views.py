@@ -1711,6 +1711,8 @@ class DetalleProformaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
     serializer_class = DetalleProformaSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['proforma']
 
     def create(self, request):
         perfil = Perfil.objects.get(usuario=self.request.user)
@@ -1760,6 +1762,9 @@ class DetalleProformaVS(viewsets.ModelViewSet):
         instance = self.get_object()
         if (perfil.tipo == 'S'):
             instance.delete()
+            inventario = Inventario.objects.get(id=instance.inventario.id)
+            inventario.disponible = inventario.disponible + instance.cantidada
+            inventario.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             if (str(instance.instancia.id) == str(perfil.instancia.id)):
@@ -1840,15 +1845,17 @@ class FacturaVS(viewsets.ModelViewSet):
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            return Factura.objects.all().order_by('empresa', 'cliente', 'vendedor')
+            return Factura.objects.all()
         else:
-            return Factura.objects.filter(instancia=perfil.instancia).order_by('empresa', 'cliente', 'vendedor')
+            return Factura.objects.filter(instancia=perfil.instancia)
 
 
 class DetalleFacturaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
     serializer_class = DetalleFacturaSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['factura']
 
     def create(self, request):
         perfil = Perfil.objects.get(usuario=self.request.user)
@@ -2965,6 +2972,52 @@ def validacion_pedido(request):
         return JsonResponse({'error': e}, safe=False,
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@api_view(["POST"])
+@csrf_exempt
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def generar_factura(request):
+    payload = json.loads(request.body)
+    try:
+        print(payload)
+        proforma = Proforma.objects.get(id=payload['idproforma'])
+        detasheproforma = DetalleProforma.objects.filter(proforma=proforma)
+        perfil = Perfil.objects.get(usuario=request.user)
+        instancia = Instancia.objects.get(perfil=perfil.id)
+        nueva_factura = Factura(proforma=proforma,instancia=instancia)
+        nueva_factura.nombre_empresa = proforma.empresa.nombre
+        nueva_factura.direccion_empresa =  proforma.empresa.direccion_fiscal
+        nueva_factura.nombre_cliente = proforma.cliente.nombre
+        nueva_factura.identificador_fiscal = proforma.cliente.identificador
+        nueva_factura.direccion_cliente = proforma.cliente.ubicacion
+        nueva_factura.telefono_cliente = proforma.cliente.telefono
+        nueva_factura.nombre_vendedor = proforma.vendedor.nombre
+        nueva_factura.telefono_vendedor = proforma.vendedor.telefono
+        nueva_factura.impuesto = 16
+        nueva_factura.save()
+        for deta in detasheproforma:
+                nuevo_detalle = DetalleFactura(factura=nueva_factura,
+                inventario=deta.inventario,
+                inventario_fijo = deta.inventario,
+                cantidada=deta.cantidada,
+                lote = deta.lote,
+                fecha_vencimiento = deta.inventario.fecha_vencimiento,
+                producto = deta.producto,
+                producto_fijo = deta.producto.nombre,
+                precio = deta.producto.costo,
+                total_producto = deta.total_producto,
+                instancia=instancia
+                )
+                nuevo_detalle.save()
+                nueva_factura.subtotal += float( deta.total_producto)
+                nueva_factura.total += float( deta.total_producto) + (float( deta.total_producto) * (float(nueva_factura.impuesto) / 100))
+                nueva_factura.save()
+        return JsonResponse({'exitoso': 'exitoso'}, safe=False, status=status.HTTP_200_OK)
+    except ObjectDoesNotExist as e:
+        return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return JsonResponse({'error': e}, safe=False,
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(["POST"])
 @csrf_exempt
