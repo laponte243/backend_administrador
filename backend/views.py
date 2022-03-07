@@ -675,9 +675,9 @@ class TasaConversionVS(viewsets.ModelViewSet):
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            return TasaConversion.objects.all().order_by('nombre')
+            return TasaConversion.objects.all().order_by('-id')
         else:
-            return TasaConversion.objects.filter(instancia=perfil.instancia).order_by('nombre')
+            return TasaConversion.objects.filter(instancia=perfil.instancia)
 
 
 class ImpuestosVS(viewsets.ModelViewSet):
@@ -1711,6 +1711,8 @@ class DetalleProformaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
     serializer_class = DetalleProformaSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['proforma']
 
     def create(self, request):
         perfil = Perfil.objects.get(usuario=self.request.user)
@@ -1760,6 +1762,9 @@ class DetalleProformaVS(viewsets.ModelViewSet):
         instance = self.get_object()
         if (perfil.tipo == 'S'):
             instance.delete()
+            inventario = Inventario.objects.get(id=instance.inventario.id)
+            inventario.disponible = inventario.disponible + instance.cantidada
+            inventario.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             if (str(instance.instancia.id) == str(perfil.instancia.id)):
@@ -1840,15 +1845,17 @@ class FacturaVS(viewsets.ModelViewSet):
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            return Factura.objects.all().order_by('empresa', 'cliente', 'vendedor')
+            return Factura.objects.all()
         else:
-            return Factura.objects.filter(instancia=perfil.instancia).order_by('empresa', 'cliente', 'vendedor')
+            return Factura.objects.filter(instancia=perfil.instancia)
 
 
 class DetalleFacturaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
     serializer_class = DetalleFacturaSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['factura']
 
     def create(self, request):
         perfil = Perfil.objects.get(usuario=self.request.user)
@@ -2923,7 +2930,6 @@ def validacion_pedido(request):
             pedido.estatus = 'C'
             pedido.save()
             for deta in detashepedido:
-                print(deta)
                 inventario = Inventario.objects.get(id=deta.inventario.id)
                 inventario.bloqueado = inventario.bloqueado - deta.cantidada
                 inventario.disponible = inventario.disponible + deta.cantidada
@@ -2943,7 +2949,6 @@ def validacion_pedido(request):
             nueva_proforma.telefono_cliente = pedido.cliente.telefono
             nueva_proforma.total = pedido.total
             nueva_proforma.save()
-            print(nueva_proforma.__dict__)
             # Se crea el detalle de la proforma con la información asociada en el detalle pedido
             for deta in detashepedido:
                 nuevo_detalle = DetalleProforma(proforma=nueva_proforma,
@@ -2952,11 +2957,13 @@ def validacion_pedido(request):
                 cantidada=deta.cantidada,
                 lote = deta.lote,
                 producto = deta.producto,
-                precio = deta.producto.costo,
+                precio = deta.producto.costo + (deta.producto.costo * (deta.lista_precio.porcentaje / 100)),
                 total_producto = deta.total_producto,
                 instancia=instancia
                 )
                 nuevo_detalle.save()
+                nueva_proforma.total += deta.total_producto
+                nueva_proforma.save()
                 inventario = Inventario.objects.get(id=deta.inventario.id)
                 inventario.bloqueado = inventario.bloqueado - deta.cantidada
                 inventario.save()
@@ -3023,3 +3030,97 @@ class PDFProforma(PDFView):
             context['utilidad'] = 'Error'
         context['proforma'] = proforma
         return context
+        
+@api_view(["POST"])
+@csrf_exempt
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def generar_factura(request):
+    payload = json.loads(request.body)
+    try:
+        print(payload)
+        proforma = Proforma.objects.get(id=payload['idproforma'])
+        detasheproforma = DetalleProforma.objects.filter(proforma=proforma)
+        perfil = Perfil.objects.get(usuario=request.user)
+        instancia = Instancia.objects.get(perfil=perfil.id)
+        nueva_factura = Factura(proforma=proforma,instancia=instancia)
+        nueva_factura.nombre_empresa = proforma.empresa.nombre
+        nueva_factura.direccion_empresa =  proforma.empresa.direccion_fiscal
+        nueva_factura.nombre_cliente = proforma.cliente.nombre
+        nueva_factura.identificador_fiscal = proforma.cliente.identificador
+        nueva_factura.direccion_cliente = proforma.cliente.ubicacion
+        nueva_factura.telefono_cliente = proforma.cliente.telefono
+        nueva_factura.nombre_vendedor = proforma.vendedor.nombre
+        nueva_factura.telefono_vendedor = proforma.vendedor.telefono
+        nueva_factura.impuesto = 16
+        nueva_factura.save()
+        for deta in detasheproforma:
+                nuevo_detalle = DetalleFactura(factura=nueva_factura,
+                inventario=deta.inventario,
+                inventario_fijo = deta.inventario,
+                cantidada=deta.cantidada,
+                lote = deta.lote,
+                fecha_vencimiento = deta.inventario.fecha_vencimiento,
+                producto = deta.producto,
+                producto_fijo = deta.producto.nombre,
+                precio = deta.producto.costo,
+                total_producto = deta.total_producto,
+                instancia=instancia
+                )
+                nuevo_detalle.save()
+                nueva_factura.subtotal += float( deta.total_producto)
+                nueva_factura.total += float( deta.total_producto) + (float( deta.total_producto) * (float(nueva_factura.impuesto) / 100))
+                nueva_factura.save()
+        return JsonResponse({'exitoso': 'exitoso'}, safe=False, status=status.HTTP_200_OK)
+    except ObjectDoesNotExist as e:
+        return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return JsonResponse({'error': e}, safe=False,
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(["POST"])
+@csrf_exempt
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def actualiza_proforma(request):
+    payload = json.loads(request.body)
+    try:
+        print(payload)
+        proforma_id = Proforma.objects.get(id=payload['idproforma'])
+        print(proforma_id)
+        detasheproforma = DetalleProforma.objects.filter(proforma=proforma_id)
+        id_proformas = []
+        for dproformas in detasheproforma:
+            id_proformas.append(dproformas.id)
+        for i in payload['data']:
+            inventario = Inventario.objects.get(id=i['inventario'])
+            if i['id'] != None:
+                print(i['cantidada'], inventario.disponible)
+                indexpedido = None
+                for index, item in enumerate(detasheproforma):
+                    if item.id == i['id']:
+                        indexpedido = index
+                cantidadanterior = detasheproforma[indexpedido].cantidada
+                print(cantidadanterior)
+                nuevodisponible = i['cantidada'] - cantidadanterior
+                inventario.disponible -= nuevodisponible
+            perfil = Perfil.objects.get(usuario=request.user)
+            lista_precio = ListaPrecio.objects.get(id=i['lista_precio'])
+            producto = Producto.objects.get(id=i["producto"])
+            instancia = Instancia.objects.get(perfil=perfil.id)
+            cantidad = int(i["cantidada"])
+            totalp = cantidad * (producto.costo + (producto.costo * (lista_precio.porcentaje /100)))
+            proforma = proforma_id
+            nuevo_componente = DetalleProforma(proforma= proforma,lote=i["lote"],total_producto=totalp,lista_precio=lista_precio,instancia_id=instancia.id,cantidada=cantidad,producto=producto,inventario=inventario)
+            nuevo_componente.save()
+            if i['id'] == None:
+                inventario.disponible = int(inventario.disponible) - cantidad
+            inventario.save()
+            print(inventario.disponible) # 41 (37)
+        DetalleProforma.objects.filter(id__in=id_proformas).delete()
+        return JsonResponse({'exitoso': 'exitoso'}, safe=False, status=status.HTTP_200_OK)
+    except ObjectDoesNotExist as e:
+        return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return JsonResponse({'error': e}, safe=False,
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)

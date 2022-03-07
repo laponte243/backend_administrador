@@ -68,11 +68,13 @@ urlpatterns = [
     path('user-creator/', views.CrearNuevoUsuario),
     path('crear-lista/', views.crearlista),
     path('actualiza-pedido/', views.actualiza_pedido),
+    path('actualiza-proforma/', views.actualiza_proforma),
     path('excel_lista/', views.export_users_csv),
     path('inventario/', views.Inven),
     path('validacion_pedido/', views.validacion_pedido),
     path('pdf_pedido/<int:id_orden>', views.PDFPedido.as_view()),
     path('pdf-proforma/<int:id_proforma>', views.PDFProforma.as_view()),
+    path('generar_factura/', views.generar_factura),
     # Login
     path('auth/login/', LoginView.as_view(), name='knox_login'),
     path('auth/logout/', knox_views.LogoutView.as_view(), name='knox_logout'),

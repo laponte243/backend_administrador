@@ -127,9 +127,9 @@ class TasaConversionSerializer(serializers.ModelSerializer):
     class Meta:
         model = TasaConversion
         fields = '__all__'
-    nombreInstancia = serializers.SerializerMethodField('LoadNombreInstancia')
-    def LoadNombreInstancia(self, obj):
-        return obj.instancia.nombre
+    date =  serializers.SerializerMethodField('LoadDate')
+    def LoadDate(self, obj):
+       return obj.fecha_tasa.date()
 
 class ConfiguracionPapeleriaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -337,10 +337,19 @@ class FacturaSerializer(serializers.ModelSerializer):
         model = Factura
         fields = '__all__'
 
+    date =  serializers.SerializerMethodField('LoadDate')
+    def LoadDate(self, obj):
+       return obj.fecha_factura.date()
 class DetalleFacturaSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetalleFactura
         fields = '__all__'
+    nombreProducto = serializers.SerializerMethodField('LoadNombreProducto')
+    def LoadNombreProducto(self, obj):
+       return obj.producto.nombre
+    almacen = serializers.SerializerMethodField('LoadNombreAlmacen')
+    def LoadNombreAlmacen(self, obj):
+       return obj.inventario.almacen.id
 
 
 class ListaPrecioSerializer(serializers.ModelSerializer):
