@@ -675,9 +675,9 @@ class TasaConversionVS(viewsets.ModelViewSet):
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            return TasaConversion.objects.all().order_by('nombre')
+            return TasaConversion.objects.all().order_by('-id')
         else:
-            return TasaConversion.objects.filter(instancia=perfil.instancia).order_by('nombre')
+            return TasaConversion.objects.filter(instancia=perfil.instancia)
 
 
 class ImpuestosVS(viewsets.ModelViewSet):
@@ -2957,11 +2957,13 @@ def validacion_pedido(request):
                 cantidada=deta.cantidada,
                 lote = deta.lote,
                 producto = deta.producto,
-                precio = deta.producto.costo,
+                precio = deta.producto.costo + (deta.producto.costo * (deta.lista_precio.porcentaje / 100)),
                 total_producto = deta.total_producto,
                 instancia=instancia
                 )
                 nuevo_detalle.save()
+                nueva_proforma.total += deta.total_producto
+                nueva_proforma.save()
                 inventario = Inventario.objects.get(id=deta.inventario.id)
                 inventario.bloqueado = inventario.bloqueado - deta.cantidada
                 inventario.save()

@@ -127,9 +127,9 @@ class TasaConversionSerializer(serializers.ModelSerializer):
     class Meta:
         model = TasaConversion
         fields = '__all__'
-    nombreInstancia = serializers.SerializerMethodField('LoadNombreInstancia')
-    def LoadNombreInstancia(self, obj):
-        return obj.instancia.nombre
+    date =  serializers.SerializerMethodField('LoadDate')
+    def LoadDate(self, obj):
+       return obj.fecha_tasa.date()
 
 class ConfiguracionPapeleriaSerializer(serializers.ModelSerializer):
     class Meta:
