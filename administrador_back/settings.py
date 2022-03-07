@@ -65,6 +65,10 @@ GRAPH_MODELS = {
   'all_applications': True,
   'group_models': True,}
 
+FORMAT_MODULE_PATH = [
+    'administrador_back.formats',
+    'backend.formats',]
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -104,13 +108,13 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
-    #'default': {
+    # 'default': {
     #    'ENGINE': 'django.db.backends.postgresql_psycopg2',
-    #    'NAME': 'administrador',
-    #    'USER': 'admin',
+    #    'NAME': 'adminproject',
+    #    'USER': 'gf',
     #    'PASSWORD': 'uPKsp22tBeBC506WRBv21d7kniWiELwg',
     #    'HOST': '157.230.2.213',
-    #    'PORT': '5432',"""
+    #    'PORT': '5432',
     }}
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -127,7 +131,7 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },]
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es'
 TIME_ZONE = 'America/Caracas'
 USE_I18N = True
 USE_L10N = True

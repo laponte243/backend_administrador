@@ -2966,3 +2966,60 @@ def validacion_pedido(request):
     except Exception as e:
         return JsonResponse({'error': e}, safe=False,
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+from django_renderpdf.views import PDFView
+from django.contrib.auth.mixins import LoginRequiredMixin
+class PDFPedido(PDFView):
+    template_name = 'pedido.html'
+    allow_force_html = True
+    def get_context_data(self, *args, **kwargs):
+        """Pass some extra context to the template."""
+        context = super().get_context_data(*args, **kwargs)
+        totalcosto = 0
+        total = 0
+        orden = Ordendetrabajo.objects.get(id=kwargs['id_orden'])
+        detalle = ordendetrabajo_detalle.objects.filter(ordendetrabajo=orden)
+        for producto in detalle:
+            total += producto.precio_venta * producto.cantidad_producto
+            totalcosto += producto.precio_compra * producto.cantidad_producto
+        total += orden.precio_manodeobra 
+        totalcosto = total - totalcosto
+        context['orden'] = orden
+        context['detalle'] = detalle
+        context['utilidad'] = totalcosto
+        return context
+
+class PDFProforma(PDFView):
+    template_name = 'proforma.html'
+    allow_force_html = True
+    def get_context_data(self, *args, **kwargs):
+        # """Pass some extra context to the template."""
+        context = super().get_context_data(*args, **kwargs)
+        proforma = Proforma.objects.get(id=kwargs['id_proforma'])
+        totalcosto = float(proforma.total)
+
+        value = {'data':[]}
+        total_calculado = 0
+        agrupador = DetalleProforma.objects.filter(proforma=proforma).values('producto','precio').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada'))
+        for dato in agrupador:
+            productox = Producto.objects.get(id=dato['producto'])
+            detallado = DetalleProforma.objects.filter(proforma=proforma,producto=productox).order_by('producto__id')
+            valuex = {'datax':[]}
+            total_cantidad = 0
+            precio_unidad = 0
+            for detalle in detallado:
+                valuex['datax'].append({'lote':detalle.lote,'cantidad':detalle.cantidada})
+                total_cantidad += detalle.cantidada
+                precio_unidad = detalle.precio
+            precio_total = float(precio_unidad) * float(total_cantidad)
+            total_calculado += round(precio_total, 2)
+            value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'cantidad':total_cantidad,'precio':precio_unidad,'total_producto':round(precio_total, 2)})
+        context['productos'] = value['data']
+        print(total_calculado,totalcosto)
+        if (float(total_calculado) == float(totalcosto)):
+            context['utilidad'] = total_calculado
+        else:
+            context['utilidad'] = 'Error'
+        context['proforma'] = proforma
+        return context

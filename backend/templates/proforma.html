@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+{% load static %}
+{% load l10n %}
+{% localize on %}
+    {{ value }}
+{% endlocalize %}
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <title>Proforma</title>
+    <!-- <style>
+        .separator {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .separator::before, .separator::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #000;
+        }
+        .separator::before {
+            margin-right: .25em;
+        }
+        .separator::after {
+            margin-left: .25em;
+        }
+    </style> -->
+</head>
+
+<style>
+    @page {
+        margin: 0;
+        padding: 0;
+    }
+    .container {
+        margin-left: 5%;
+        margin-right: 5%;
+        font-size: 1em;
+        background: rgb(255, 255, 255);
+    }
+    .item1 {
+        margin-top: 8%;
+        font-size: 0.9em;
+        /* grid-area: header; */
+    }
+    .item2 {
+        margin-top: 2%;
+        font-size: 0.8em;
+        /* grid-area: leyenda; */
+    }
+    .item3 {
+        font-size: 1.1em;
+        /* grid-area: contenido; */
+    }
+    .item4 {
+        font-size: 0.8em;
+        /* grid-area: detalle; */
+    }
+    .item5 {
+        margin-top: 4%;
+        font-size: 1em;
+        /* grid-area: total; */
+    }
+</style>
+
+<body>
+    <div class="container">
+        <div class="item1">
+            <img src="ejemplologo.jpeg" alt="LOGO MEDICALVET CENTRO, C.A" width="800" height="500">
+        </div>
+        <div class="item2">
+            <p>Direccion: {{proforma.empresa.direccion_fiscal}} <br> Telefono: 000-AIUDA-000 Correo: AYUDA@HELP.SOS</p>
+        </div>
+        <div class="item3" style="text-align: right">
+            <strong><p> PROFORMA: {{proforma.id}}</p></strong>
+        </div>
+        <div class="row">
+            <div class="col-xs-12">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50%">Cliente</th>
+                            <th style="width: 10%">Codigo</th>
+                            <th style="width: 20%">Fecha</th>
+                            <th style="width: 10%">Vendedor</th>
+                            <th style="width: 10%">Condicion</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong><em>{{proforma.cliente.nombre}}</em></strong></td>
+                            <td style="text-align: center">{{proforma.id}}</td>
+                            <td>{{proforma.fecha_proforma|date:"d/m/Y"}}</td>
+                            <td style="text-align: center">{{proforma.vendedor.id}}</td>
+                            <td><strong>Contado</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="row" style="margin-top: 1%">
+                    <div class="col-xs-8">Direccion fiscal: {{proforma.cliente.ubicacion}}</div>
+                    <div class="col-xs-4" style="text-align: right">RIF: {{proforma.cliente.identificador}}</div>
+                </div>
+                <div class="row" style="margin-top: 1%">
+                    <div class="col-xs-8">Email: {{proforma.cliente.mail}}</div>
+                    <div class="col-xs-4" style="text-align: right">Telefono: {{proforma.cliente.telefono}}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row" style="margin-top: 5%">
+            <div class="col-xs-12">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%">ID</th>
+                            <th style="width: 15%">PRODUCTO</th>
+                            <th style="width: 30%">SKU.</th>
+                            <th style="width: 10%">LOTES</th>
+                            <th style="width: 10%">CANT.</th>
+                            <th style="width: 20%">P/UNIDAD</th>
+                            <th style="width: 10%">TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for producto in productos %}
+                        <tr>
+                            <td>{{forloop.counter}}</td>
+                            <td>{{producto.producto_nombre}}</td>
+                            <td>{{producto.producto_sku}}</td>
+                            <td></td>
+                            <td>{{producto.cantidad}}</td>
+                            <td>{{producto.precio}}</td>
+                            <td>{{producto.total_producto}}</td>
+                        </tr>
+                        {% for subdeta in producto.detalle %}
+                        <tr style="visibility:visible;font-size: 12px">
+                            <td colspan="4" style="text-align:right">
+                                {{subdeta.lote}}
+                            </td>
+                            <td colspan="3" style="text-align:left">
+                                {{subdeta.cantidad}}
+                            </td>
+                        </tr> 
+                        {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="row"">
+            <div class="col-xs-7" style="text-align: right; bottom: 0">
+            </div>
+            <div class="col-xs-4" style="text-align: right; bottom: 0">
+                <p>
+                    TOTAL: {{utilidad}}
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
