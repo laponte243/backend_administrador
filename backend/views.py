@@ -38,9 +38,7 @@ import pandas as pd
 import csv
 
 # Utiles
-"""Rceiver for reset password"""
-
-
+""" Reseteo de contraseña """
 @receiver(reset_password_token_created)
 def password_reset_token_created(sender, instance, reset_password_token, *args, **kwargs):
 
@@ -61,9 +59,7 @@ def password_reset_token_created(sender, instance, reset_password_token, *args, 
     msg.send()
 
 
-"""Overwrite knox's login view"""
-
-
+""" Acceso de KNOX """
 class LoginView(KnoxLoginView):
     permission_classes = (permissions.AllowAny,)
 
@@ -80,28 +76,30 @@ class LoginView(KnoxLoginView):
         temp_list.data["last_login"] = user.last_login
         return Response({"data": temp_list.data})
 
-
+""" Vista creada para el modelo de Group """
 class GroupVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
     queryset = Group.objects.all().order_by('name')
     serializer_class = GroupMSerializer
 
-
+""" Vista creada para el modelo de Permission """
 class PermissionVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
     queryset = Permission.objects.all().order_by('name')
     serializer_class = PermissionMSerializer
 
-
+""" Vista modificada para el modelo mixim de User """
 class UserVS(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
     serializer_class = UsuarioMSerializer
 
+    """ Motodo de crear no permitido """
     def create(self, request):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
+    """ Metodo de leer """
     def get_queryset(self):
         if (self.request.user.perfil.tipo == 'S'):
             return User.objects.all()
@@ -109,65 +107,82 @@ class UserVS(viewsets.ModelViewSet):
             instancia = Perfil.objects.get(usuario=self.request.user).instancia
             return User.objects.filter(perfil__instancia=instancia).exclude(perfil__tipo='A')
         else:
-            return None
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
 
-    """ Update by original django method """
+    """ Metodo de actualizar no creada """
+    # def update(self): Actualizacion original
 
+    """ Metodo de eliminar """
     def destroy(self, request, *args, **kwargs):
         perfil = Perfil.objects.get(usuario=self.request.user)
         objeto = self.get_object()
+        # Super
         if (perfil.tipo == 'S'):
             Perfil.objects.get(usuario=self.request.data.id).delete()
             objeto.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
+        # Admin
         elif (perfil.tipo == 'A'):
+            # Verificar que el usuario a borrar no sea Staff, y este en la misma instancia desde donde se hace la peticion
             if (objeto.perfil.tipo != 'S' and objeto.perfil.tipo != 'A' and str(objeto.perfil.instancia.id) == str(perfil.instancia.id)):
                 Perfil.objects.get(usuario=self.request.data.id).delete()
                 objeto.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
                 return Response(status=status.HTTP_401_UNAUTHORIZED)
+        # Usuario/Vendedor
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
-
+""" Vista del modelo Modulo """
 class ModuloVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
     serializer_class = ModuloSerializer
 
+    """ Metodo de crear no disponible """
     def create(self, request, *args, **kwargs):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
+    """ Metodo de leer """
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
+        # Super
         if (perfil.tipo == 'S'):
             return Modulo.objects.all().order_by('nombre')
+        # Admin
         if (perfil.tipo == 'A'):
             modulos = []
             for m in perfil.instancia.modulo:
                 modulos.append(m)
             return modulos
+        # Usuario/Vendedor
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
+    """ Metodo de actualizar no disponible """
     def update(self, request, *args, **kwargs):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
+    """ Metodo de eliminar no disponible """
     def destroy(self, request, *args, **kwargs):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-
+""" Vista para el modelo Menu """
 class MenuVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
     serializer_class = MenuSerializer
 
+    """ Metodo de crear no disponible """
     def create(self, request, *args, **kwargs):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
+    """ Metodo de leer """
     def get_queryset(self):
-        if (Menu.objects.all().count() == 0):
+        # Verificar si existen los menus
+        menus = Menu.objects.all()
+        if (menus.count() == 0):
             for m in modelosMENU['modelos']:
                 menu = Menu(router=m['router'], orden=m['orden'])
                 menu.save()
@@ -176,7 +191,7 @@ class MenuVS(viewsets.ModelViewSet):
                     menu.save()
         perfil = Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo == 'S'):
-            return Menu.objects.all()
+            return menus
         else:
             return None
 
@@ -193,12 +208,13 @@ class MenuVS(viewsets.ModelViewSet):
        else:
            return Response(status=status.HTTP_403_FORBIDDEN)
 
+    """ Metodo de eliminar no disponible """
     def destroy(self, request, *args, **kwargs):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 # Instancia
 
-
+""" """
 class InstanciaVS(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser, IsAuthenticated]
     serializer_class = InstanciaSerializer
@@ -239,7 +255,7 @@ class InstanciaVS(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         return Response(False, status=status.HTTP_403_FORBIDDEN)
 
-
+""" """
 class MenuInstanciaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -301,7 +317,7 @@ class MenuInstanciaVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)  # Change
 
-
+""" """
 class PerfilVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -380,7 +396,7 @@ class PerfilVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)  # Change
 
-
+""" """
 class PermisoVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -401,7 +417,7 @@ class PermisoVS(viewsets.ModelViewSet):
 
 # Empresa
 
-
+""" """
 class EmpresaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -470,7 +486,7 @@ class EmpresaVS(viewsets.ModelViewSet):
         else:
             return Empresa.objects.filter(instancia=perfil.instancia).order_by('nombre')
 
-
+""" """
 class ContactoEmpresaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -539,7 +555,7 @@ class ContactoEmpresaVS(viewsets.ModelViewSet):
         else:
             return ContactoEmpresa.objects.filter(instancia=perfil.instancia).order_by('nombre')
 
-
+""" """
 class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -610,7 +626,7 @@ class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
 
 # Inventario
 
-
+""" """
 class TasaConversionVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -679,7 +695,7 @@ class TasaConversionVS(viewsets.ModelViewSet):
         else:
             return TasaConversion.objects.filter(instancia=perfil.instancia)
 
-
+""" """
 class ImpuestosVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -748,7 +764,7 @@ class ImpuestosVS(viewsets.ModelViewSet):
         else:
             return Impuestos.objects.filter(instancia=perfil.instancia).order_by('nombre')
 
-
+""" """
 class MarcaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -817,7 +833,7 @@ class MarcaVS(viewsets.ModelViewSet):
         else:
             return Marca.objects.filter(instancia=perfil.instancia).order_by('nombre')
 
-
+""" """
 class UnidadVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -887,7 +903,7 @@ class UnidadVS(viewsets.ModelViewSet):
         else:
             return Unidad.objects.filter(instancia=perfil.instancia).order_by('nombre')
 
-
+""" """
 class ProductoVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -979,7 +995,7 @@ class ProductoVS(viewsets.ModelViewSet):
         else:
             return Producto.objects.filter(instancia=perfil.instancia).order_by('id')
 
-
+""" """
 class ProductoImagenVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -1049,7 +1065,7 @@ class ProductoImagenVS(viewsets.ModelViewSet):
         else:
             return ProductoImagen.objects.filter(instancia=perfil.instancia).order_by('producto', 'principal')
 
-
+""" """
 class AlmacenVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -1118,7 +1134,7 @@ class AlmacenVS(viewsets.ModelViewSet):
         else:
             return Almacen.objects.filter(instancia=perfil.instancia).order_by('nombre')
 
-
+""" """
 class MovimientoInventarioVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -1197,7 +1213,7 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
         else:
             return MovimientoInventario.objects.filter(instancia=perfil.instancia).order_by('lote')
 
-
+""" """
 class DetalleInventarioVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -1282,7 +1298,7 @@ def Inven(request):
 
 # ventas
 
-
+""" """
 class VendedorVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -1353,7 +1369,7 @@ class VendedorVS(viewsets.ModelViewSet):
         else:
             return Vendedor.objects.filter(instancia=perfil.instancia).order_by('nombre')
 
-
+""" """
 class ClienteVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -1424,7 +1440,7 @@ class ClienteVS(viewsets.ModelViewSet):
         else:
             return Cliente.objects.filter(instancia=perfil.instancia).order_by('nombre')
 
-
+""" """
 class ContactoClienteVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -1493,7 +1509,7 @@ class ContactoClienteVS(viewsets.ModelViewSet):
         else:
             return ContactoCliente.objects.filter(instancia=perfil.instancia).order_by('nombre')
 
-
+""" """
 class PedidoVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -1562,7 +1578,7 @@ class PedidoVS(viewsets.ModelViewSet):
         else:
             return Pedido.objects.filter(instancia=perfil.instancia)
 
-
+""" """
 class DetallePedidoVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -1637,7 +1653,7 @@ class DetallePedidoVS(viewsets.ModelViewSet):
         else:
             return DetallePedido.objects.filter(instancia=perfil.instancia)
 
-
+""" """
 class ProformaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -1706,7 +1722,7 @@ class ProformaVS(viewsets.ModelViewSet):
         else:
             return Proforma.objects.filter(instancia=perfil.instancia)
 
-
+""" """
 class DetalleProformaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -1780,7 +1796,7 @@ class DetalleProformaVS(viewsets.ModelViewSet):
         else:
             return DetalleProforma.objects.filter(instancia=perfil.instancia)
 
-
+""" """
 class FacturaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -1849,7 +1865,7 @@ class FacturaVS(viewsets.ModelViewSet):
         else:
             return Factura.objects.filter(instancia=perfil.instancia)
 
-
+""" """
 class DetalleFacturaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -1920,7 +1936,7 @@ class DetalleFacturaVS(viewsets.ModelViewSet):
         else:
             return DetalleFactura.objects.filter(instancia=perfil.instancia)
 
-
+""" """
 class ListaPrecioVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -2034,7 +2050,7 @@ class ListaPrecioVS(viewsets.ModelViewSet):
         else:
             return ListaPrecio.objects.filter(instancia=perfil.instancia).order_by('id')
 
-
+""" """
 class DetalleListaPrecioVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -2114,7 +2130,7 @@ class DetalleListaPrecioVS(viewsets.ModelViewSet):
         else:
             return DetalleListaPrecio.objects.filter(instancia=perfil.instancia).order_by('producto', '-precio')
 
-
+""" """
 class ImpuestosFacturaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -2183,7 +2199,7 @@ class ImpuestosFacturaVS(viewsets.ModelViewSet):
         else:
             return ImpuestosFactura.objects.filter(instancia=perfil.instancia).order_by('nombre')
 
-
+""" """
 class NumerologiaFacturaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -2252,7 +2268,7 @@ class NumerologiaFacturaVS(viewsets.ModelViewSet):
         else:
             return NumerologiaFactura.objects.filter(instancia=perfil.instancia).order_by('tipo', 'valor')
 
-
+""" """
 class NotaFacturaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -2323,7 +2339,7 @@ class NotaFacturaVS(viewsets.ModelViewSet):
 
 # Compras
 
-
+""" """
 class ProveedorVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -2392,7 +2408,7 @@ class ProveedorVS(viewsets.ModelViewSet):
         else:
             return Proveedor.objects.filter(instancia=perfil.instancia).order_by('nombre')
 
-
+""" """
 class CompraVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -2461,7 +2477,7 @@ class CompraVS(viewsets.ModelViewSet):
         else:
             return Compra.objects.filter(instancia=perfil.instancia).order_by('empresa', 'Proveedor', 'total')
 
-
+""" """
 class DetalleCompraVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -2530,7 +2546,7 @@ class DetalleCompraVS(viewsets.ModelViewSet):
         else:
             return DetalleCompra.objects.filter(instancia=perfil.instancia).order_by('compra', 'producto', 'cantidad', 'precio')
 
-
+""" """
 class NotaCompraVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -2632,26 +2648,33 @@ def CrearAdmin(data):
 def CreateSuperUser(request):
     if (Menu.objects.all().count() == 0):
         for m in modelosMENU['modelos']:
+            modulo = Modulo(nombre=m['router'])
+            modulo.save()
             menu = Menu(router=m['router'], orden=m['orden'])
+            menu.modulos = modulo
             menu.save()
             if (m['parent'] != None):
                 menu.parent = Menu.objects.get(id=m['parent'])
                 menu.save()
     if (Instancia.objects.all().count() == 0):
-        instancia = Instancia(nombre="Primera",activo=True,multiempresa=True,vencimiento=None)
-        instancia.save()
+        instancia = Instancia.objects.create(nombre="Primera",activo=True,multiempresa=True,vencimiento=None)
+        for mod in Modulo.objects.all():
+            instancia.modulos.add(mod)
         perfilS = Perfil(instancia=instancia,usuario_id=1,activo=True,avatar=None,tipo="S")
         perfilS.save()
-        # admin = User.objects.create_user(username='admin',email='',password='admin')
-        # admin.save()
-        # perfilA = Perfil(instancia=instancia,usuario=admin,activo=True,avatar=None,tipo="A")
-        # perfilA.save()
-        # for m in Menu.objects.all():
-        #     menuinstancia = MenuInstancia(intancia=instancia,menu=m,orden=m['orden'])
-        #     menuinstancia.save()
-        #     if (m['parent'] != None):
-        #         menuinstancia.parent = MenuInstancia.objects.filter(menu=Menu.objects.get(id=m['parent'])).first()
-        #         menuinstancia.save()
+        admin = User.objects.create_user(username='admin',password='admin')
+        perfilA = Perfil(instancia=instancia,usuario=admin,activo=True,avatar=None,tipo="A")
+        perfilA.save()
+        usuario = User.objects.create_user(username='usuario',password='usuario')
+        perfilU = Perfil(instancia=instancia,usuario=usuario,activo=True,avatar=None,tipo="U")
+        perfilU.save()
+        for m in Menu.objects.all().order_by('id'):
+            menuinstancia = MenuInstancia(instancia_id=1,menu=m,orden=m.orden)
+            menuinstancia.save()
+            if (m.parent != None):
+                print(m.parent.id)
+                menuinstancia.parent = MenuInstancia.objects.get(menu__id=m.parent.id)
+                menuinstancia.save()
         # for p in MenuInstancia.objects.filter(instancia=instancia):
         #     permiso = None
         #     permiso = Permiso(instancia=instancia,menuinstancia_id=p.id,perfil_id=2,crear=p['crear'],leer=p['leer'],editar=p['editar'],eliminar=p['eliminar'])
@@ -2745,29 +2768,30 @@ def ObtenerMenu(request):
                 menus['children'].append(primero)
         return Response([menus])
     elif (request.user.perfil.tipo == "A" or request.user.perfil.tipo == "U" or request.user.perfil.tipo == "V"):
-        for pe in Permiso.objects.filter(perfil=request.user.perfil):
-            primer = MenuInstancia.objects.get(id=pe.menuinstancia.id)
-            if (primer.parent == None):
-                if VerificarHijos(primer):
-                    primero = { 'router': '', 'children': []}
-                    nombrePrimero = primer.menu.router
-                    primero['router'] = nombrePrimero.replace('-','')
-                    for s in MenuInstancia.objects.filter(parent=primer.id).order_by('orden'):
-                        if VerificarHijos(s):
-                            segundo = { 'router': '', 'children': []}
-                            nombreSegundo = s.menu.router
-                            segundo['router'] = nombreSegundo
-                            for t in MenuInstancia.objects.filter(parent=s.id).order_by('orden'):
-                                tercero = t.menu.router
-                                segundo['children'].append(tercero)
-                            primero['children'].append(segundo)
-                        else:
-                            segundo = s.menu.router
-                            primero['children'].append(segundo)
-                    menus['children'].append(primero)
-                else:
-                    primero = primer.menu.router
-                    menus['children'].append(primero)
+        instancia = request.user.perfil.instancia
+        menu_instancia = MenuInstancia.objects.filter(menu__modulos__in=instancia.modulos.values_list('id'))
+        primeros = menu_instancia.filter(parent=None).order_by('orden')
+        for primer in primeros:
+            if VerificarHijos(primer):
+                primero = { 'router': '', 'children': []}
+                nombrePrimero = primer.menu.router
+                primero['router'] = nombrePrimero.replace('-','')
+                for s in MenuInstancia.objects.filter(parent=primer.id).order_by('orden'):
+                    if VerificarHijos(s):
+                        segundo = { 'router': '', 'children': []}
+                        nombreSegundo = s.menu.router
+                        segundo['router'] = nombreSegundo
+                        for t in MenuInstancia.objects.filter(parent=s.id).order_by('orden'):
+                            tercero = t.menu.router
+                            segundo['children'].append(tercero)
+                        primero['children'].append(segundo)
+                    else:
+                        segundo = s.menu.router
+                        primero['children'].append(segundo)
+                menus['children'].append(primero)
+            else:
+                primero = primer.menu.router
+                menus['children'].append(primero)
         return Response([menus])
     else:
         return JsonResponse({'error': 'Forbidden, unknown user'}, status=status.HTTP_403_FORBIDDEN)
@@ -2817,18 +2841,19 @@ def actualiza_pedido(request):
         pedido_id = Pedido.objects.get(id=payload['idpedido'])
         detashepedido = DetallePedido.objects.filter(pedido=pedido_id)
         id_dpedidos = []
+        total_proforma = 0.0
         for dpedidos in detashepedido:
             id_dpedidos.append(dpedidos.id)
         for i in payload['data']:
             inventario = Inventario.objects.get(id=i['inventario'])
             if i['id'] != None:
-                print(i['cantidada'], inventario.disponible)
+                # print(i['cantidada'], inventario.disponible)
                 indexpedido = None
                 for index, item in enumerate(detashepedido):
                     if item.id == i['id']:
                         indexpedido = index
                 cantidadanterior = detashepedido[indexpedido].cantidada
-                print(cantidadanterior)
+                # print(cantidadanterior)
                 nuevodisponible = i['cantidada'] - cantidadanterior
                 inventario.disponible -= nuevodisponible
                 inventario.bloqueado += nuevodisponible
@@ -2837,7 +2862,12 @@ def actualiza_pedido(request):
             producto = Producto.objects.get(id=i["producto"])
             instancia = Instancia.objects.get(perfil=perfil.id)
             cantidad = int(i["cantidada"])
-            totalp = cantidad * (producto.costo + (producto.costo * (lista_precio.porcentaje /100)))
+
+            """totalp = cantidad * (producto.costo + (producto.costo * (lista_precio.porcentaje /100)))""" # Dividir totalp en dos partes
+            precio_unidad = producto.costo + (producto.costo * (lista_precio.porcentaje /100)) # Calcular el precio de cada producto
+            totalp = cantidad * precio_unidad # Calcular el precio final segun la cantidad
+            total_proforma += float(totalp)
+
             pedido = pedido_id
             nuevo_componente = DetallePedido(lote=i["lote"],total_producto=totalp,lista_precio=lista_precio,instancia_id=instancia.id,pedido=pedido,cantidada=cantidad,producto=producto,inventario=inventario)
             nuevo_componente.save()
@@ -2845,7 +2875,9 @@ def actualiza_pedido(request):
                 inventario.disponible = int(inventario.disponible) - cantidad
                 inventario.bloqueado = int(inventario.bloqueado) + cantidad
             inventario.save()
-            print(inventario.disponible) # 41 (37)
+            # print(inventario.disponible) # 41 (37)
+        pedido_id.total = total_proforma
+        pedido_id.save()
         DetallePedido.objects.filter(id__in=id_dpedidos).delete()
         return JsonResponse({'exitoso': 'exitoso'}, safe=False, status=status.HTTP_200_OK)
     except ObjectDoesNotExist as e:
@@ -2947,7 +2979,6 @@ def validacion_pedido(request):
             nueva_proforma.identificador_fiscal = pedido.cliente.identificador
             nueva_proforma.direccion_cliente = pedido.cliente.ubicacion
             nueva_proforma.telefono_cliente = pedido.cliente.telefono
-            nueva_proforma.total = pedido.total
             nueva_proforma.save()
             # Se crea el detalle de la proforma con la información asociada en el detalle pedido
             for deta in detashepedido:
@@ -2974,7 +3005,7 @@ def validacion_pedido(request):
         return JsonResponse({'error': e}, safe=False,
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
+""" """
 from django_renderpdf.views import PDFView
 from django.contrib.auth.mixins import LoginRequiredMixin
 class PDFPedido(PDFView):
@@ -2983,20 +3014,35 @@ class PDFPedido(PDFView):
     def get_context_data(self, *args, **kwargs):
         """Pass some extra context to the template."""
         context = super().get_context_data(*args, **kwargs)
-        totalcosto = 0
-        total = 0
-        orden = Ordendetrabajo.objects.get(id=kwargs['id_orden'])
-        detalle = ordendetrabajo_detalle.objects.filter(ordendetrabajo=orden)
-        for producto in detalle:
-            total += producto.precio_venta * producto.cantidad_producto
-            totalcosto += producto.precio_compra * producto.cantidad_producto
-        total += orden.precio_manodeobra 
-        totalcosto = total - totalcosto
-        context['orden'] = orden
-        context['detalle'] = detalle
-        context['utilidad'] = totalcosto
+        pedido = Pedido.objects.get(id=kwargs['id_pedido'])
+        totalcosto = float(pedido.total)
+
+        value = {'data':[]}
+        total_calculado = 0
+        agrupador = DetallePedido.objects.filter(pedido=pedido).values('producto','precio').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada'))
+        for dato in agrupador:
+            productox = Producto.objects.get(id=dato['producto'])
+            detallado = DetallePedido.objects.filter(pedido=pedido,producto=productox).order_by('producto__id')
+            valuex = {'datax':[]}
+            total_cantidad = 0
+            precio_unidad = 0
+            for detalle in detallado:
+                valuex['datax'].append({'lote':detalle.lote,'cantidad':detalle.cantidada})
+                total_cantidad += detalle.cantidada
+                precio_unidad = detalle.precio
+            precio_total = float(precio_unidad) * float(total_cantidad)
+            total_calculado += round(precio_total, 2)
+            value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'cantidad':total_cantidad,'precio':precio_unidad,'total_producto':round(precio_total, 2)})
+        context['productos'] = value['data']
+        print(total_calculado,totalcosto)
+        if (float(total_calculado) == float(totalcosto)):
+            context['utilidad'] = total_calculado
+        else:
+            context['utilidad'] = 'Error'
+        context['pedido'] = pedido
         return context
 
+""" """
 class PDFProforma(PDFView):
     template_name = 'proforma.html'
     allow_force_html = True
@@ -3023,14 +3069,13 @@ class PDFProforma(PDFView):
             total_calculado += round(precio_total, 2)
             value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'cantidad':total_cantidad,'precio':precio_unidad,'total_producto':round(precio_total, 2)})
         context['productos'] = value['data']
-        print(total_calculado,totalcosto)
         if (float(total_calculado) == float(totalcosto)):
             context['utilidad'] = total_calculado
         else:
             context['utilidad'] = 'Error'
         context['proforma'] = proforma
         return context
-        
+
 @api_view(["POST"])
 @csrf_exempt
 @authentication_classes([TokenAuthentication])
@@ -3085,23 +3130,24 @@ def generar_factura(request):
 def actualiza_proforma(request):
     payload = json.loads(request.body)
     try:
-        print(payload)
+        # print(payload)
         proforma_id = Proforma.objects.get(id=payload['idproforma'])
-        print(proforma_id)
+        # print(proforma_id)
         detasheproforma = DetalleProforma.objects.filter(proforma=proforma_id)
         id_proformas = []
+        total_proforma = 0.0
         for dproformas in detasheproforma:
             id_proformas.append(dproformas.id)
         for i in payload['data']:
             inventario = Inventario.objects.get(id=i['inventario'])
             if i['id'] != None:
-                print(i['cantidada'], inventario.disponible)
+                # print(i['cantidada'], inventario.disponible)
                 indexpedido = None
                 for index, item in enumerate(detasheproforma):
                     if item.id == i['id']:
                         indexpedido = index
                 cantidadanterior = detasheproforma[indexpedido].cantidada
-                print(cantidadanterior)
+                # print(cantidadanterior)
                 nuevodisponible = i['cantidada'] - cantidadanterior
                 inventario.disponible -= nuevodisponible
             perfil = Perfil.objects.get(usuario=request.user)
@@ -3109,14 +3155,21 @@ def actualiza_proforma(request):
             producto = Producto.objects.get(id=i["producto"])
             instancia = Instancia.objects.get(perfil=perfil.id)
             cantidad = int(i["cantidada"])
-            totalp = cantidad * (producto.costo + (producto.costo * (lista_precio.porcentaje /100)))
+
+            """totalp = cantidad * (producto.costo + (producto.costo * (lista_precio.porcentaje /100)))""" # Dividir totalp en dos partes
+            precio_unidad = float(producto.costo) + (float(producto.costo) * (float(lista_precio.porcentaje)/100.0)) # Calcular el precio del producto en la venta
+            totalp = cantidad * precio_unidad # Calcular el precio final del detalle segun la cantidad
+            total_proforma += float(totalp)
+
             proforma = proforma_id
-            nuevo_componente = DetalleProforma(proforma= proforma,lote=i["lote"],total_producto=totalp,lista_precio=lista_precio,instancia_id=instancia.id,cantidada=cantidad,producto=producto,inventario=inventario)
+            nuevo_componente = DetalleProforma(proforma=proforma,lote=i["lote"],total_producto=totalp,lista_precio=lista_precio,precio=precio_unidad,instancia_id=instancia.id,cantidada=cantidad,producto=producto,inventario=inventario)
             nuevo_componente.save()
             if i['id'] == None:
                 inventario.disponible = int(inventario.disponible) - cantidad
             inventario.save()
-            print(inventario.disponible) # 41 (37)
+            # print(inventario.disponible) # 41 (37)
+        proforma_id.total = total_proforma
+        proforma_id.save()
         DetalleProforma.objects.filter(id__in=id_proformas).delete()
         return JsonResponse({'exitoso': 'exitoso'}, safe=False, status=status.HTTP_200_OK)
     except ObjectDoesNotExist as e:

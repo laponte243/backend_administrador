@@ -9,9 +9,13 @@
 <head>
     <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1">
-     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script> 
+    {% load staticfiles %}  
+    <link href="{% static 'css/bootstrap.min.css' %}" >
+    <script src="{% static 'bootstrap.min.js' %}"></script>  
+    <script>alert();</script>
+    <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"> -->
+    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script> -->
     <title>Proforma</title>
     <!-- <style>
         .separator {
@@ -42,7 +46,7 @@
     .container {
         margin-left: 5%;
         margin-right: 5%;
-        font-size: 11px;
+        font-size: 1em;
         background: rgb(255, 255, 255);
     }
     .item1 {
@@ -68,9 +72,6 @@
         font-size: 1em;
         /* grid-area: total; */
     }
-    .table>thead>tr>th {
-        border-bottom: 2px solid rgb(184, 184, 184);
-    }
 </style>
 
 <body>
@@ -79,7 +80,7 @@
             <img src="ejemplologo.jpeg" alt="LOGO MEDICALVET CENTRO, C.A" width="800" height="500">
         </div>
         <div class="item2">
-            <p>Direccion: Av. Bolivar <br> Telefono: 0000-000-00-00 Correo: empresa@dominio.red</p>
+            <p>Direccion: {{proforma.empresa.direccion_fiscal}} <br> Telefono: 000-AIUDA-000 Correo: AYUDA@HELP.SOS</p>
         </div>
         <div class="item3" style="text-align: right">
             <strong><p> PROFORMA: {{proforma.id}}</p></strong>
@@ -119,12 +120,12 @@
 
         <div class="row" style="margin-top: 5%">
             <div class="col-xs-12">
-                <table class="table table-responsive" style="border-bottom: none;">
-                    <thead style="border-bottom: none;">
-                        <tr style="border-bottom: none;">
+                <table class="table">
+                    <thead>
+                        <tr>
                             <th style="width: 5%">ID</th>
-                            <th style="width: 15%">SKU.</th>
-                            <th style="width: 30%">PRODUCTO</th>
+                            <th style="width: 15%">PRODUCTO</th>
+                            <th style="width: 30%">SKU.</th>
                             <th style="width: 10%">LOTES</th>
                             <th style="width: 10%">CANT.</th>
                             <th style="width: 20%">P/UNIDAD</th>
@@ -134,23 +135,20 @@
                     <tbody>
                         {% for producto in productos %}
                         <tr>
-                            <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{forloop.counter}}</td>
-                            <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{producto.producto_sku}}</td>
-                            <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{producto.producto_nombre}}</td>
-                            <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)"></td>
-                            <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{producto.cantidad}}</td>
-                            <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{producto.precio}}</td>
-                            <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{producto.total_producto}}</td>
+                            <td>{{forloop.counter}}</td>
+                            <td>{{producto.producto_nombre}}</td>
+                            <td>{{producto.producto_sku}}</td>
+                            <td></td>
+                            <td>{{producto.cantidad}}</td>
+                            <td>{{producto.precio}}</td>
+                            <td>{{producto.total_producto}}</td>
                         </tr>
                         {% for subdeta in producto.detalle %}
-                        <tr style="visibility:visible;font-size: 8px">
-                            <td colspan="3" style="text-align:right; border-top: none;">
-                                -
-                            </td>
-                            <td colspan="1" style="text-align:center; border-top: none;">
+                        <tr style="visibility:visible;font-size: 12px">
+                            <td colspan="4" style="text-align:right">
                                 {{subdeta.lote}}
                             </td>
-                            <td colspan="3" style="text-align:left; border-top: none;">
+                            <td colspan="3" style="text-align:left">
                                 {{subdeta.cantidad}}
                             </td>
                         </tr> 

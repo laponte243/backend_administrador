@@ -19,7 +19,7 @@ class Menu(models.Model):
     router = models.CharField(max_length=150, blank=False, null=False, help_text="Nombre la opcion de menú")
     parent = models.ForeignKey('self', null=True, blank=False, on_delete=models.DO_NOTHING, help_text="Si el menu es hijo de otro")
     orden = models.IntegerField(null=False, default=0)
-    modulos = models.ManyToManyField(Modulo, blank=False)
+    modulos = models.ForeignKey(Modulo, null=True, on_delete=models.DO_NOTHING)
     history = HistoricalRecords()
     def __str__(self):
         return '%s' % (self.router)
