@@ -28,7 +28,7 @@ router.register(r'configuracion-papeleria', views.ConfiguracionPapeleriaVS, base
 router.register(r'tasa-conversion', views.TasaConversionVS, basename='tasa-conversion')
 router.register(r'impuesto', views.ImpuestosVS, basename='impuesto')
 router.register(r'marca', views.MarcaVS, basename='marca')
-router.register(r'unidad', views.UnidadVS, basename='unidad')
+# router.register(r'unidad', views.UnidadVS, basename='unidad')
 router.register(r'producto', views.ProductoVS, basename='producto')
 router.register(r'producto-imagen', views.ProductoImagenVS, basename='producto-imagen')
 router.register(r'movimiento-inventario', views.MovimientoInventarioVS, basename='Movimiento-inventario')

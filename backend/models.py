@@ -148,28 +148,32 @@ class Marca(models.Model):
     nombre = models.TextField(max_length=220, blank=True, help_text="Nombre de la marca")
     logo = models.ImageField(upload_to='marcas', null=True, help_text="logo de la marca")
     history = HistoricalRecords()
+    def __str__(self):
+        return self.nombre
 
-class Unidad(models.Model):
-    instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
-    nombre = models.TextField(max_length=30, blank=False, help_text="Nombre de la unidad de medida")
-    abreviatura = models.TextField(max_length=10, blank=False, help_text="Abreviatura de la unidad de medida")
-    history = HistoricalRecords()
+# class Unidad(models.Model):
+#     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
+#     nombre = models.TextField(max_length=30, blank=False, help_text="Nombre de la unidad de medida")
+#     abreviatura = models.TextField(max_length=10, blank=False, help_text="Abreviatura de la unidad de medida")
+#     history = HistoricalRecords()
+#     def __str__(self):
+#         return '%s (%s)' % (self.nombre, self.abreviatura)
 
 class Producto(models.Model):
-    #datos basicos
+    # Datos basicos
     instancia = models.ForeignKey(Instancia, null=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
-    unidad = models.ForeignKey(Unidad, null=True, default= None, on_delete=models.DO_NOTHING, help_text="Unidad de medida del producto")
+    # unidad = models.ForeignKey(Unidad, null=True, default= None, on_delete=models.DO_NOTHING, help_text="Unidad de medida del producto")
     marca = models.ForeignKey(Marca, null=True, on_delete=models.DO_NOTHING, help_text="Marca asociada al producto")
     nombre = models.TextField(max_length=150, null=True, blank=True, help_text="Nombre del producto")
     sku = models.TextField(max_length=150, null=False, blank=False, help_text="SKU del producto")
     servicio = models.BooleanField(default=False, help_text="¿Es un servicio?")
     MovimientoInventario_producto = models.BooleanField(default=False, help_text="¿Esta en un MovimientoInventario?")
-    #datos financieros
+    # Datos financieros
     costo = models.FloatField(null=True, help_text="Costo del producto")
     exonerado = models.BooleanField(default=False, help_text="¿Esta exonerado el impuesto?")
     venta_sin_inventario = models.BooleanField(default=False, help_text="¿Se permite la venta del producto sin inventario?")
     lote = models.BooleanField(default=False, help_text="¿Viene en lote?")
-    #datos configuracion
+    # Datos configuracion
     activo = models.BooleanField(default=True, help_text="¿El producto esta activo?")
     menejo_inventario = models.BooleanField(default=True, help_text="¿Se manejara inventario del producto?")
     venta = models.BooleanField(default=True, help_text="¿Es un producto que se puede vender?")
@@ -210,8 +214,8 @@ class Inventario(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     producto = models.ForeignKey(Producto, null=False, on_delete=models.DO_NOTHING, help_text="producto asociado")
     almacen = models.ForeignKey(Almacen, null=True, on_delete=models.DO_NOTHING, help_text="almacen asociado")
-    lote = models.TextField(null=True, blank=True, help_text="Numero de lote del producto")
-    fecha_vencimiento = models.DateTimeField(null=True, blank=True, help_text="Fecha de vencimiento del producto")
+    lote = models.TextField(null=False, blank=False, help_text="Numero de lote del producto")
+    fecha_vencimiento = models.DateTimeField(null=False, blank=False, help_text="Fecha de vencimiento del producto")
     disponible = models.FloatField(null=False, default=0, blank=False, help_text="cantidad disponible")
     transito = models.FloatField(null=False, default=0, blank=False, help_text="cantidad en transito")
     bloqueado = models.FloatField(null=False, default=0, blank=False, help_text="cantidad bloqueada")

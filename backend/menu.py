@@ -23,7 +23,7 @@ modelosMENU = {'modelos':[
     {"router": "Productos",             "parent":3,"orden":2}, # -Inventarios id:5
     {"router": "Inventario",            "parent":3,"orden":3}, # -Inventarios id:6
     # {"router": "Marca",                 "parent":6,"orden":1},
-    # {"router": "Unidad",                "parent":6,"orden":2},
+    # {"router": "Unidad",                "parent":6,"orden":2}, # Eliminado
     # {"router": "Producto",              "parent":6,"orden":3},
     # {"router": "MovimientoInventario",  "parent":6,"orden":4},
     # {"router": "Almacen",               "parent":6,"orden":5},

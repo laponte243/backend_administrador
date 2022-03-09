@@ -833,75 +833,75 @@ class MarcaVS(viewsets.ModelViewSet):
         else:
             return Marca.objects.filter(instancia=perfil.instancia).order_by('nombre')
 
-""" """
-class UnidadVS(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]
-    queryset = Unidad.objects.all().order_by('nombre')
-    serializer_class = UnidadSerializer
 
-    def create(self, request):
-        perfil = Perfil.objects.get(usuario=self.request.user)
-        datos = request.data
-        datos['instancia'] = perfil.instancia.id
-        if (perfil.tipo == 'S'):
-            serializer = self.get_serializer(data=datos)
-            serializer.is_valid(raise_exception=True)
-            self.perform_create(serializer)
-            headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'):
-            datos = request.data
-            datos['instancia'] = perfil.instancia.id
-            serializer = self.get_serializer(data=datos)
-            serializer.is_valid(raise_exception=True)
-            self.perform_create(serializer)
-            headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        else:
-                return Response(status=status.HTTP_403_FORBIDDEN)
+# class UnidadVS(viewsets.ModelViewSet):
+#     permission_classes = [IsAuthenticated]
+#     authentication_classes = [TokenAuthentication]
+#     queryset = Unidad.objects.all().order_by('nombre')
+#     serializer_class = UnidadSerializer
 
-    def update(self, request, *args, **kwargs):
-        perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo == 'S'):
-            partial = True  # Here I change partial to True
-            instance = self.get_object()
-            serializer = self.get_serializer(
-                instance, data=request.data, partial=partial)
-            serializer.is_valid(raise_exception=True)
-            self.perform_update(serializer)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-            if (str(request.data['instancia']) == str(perfil.instancia.id)):
-                partial = True  # Here I change partial to True
-                instance = self.get_object()
-                serializer = self.get_serializer(
-                    instance, data=request.data, partial=partial)
-                serializer.is_valid(raise_exception=True)
-                self.perform_update(serializer)
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            else:
-                return Response(status=status.HTTP_403_FORBIDDEN)
+#     def create(self, request):
+#         perfil = Perfil.objects.get(usuario=self.request.user)
+#         datos = request.data
+#         datos['instancia'] = perfil.instancia.id
+#         if (perfil.tipo == 'S'):
+#             serializer = self.get_serializer(data=datos)
+#             serializer.is_valid(raise_exception=True)
+#             self.perform_create(serializer)
+#             headers = self.get_success_headers(serializer.data)
+#             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+#         elif (perfil.tipo == 'A'):
+#             datos = request.data
+#             datos['instancia'] = perfil.instancia.id
+#             serializer = self.get_serializer(data=datos)
+#             serializer.is_valid(raise_exception=True)
+#             self.perform_create(serializer)
+#             headers = self.get_success_headers(serializer.data)
+#             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+#         else:
+#                 return Response(status=status.HTTP_403_FORBIDDEN)
 
-    def destroy(self, request, *args, **kwargs):
-        perfil = Perfil.objects.get(usuario=self.request.user)
-        instance = self.get_object()
-        if (perfil.tipo == 'S'):
-            instance.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        else:
-            if (str(instance.instancia.id) == str(perfil.instancia.id)):
-                instance.delete()
-                return Response(status=status.HTTP_204_NO_CONTENT)
-            else:
-                return Response(status=status.HTTP_403_FORBIDDEN)
+#     def update(self, request, *args, **kwargs):
+#         perfil = Perfil.objects.get(usuario=self.request.user)
+#         if (perfil.tipo == 'S'):
+#             partial = True  # Here I change partial to True
+#             instance = self.get_object()
+#             serializer = self.get_serializer(
+#                 instance, data=request.data, partial=partial)
+#             serializer.is_valid(raise_exception=True)
+#             self.perform_update(serializer)
+#             return Response(serializer.data, status=status.HTTP_200_OK)
+#         else:
+#             if (str(request.data['instancia']) == str(perfil.instancia.id)):
+#                 partial = True  # Here I change partial to True
+#                 instance = self.get_object()
+#                 serializer = self.get_serializer(
+#                     instance, data=request.data, partial=partial)
+#                 serializer.is_valid(raise_exception=True)
+#                 self.perform_update(serializer)
+#                 return Response(serializer.data, status=status.HTTP_200_OK)
+#             else:
+#                 return Response(status=status.HTTP_403_FORBIDDEN)
 
-    def get_queryset(self):
-        perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo == 'S'):
-            return Unidad.objects.all().order_by('nombre')
-        else:
-            return Unidad.objects.filter(instancia=perfil.instancia).order_by('nombre')
+#     def destroy(self, request, *args, **kwargs):
+#         perfil = Perfil.objects.get(usuario=self.request.user)
+#         instance = self.get_object()
+#         if (perfil.tipo == 'S'):
+#             instance.delete()
+#             return Response(status=status.HTTP_204_NO_CONTENT)
+#         else:
+#             if (str(instance.instancia.id) == str(perfil.instancia.id)):
+#                 instance.delete()
+#                 return Response(status=status.HTTP_204_NO_CONTENT)
+#             else:
+#                 return Response(status=status.HTTP_403_FORBIDDEN)
+
+#     def get_queryset(self):
+#         perfil = Perfil.objects.get(usuario=self.request.user)
+#         if (perfil.tipo == 'S'):
+#             return Unidad.objects.all().order_by('nombre')
+#         else:
+#             return Unidad.objects.filter(instancia=perfil.instancia).order_by('nombre')
 
 """ """
 class ProductoVS(viewsets.ModelViewSet):
@@ -1706,10 +1706,12 @@ class ProformaVS(viewsets.ModelViewSet):
         perfil = Perfil.objects.get(usuario=self.request.user)
         instance = self.get_object()
         if (perfil.tipo == 'S'):
+            DetalleProforma.objects.filter(proforma=instance.id).delete()
             instance.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             if (str(instance.instancia.id) == str(perfil.instancia.id)):
+                DetalleProforma.objects.filter(proforma=instance.id).delete()
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
@@ -2672,7 +2674,6 @@ def CreateSuperUser(request):
             menuinstancia = MenuInstancia(instancia_id=1,menu=m,orden=m.orden)
             menuinstancia.save()
             if (m.parent != None):
-                print(m.parent.id)
                 menuinstancia.parent = MenuInstancia.objects.get(menu__id=m.parent.id)
                 menuinstancia.save()
         # for p in MenuInstancia.objects.filter(instancia=instancia):
@@ -2952,7 +2953,7 @@ def export_users_csv(request):
 def validacion_pedido(request):
     payload = json.loads(request.body)
     try:
-        print(payload)
+        # print(payload)
         pedido = Pedido.objects.get(id=payload['idpedido'])
         decision = payload['decision']
         detashepedido = DetallePedido.objects.filter(pedido=pedido)
@@ -3015,30 +3016,18 @@ class PDFPedido(PDFView):
         """Pass some extra context to the template."""
         context = super().get_context_data(*args, **kwargs)
         pedido = Pedido.objects.get(id=kwargs['id_pedido'])
-        totalcosto = float(pedido.total)
-
         value = {'data':[]}
-        total_calculado = 0
-        agrupador = DetallePedido.objects.filter(pedido=pedido).values('producto','precio').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada'))
+        agrupador = DetallePedido.objects.filter(pedido=pedido).values('producto').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada'))
         for dato in agrupador:
             productox = Producto.objects.get(id=dato['producto'])
             detallado = DetallePedido.objects.filter(pedido=pedido,producto=productox).order_by('producto__id')
             valuex = {'datax':[]}
             total_cantidad = 0
-            precio_unidad = 0
             for detalle in detallado:
                 valuex['datax'].append({'lote':detalle.lote,'cantidad':detalle.cantidada})
                 total_cantidad += detalle.cantidada
-                precio_unidad = detalle.precio
-            precio_total = float(precio_unidad) * float(total_cantidad)
-            total_calculado += round(precio_total, 2)
-            value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'cantidad':total_cantidad,'precio':precio_unidad,'total_producto':round(precio_total, 2)})
+            value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'cantidad':total_cantidad})
         context['productos'] = value['data']
-        print(total_calculado,totalcosto)
-        if (float(total_calculado) == float(totalcosto)):
-            context['utilidad'] = total_calculado
-        else:
-            context['utilidad'] = 'Error'
         context['pedido'] = pedido
         return context
 
@@ -3057,22 +3046,38 @@ class PDFProforma(PDFView):
         agrupador = DetalleProforma.objects.filter(proforma=proforma).values('producto','precio').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada'))
         for dato in agrupador:
             productox = Producto.objects.get(id=dato['producto'])
-            detallado = DetalleProforma.objects.filter(proforma=proforma,producto=productox).order_by('producto__id')
             valuex = {'datax':[]}
             total_cantidad = 0
             precio_unidad = 0
-            for detalle in detallado:
-                valuex['datax'].append({'lote':detalle.lote,'cantidad':detalle.cantidada})
-                total_cantidad += detalle.cantidada
-                precio_unidad = detalle.precio
-            precio_total = float(precio_unidad) * float(total_cantidad)
-            total_calculado += round(precio_total, 2)
-            value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'cantidad':total_cantidad,'precio':precio_unidad,'total_producto':round(precio_total, 2)})
+            costo_total = 0
+            mostrar = True
+            detallado = DetalleProforma.objects.filter(proforma=proforma,producto=productox).order_by('producto__id')
+            if productox.lote == True and len(detallado) > 1:
+                for detalle in detallado:
+                    valuex['datax'].append({'lote':detalle.lote,'cantidad':detalle.cantidada})
+                    total_cantidad += detalle.cantidada
+                    precio_unidad = detalle.precio
+            elif productox.lote == True and len(detallado) == 1:
+                valuex['datax'] = ''
+                mostrar = False
+                for detalle in detallado:
+                    valuex['datax'] = detalle.lote
+                    total_cantidad += detalle.cantidada
+                    precio_unidad = detalle.precio
+            else:
+                mostrar = False
+                for detalle in detallado:
+                    total_cantidad += detalle.cantidada
+                    precio_unidad = detalle.precio
+                valuex['datax'] = None
+            costo_total = float(precio_unidad) * float(total_cantidad)
+            total_calculado += round(costo_total, 2)
+            value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'mostrar':mostrar,'cantidad':total_cantidad,'precio':precio_unidad,'total_producto':round(costo_total, 2)})
         context['productos'] = value['data']
         if (float(total_calculado) == float(totalcosto)):
-            context['utilidad'] = total_calculado
+            context['total'] = total_calculado
         else:
-            context['utilidad'] = 'Error'
+            context['total'] = 'Error'
         context['proforma'] = proforma
         return context
 
@@ -3083,7 +3088,7 @@ class PDFProforma(PDFView):
 def generar_factura(request):
     payload = json.loads(request.body)
     try:
-        print(payload)
+        # print(payload)
         proforma = Proforma.objects.get(id=payload['idproforma'])
         detasheproforma = DetalleProforma.objects.filter(proforma=proforma)
         perfil = Perfil.objects.get(usuario=request.user)
@@ -3170,6 +3175,7 @@ def actualiza_proforma(request):
             # print(inventario.disponible) # 41 (37)
         proforma_id.total = total_proforma
         proforma_id.save()
+        print(id_proformas)
         DetalleProforma.objects.filter(id__in=id_proformas).delete()
         return JsonResponse({'exitoso': 'exitoso'}, safe=False, status=status.HTTP_200_OK)
     except ObjectDoesNotExist as e:

@@ -155,13 +155,13 @@ class MarcaSerializer(serializers.ModelSerializer):
     def LoadNombreInstancia(self, obj):
         return obj.instancia.nombre
 
-class UnidadSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Unidad
-        fields = '__all__'
-    nombreInstancia = serializers.SerializerMethodField('LoadNombreInstancia')
-    def LoadNombreInstancia(self, obj):
-        return obj.instancia.nombre
+# class UnidadSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Unidad
+#         fields = '__all__'
+#     nombreInstancia = serializers.SerializerMethodField('LoadNombreInstancia')
+#     def LoadNombreInstancia(self, obj):
+#         return obj.instancia.nombre
 
 class ProductoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -222,7 +222,7 @@ class InventarioSerializer(serializers.ModelSerializer):
         return obj.almacen.nombre
     date =  serializers.SerializerMethodField('LoadDate')
     def LoadDate(self, obj):
-       return obj.fecha_vencimiento.date()
+        return obj.fecha_vencimiento.date()
 
 #ventas
 class VendedorSerializer(serializers.ModelSerializer):

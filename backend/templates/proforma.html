@@ -71,6 +71,12 @@
     .table>thead>tr>th {
         border-bottom: 2px solid rgb(184, 184, 184);
     }
+    tr { 
+        line-height: 0px;
+    }
+    td { 
+        line-height: 0px;
+    }
 </style>
 
 <body>
@@ -119,7 +125,7 @@
 
         <div class="row" style="margin-top: 5%">
             <div class="col-xs-12">
-                <table class="table table-responsive" style="border-bottom: none;">
+                <table class="table table-responsive table-condensed" style="border-bottom: none;">
                     <thead style="border-bottom: none;">
                         <tr style="border-bottom: none;">
                             <th style="width: 5%">ID</th>
@@ -133,28 +139,36 @@
                     </thead>
                     <tbody>
                         {% for producto in productos %}
-                        <tr>
-                            <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{forloop.counter}}</td>
-                            <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{producto.producto_sku}}</td>
-                            <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{producto.producto_nombre}}</td>
-                            <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)"></td>
-                            <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{producto.cantidad}}</td>
-                            <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{producto.precio}}</td>
-                            <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{producto.total_producto}}</td>
-                        </tr>
-                        {% for subdeta in producto.detalle %}
-                        <tr style="visibility:visible;font-size: 8px">
-                            <td colspan="3" style="text-align:right; border-top: none;">
-                                -
-                            </td>
-                            <td colspan="1" style="text-align:center; border-top: none;">
-                                {{subdeta.lote}}
-                            </td>
-                            <td colspan="3" style="text-align:left; border-top: none;">
-                                {{subdeta.cantidad}}
-                            </td>
-                        </tr> 
-                        {% endfor %}
+                            <tr style="border-bottom: none; height: 28px;">
+                                <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{forloop.counter}}</td>
+                                <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{producto.producto_sku}}</td>
+                                <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{producto.producto_nombre}}</td>
+                                <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">
+                                    {% if not producto.mostrar %}
+                                        {% if producto.detalle %}
+                                            <span style="font-size: 8px;">{{ producto.detalle }}</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                                <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{producto.cantidad}}</td>
+                                <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{producto.precio}}</td>
+                                <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{producto.total_producto}}</td>
+                            </tr>
+                            {% if producto.mostrar %}
+                                {% for subdeta in producto.detalle %}
+                                    <tr style="visibility:visible;font-size: 8px; border-top: none; height: 20px;">
+                                        <td colspan="3" style="text-align:right; border-top: none; border-bottom: none;">
+                                            -
+                                        </td>
+                                        <td colspan="1" style="text-align:center; border-top: none; border-bottom: none;">
+                                            {{subdeta.lote}}
+                                        </td>
+                                        <td colspan="3" style="text-align:left; border-top: none; border-bottom: none;"">
+                                            {{subdeta.cantidad}}
+                                        </td>
+                                    </tr> 
+                                {% endfor %}
+                            {% endif %}
                         {% endfor %}
                     </tbody>
                 </table>
@@ -165,7 +179,7 @@
             </div>
             <div class="col-xs-4" style="text-align: right; bottom: 0">
                 <p>
-                    TOTAL: {{utilidad}}
+                    TOTAL: {{total}}
                 </p>
             </div>
         </div>
