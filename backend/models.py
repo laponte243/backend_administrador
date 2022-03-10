@@ -1,13 +1,11 @@
 # Django's imports
-from typing_extensions import TypeGuard
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.deletion import DO_NOTHING
 from django.db.models.fields import TextField
-# Simple history
+# Utiles
+from typing_extensions import TypeGuard
 from simple_history.models import HistoricalRecords
-
-#Utiles
 
 class Modulo(models.Model):
     nombre = models.TextField(max_length=20,blank=False,null=False)
@@ -89,7 +87,6 @@ class Nota(models.Model):
     descripcion = models.TextField(max_length=150, blank=False, null=True, help_text="descripcion del caso de la nota")
     tipo = models.CharField(max_length=1, choices=TIPO, default='C', help_text="que tipo de nota es")
     fecha = models.DateTimeField(auto_now_add=True, help_text="fecha de la nota")
-    
     class Meta:
         abstract=True
 
@@ -100,6 +97,8 @@ class Empresa(models.Model):
     direccion_fiscal = models.TextField(max_length=150, blank=False, null=False, help_text="direccion fiscal de la empresa")
     logo = models.ImageField(upload_to='empresas', null=True, help_text="logo de la empresa")
     history = HistoricalRecords()
+    def __str__(self):
+        return '%s' % (self.nombre)
 
 class ContactoEmpresa(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
@@ -108,6 +107,8 @@ class ContactoEmpresa(models.Model):
     telefono = models.TextField(max_length=150, blank=False, null=False, help_text="telefono del contacto")
     mail = models.TextField(max_length=150, blank=False, null=False, help_text="correo electronico del contacto")
     history = HistoricalRecords()
+    def __str__(self):
+        return 'Contacto de la empresa %s' % (self.empresa)
 
 class ConfiguracionPapeleria(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
@@ -123,6 +124,8 @@ class ConfiguracionPapeleria(models.Model):
     valor = models.IntegerField(blank=False, null=False, help_text="valor actual del numero")
     tipo = models.CharField(max_length=1, choices=TIPO, default='F', help_text="tipo de numero")
     history = HistoricalRecords()
+    # def __str__(self):
+    #     return '%s' % (self.nombre)
 
 #Inventario
 
@@ -131,6 +134,8 @@ class TasaConversion(models.Model):
     fecha_tasa = models.DateTimeField(auto_now_add=True, help_text="tasa de conversion del dia")
     valor = models.FloatField(blank=False, null=False, help_text="valor de la tasa de conversion")
     history = HistoricalRecords()
+    def __str__(self):
+        return '%s (%s)' % (self.valor,self.fecha_tasa)
 
 class Impuestos(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
@@ -142,6 +147,8 @@ class Impuestos(models.Model):
     min = models.FloatField(blank=False, null=True, help_text="Cual es el valor minimo en subtotal")
     max = models.FloatField(blank=False, null=True, help_text="cual es el valor maximo en subtotal")
     history = HistoricalRecords()
+    def __str__(self):
+        return '%s' % (self.nombre)
 
 class Marca(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
@@ -188,6 +195,8 @@ class ProductoImagen(models.Model):
     imagen = models.ImageField(upload_to='productos', help_text="Imagen del producto")
     principal = models.BooleanField(default=False, help_text="Es la imagen principal del producto?")
     history = HistoricalRecords()
+    def __str__(self):
+        return 'Imagen de %s' % (self.producto)
 
 class Almacen(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
@@ -234,6 +243,8 @@ class Vendedor(models.Model):
     correo = models.TextField(max_length=150, blank=True, help_text="correo asociado al vendedor")
     activo = models.BooleanField(default=False, help_text="Esta activo?")
     history = HistoricalRecords()
+    def __str__(self):
+        return 'Vendedor %s' % (self.nombre)
 
 class Cliente(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
@@ -248,6 +259,8 @@ class Cliente(models.Model):
     imagen = models.ImageField(upload_to='clientes', null=True, help_text="Imagen o logo asociado al cliente")
     activo = models.BooleanField(default=False, help_text="Esta activo?")
     history = HistoricalRecords()
+    def __str__(self):
+        return 'Cliente %s' % (self.nombre)
 
 class ContactoCliente(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
@@ -256,6 +269,8 @@ class ContactoCliente(models.Model):
     telefono = models.TextField(max_length=150, blank=False, null=False, help_text="telefono del contacto")
     mail = models.TextField(max_length=150, blank=False, null=False, help_text="correo electronico del contacto")
     history = HistoricalRecords()
+    def __str__(self):
+        return 'Contacto del cliente %s' % (self.cliente)
 
 class ListaPrecio(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
@@ -264,15 +279,17 @@ class ListaPrecio(models.Model):
     predeterminada = models.BooleanField(default=False, help_text="esta lista es la predeterminada?")
     porcentaje = models.FloatField(null= False, blank=False, help_text="Porcentaje de la lista de precio")
     history = HistoricalRecords()
+    def __str__(self):
+        return '%s (%s%)' % (self.nombre, self.porcentaje)
 
 class DetalleListaPrecio(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     listaprecio = models.ForeignKey(ListaPrecio, null=False, blank=False, on_delete=models.DO_NOTHING,help_text="Lista de precio asociada")
-
     producto = models.ForeignKey(Producto, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="producto asociado")
     precio = models.FloatField(null=False, default=0, blank=False, help_text="precio del producto en la lista")
-
     history = HistoricalRecords()
+    def __str__(self):
+        return '%s' % (self.lista.nombre)
 
 class Pedido(models.Model): # Pedido 
     ESTATUS = (
@@ -288,6 +305,8 @@ class Pedido(models.Model): # Pedido
     fecha_pedido = models.DateTimeField(auto_now_add=True, help_text="fecha de generacion del pedido")
     total = models.FloatField(null=False, default=0, blank=False, help_text="total de la pedido")
     history = HistoricalRecords()
+    def __str__(self):
+        return "ID: #%s, $%s (%s/%s)" % (self.id,self.total,self.cliente.nombre,self.empresa.nombre)
 
 class DetallePedido(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
@@ -299,6 +318,8 @@ class DetallePedido(models.Model):
     total_producto = models.FloatField(null=False, default=0, blank=False, help_text="total por producto")
     inventario = models.ForeignKey(Inventario, null=False, blank=False,on_delete=models.DO_NOTHING, help_text="Inventario asociado")
     history = HistoricalRecords()
+    def __str__(self):
+        return "Pedido: #%s, $%s (%s/%s)" % (self.pedido.id,self.total_producto,self.producto,self.lote)
 
 class Proforma(models.Model):
     impreso = models.BooleanField(default=False, help_text="Esta impreso?")
@@ -317,6 +338,8 @@ class Proforma(models.Model):
     fecha_proforma = models.DateTimeField(auto_now_add=True, help_text="fecha de generacion del pedido")
 
     history = HistoricalRecords()
+    def __str__(self):
+        return "ID: #%s, $%s (%s/%s)" % (self.id,self.total,self.producto,self.cliente.nombre,self.empresa.nombre)
 
 class DetalleProforma(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
@@ -330,74 +353,63 @@ class DetalleProforma(models.Model):
     total_producto = models.FloatField(null=False, default=0, blank=False, help_text="Precio por la cantidad del producto")
     inventario = models.ForeignKey(Inventario, null=False, blank=False,on_delete=models.DO_NOTHING, help_text="Inventario asociado")
     history = HistoricalRecords()
+    def __str__(self):
+        return "Pedido: #%s, $%s (%s/%s)" % (self.proforma.id,self.total_producto,self.producto,self.lote)
 
 class Factura(models.Model):
-    impreso = models.BooleanField(default=False, help_text="Esta impreso?")
+    # Llaves foraneas
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     proforma = models.ForeignKey(Proforma, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="proforma asociada")
-    nombre_empresa = models.TextField(
-        max_length=150, null=False, blank=False, help_text="empresa asociada")
-    telefonocontacto_empresa = models.TextField(
-        max_length=150, null=False, blank=False, help_text="empresa asociada")
-    direccion_empresa = models.TextField(
-        max_length=150, null=False, blank=False, help_text="empresa asociada")
-    
-    nombre_cliente = models.TextField(
-        max_length=150, blank=False, null=False, help_text="Nombre del cliente en la venta")
-    identificador_fiscal = models.TextField(
-        max_length=150, blank=False, null=False, help_text="Identificador fiscal del cliente en la venta")
-    direccion_cliente = models.TextField(
-        max_length=150, blank=False, null=False, help_text="telefono del cliente en la venta")
-    telefono_cliente = models.TextField(
-        max_length=150, null=False, blank=False, help_text="empresa asociada")
-
-    nombre_vendedor = models.TextField(
-        max_length=150, null=True, blank=False, help_text="vendedor asociado")
-    telefono_vendedor = models.TextField(
-        max_length=150, null=False, blank=False, help_text="empresa asociada")
-    
+    # Cliente
+    nombre_cliente = models.TextField(max_length=150, blank=False, null=False, help_text="Nombre del cliente en la venta")
+    identificador_fiscal = models.TextField(max_length=150, blank=False, null=False, help_text="Identificador fiscal del cliente en la venta")
+    direccion_cliente = models.TextField(max_length=150, blank=False, null=False, help_text="telefono del cliente en la venta")
+    telefono_cliente = models.TextField(max_length=150, null=False, blank=False, help_text="empresa asociada")
+    # Empresa
+    nombre_empresa = models.TextField(max_length=150, null=False, blank=False, help_text="empresa asociada")
+    telefonocontacto_empresa = models.TextField(max_length=150, null=False, blank=False, help_text="empresa asociada")
+    direccion_empresa = models.TextField(max_length=150, null=False, blank=False, help_text="empresa asociada")
+    # Vendedor
+    nombre_vendedor = models.TextField(max_length=150, null=True, blank=False, help_text="vendedor asociado")
+    telefono_vendedor = models.TextField(max_length=150, null=False, blank=False, help_text="empresa asociada")
+    # Total
+    subtotal = models.TextField(max_length=150, null=False, default=0, blank=False, help_text="subtotal de la venta")
+    monto_exento = models.TextField(max_length=150,null=False, default=0, blank=False, help_text="monto exento de la proforma")
+    impuesto = models.TextField(max_length=150, null=False, default=0, blank=False, help_text="monto exento de la proforma")
+    total = models.TextField(max_length=150, null=False, default=0, blank=False, help_text="total de la venta")
+    # Datos de pago
+    tipo_pago = models.TextField(max_length=150, blank=False, null=False, help_text="tipo de pago utilizado por el cliente de la venta")
+    credito = models.TextField(default=False, help_text="La venta se realizo a credito?")
+    dias_credito = models.TextField(null=True, default=0, help_text="dias de credito?")
+    # Estatus
+    impreso = models.BooleanField(default=False, help_text="Esta impreso?")
+    nota_entrega = models.TextField(default=False, help_text="fecha de generacion una nota de entrega?")
+    # Otros
     fecha_factura = models.DateTimeField(auto_now_add=True, help_text="fecha de generacion del pedido")
-    subtotal = models.TextField(
-        max_length=150, null=False, default=0, blank=False, help_text="subtotal de la venta")
-    monto_exento = models.TextField(
-        max_length=150,null=False, default=0, blank=False, help_text="monto exento de la proforma")
-    impuesto = models.TextField(
-        max_length=150, null=False, default=0, blank=False, help_text="monto exento de la proforma")
-    total = models.TextField(
-        max_length=150, null=False, default=0, blank=False, help_text="total de la venta")
-    #Datos de pago
-    tipo_pago = models.TextField(
-        max_length=150, blank=False, null=False, help_text="tipo de pago utilizado por el cliente de la venta")
-    credito = models.TextField(
-        default=False, help_text="La venta se realizo a credito?")
-    dias_credito = models.TextField(
-        null=True, default=0, help_text="dias de credito?")
-    #Estatus
-    nota_entrega = models.TextField(
-        default=False, help_text="fecha de generacion una nota de entrega?")
     history = HistoricalRecords()
+    def __str__(self):
+        return "Factura: #%s, $%s (%s/%s)" % (self.proforma.id,self.total,self.cliente.nombre,self.empresa.nombre)
 
 class DetalleFactura(models.Model):
+    # Relaciones foraneas principales
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
-    factura = models.ForeignKey(Factura, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="venta asociada")
-    #Datos fijos
+    factura = models.ForeignKey(Factura, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Factura asociada")
+    # Producto
+    producto = models.ForeignKey(Producto, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Producto asociada")
     inventario = models.ForeignKey(Inventario, null=False, blank=False,on_delete=models.DO_NOTHING, help_text="Inventario asociado")
-    inventario_fijo = models.TextField(
-        max_length=150, null=True, blank=False, help_text="MovimientoInventario fijo asociado del producto asociado")
-    fecha_vencimiento = models.TextField(
-        max_length=150, null=True, blank=False, help_text="Fecha de vencimiento del MovimientoInventario")
-    producto_fijo = models.TextField(
-        max_length=150, null=False, blank=False, help_text="producto asociado")
-    producto = models.ForeignKey(Producto, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="detallepedido asociada")
-    lote = models.TextField(max_length=150, blank=False, null=True, help_text="lote del producto")
+    producto_fijo = models.TextField(max_length=150, null=False, blank=False, help_text="Producto asociado fijado")
+    inventario_fijo = models.TextField(max_length=150, null=True, blank=False, help_text="Inventario asociado fijado")
+    lote = models.TextField(max_length=150, blank=False, null=True, help_text="Lote del producto fijado")
     cantidada = models.FloatField(null=False, default=0, blank=False, help_text="Cantidad vendida")
-    descripcion = models.TextField(
-        max_length=150, blank=False, null=True, help_text="En caso de no tener un producto asociado se puede colocar una descripcion del rublo aca")
-    precio = models.TextField(
-        max_length=150, null=False, default=0, blank=False, help_text="precio del producto o servicio a vender")
-    total_producto = models.TextField(
-        max_length=150, null=False, default=0, blank=False, help_text="subtotal del producto")
+    precio = models.TextField(max_length=150, null=False, default=0, blank=False, help_text="Precio del producto o servicio a vender fijado")
+    # Total del detalle
+    total_producto = models.TextField(max_length=150, null=False, default=0, blank=False, help_text="Total final del detalle")
+    # Otros
+    descripcion = models.TextField(max_length=150, blank=False, null=True, help_text="En caso de no tener un producto asociado se puede colocar una descripcion del rublo aca")
+    fecha_vencimiento = models.TextField(max_length=150, null=True, blank=False, help_text="Fecha de vencimiento del MovimientoInventario")
     history = HistoricalRecords()
+    def __str__(self):
+        return "Factura: #%s, $%s (%s/%s)" % (self.factura.id,self.total_producto,self.producto,self.lote)
 
 class ImpuestosFactura(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
@@ -405,6 +417,8 @@ class ImpuestosFactura(models.Model):
     nombre = models.TextField(max_length=100, blank=False, null=True, help_text="nombre del impuesto asociado")
     subtotal = models.FloatField(null=False, default=0, blank=False, help_text="subtotal del impuesto asociado a la venta")
     history = HistoricalRecords()
+    def __str__(self):
+        return 'Impuesto dado a %s' % (self.factura)
 
 class NumerologiaFactura(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
@@ -412,10 +426,14 @@ class NumerologiaFactura(models.Model):
     tipo = models.TextField(max_length=100, blank=False, null=True, help_text="tipo de numerologia")
     valor = models.TextField(max_length=100, blank=False, null=True, help_text="valor que se utilizo en la venta")
     history = HistoricalRecords()
+    # def __str__(self):
+    #     return 'Impuesto dado a %s' % (self.factura)
 
 class NotaFactura(Nota):
     factura = models.ForeignKey(Factura, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="venta asociada")
     history = HistoricalRecords()
+    def __str__(self):
+        return 'Nota asociada a "%s"' % (self.factura)
 
 #Compras
 class Proveedor(models.Model):
@@ -428,36 +446,51 @@ class Proveedor(models.Model):
     credito = models.BooleanField(default=False, help_text="el proveedor da credito?")
     imagen = models.ImageField(upload_to='proveedores', null=True, help_text="imagen asociada al proveedor")
     history = HistoricalRecords()
+    def __str__(self):
+        return 'Proveedor %s' % (self.nombre)
 
 class Compra(models.Model):
+    # Relaciones foraneas
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     empresa = models.ForeignKey(Empresa, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="empresa asociada")
     Proveedor = models.ForeignKey(Cliente, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="proveedor asoaciado")
-    #datos fijos factura
+    # Factura de compra
     fecha_factura = models.DateTimeField(auto_now_add=True, help_text="fecha de la factura de compra")
     numero_factura = models.TextField(max_length=150, blank=False, null=False, help_text="numero de la factura")
     numero_control = models.TextField(max_length=150, blank=False, null=True, help_text="numero de control")
-    subtotal = models.FloatField(null=False, default=0, blank=False, help_text="subtotal de la factura")
-    impuestos = models.FloatField(null=False, default=0, blank=False, help_text="total en impuestos")
-    total = models.FloatField(null=False, default=0, blank=False, help_text="total en factura")
-    #datos pago
+    # Datos pago
     tipo_pago = models.TextField(max_length=150, blank=False, null=False, help_text="tipo de pago utilizado")
     credito = models.BooleanField(default=False, help_text="la factura es a credito?")
     dias_credito = models.IntegerField(null=True, default=0, help_text="cuantos dias de credito?")
+    # Total
+    subtotal = models.FloatField(null=False, default=0, blank=False, help_text="subtotal de la factura")
+    impuestos = models.FloatField(null=False, default=0, blank=False, help_text="total en impuestos")
+    total = models.FloatField(null=False, default=0, blank=False, help_text="total en factura")
+    # Otros
     history = HistoricalRecords()
+    def __str__(self):
+        return 'Compra: %s' % (self.factura)
 
 class DetalleCompra(models.Model):
+    # Relaciones foraneas
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     compra = models.ForeignKey(Compra, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="compra asociada")
+    # Producto
     producto = models.ForeignKey(Producto, null=True, blank=False, on_delete=models.DO_NOTHING, help_text="producto asociado")
-    descripcion = models.TextField(max_length=150, blank=False, null=True, help_text="en caso de no tener producto asociado a la compra se puede colocar una descripcion del rubro")
+    inventario = models.BooleanField(default=False, help_text="la compra afectara el inventario?")
     cantidad = models.FloatField(null=False, default=0, blank=False, help_text="cantidad comprada")
     servicio = models.BooleanField(default=False, help_text="se compro un servicio?")
-    inventario = models.BooleanField(default=False, help_text="la compra afectara el inventario?")
+    # Total
     precio = models.FloatField(null=True, default=0, blank=True, help_text="precio del rubro")
     subtotal = models.FloatField(null=True, default=0, blank=True, help_text="subtotal del rubro")
+    # Otros
+    descripcion = models.TextField(max_length=150, blank=False, null=True, help_text="En caso de no tener producto asociado a la compra se puede colocar una descripcion del rubro")
     history = HistoricalRecords()
+    def __str__(self):
+        return "Factura: #%s, $%s (%s/%s)" % (self.factura.id,self.total_producto,self.producto,self.lote)
 
 class NotaCompra(Nota):
     compra = models.ForeignKey(Compra, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="subtotal del rubro")
     history = HistoricalRecords()
+    def __str__(self):
+        return 'Nota asociada a %s' % (self.compra)

@@ -1,10 +1,11 @@
 
-# Imports required for URLS.PY
+# Importes requeridos para urls.py
 from rest_framework.authtoken import views as vx
 from rest_framework import routers
 from django.urls import include, path
-from . import views
 from knox import views as knox_views
+# Raiz
+from . import views
 from backend.views import LoginView
 
 # Router

@@ -5,8 +5,10 @@ from django.contrib.auth.models import User, Permission, Group
 from django.contrib.auth.forms import PasswordResetForm
 from django.conf import settings
 from django.utils.translation import gettext as _
-# Root
+# Raiz
 from .models import *
+
+""" Cambios de los Mixins """
 
 class GroupMSerializer(serializers.ModelSerializer):
     class Meta:
@@ -62,8 +64,7 @@ class PasswordResetSerializer(serializers.Serializer):
             'request': request}
         self.reset_form.save(**opts)
 
-###########Contenido###########
-
+""" Contenido """
 
 class ModuloSerializer(serializers.ModelSerializer):
     class Meta:
@@ -224,7 +225,8 @@ class InventarioSerializer(serializers.ModelSerializer):
     def LoadDate(self, obj):
         return obj.fecha_vencimiento.date()
 
-#ventas
+""" Ventas """
+
 class VendedorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vendedor
@@ -254,7 +256,6 @@ class ContactoClienteSerializer(serializers.ModelSerializer):
     nombreCliente = serializers.SerializerMethodField('LoadNombreCliente')
     def LoadNombreCliente(self, obj):
         return obj.cliente.nombre
-
 
 class PedidoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -300,7 +301,6 @@ class DetallePedidoSerializer(serializers.ModelSerializer):
     def LoadNombreAlmacen(self, obj):
        return obj.inventario.almacen.id
     
-
 class ProformaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Proforma
@@ -318,7 +318,6 @@ class ProformaSerializer(serializers.ModelSerializer):
     def LoadDate(self, obj):
        return obj.fecha_proforma.date()
 
-
 class DetalleProformaSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetalleProforma
@@ -332,6 +331,7 @@ class DetalleProformaSerializer(serializers.ModelSerializer):
     almacen = serializers.SerializerMethodField('LoadNombreAlmacen')
     def LoadNombreAlmacen(self, obj):
        return obj.inventario.almacen.id
+
 class FacturaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Factura
@@ -340,6 +340,7 @@ class FacturaSerializer(serializers.ModelSerializer):
     date =  serializers.SerializerMethodField('LoadDate')
     def LoadDate(self, obj):
        return obj.fecha_factura.date()
+
 class DetalleFacturaSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetalleFactura
@@ -350,7 +351,6 @@ class DetalleFacturaSerializer(serializers.ModelSerializer):
     almacen = serializers.SerializerMethodField('LoadNombreAlmacen')
     def LoadNombreAlmacen(self, obj):
        return obj.inventario.almacen.id
-
 
 class ListaPrecioSerializer(serializers.ModelSerializer):
     class Meta:
@@ -396,7 +396,13 @@ class NumerologiaFacturaSerializer(serializers.ModelSerializer):
     def LoadNombreProducto(self, obj):
         return obj.venta.nombre
 
-#Compras
+class NotaFacturaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NotaFactura
+        fields = '__all__'
+        
+"""Compras"""
+
 class ProveedorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Proveedor
@@ -438,12 +444,6 @@ class DetalleCompraSerializer(serializers.ModelSerializer):
     nombreProducto = serializers.SerializerMethodField('LoadNombreProducto')
     def LoadNombreProducto(self, obj):
         return obj.producto.nombre
-
-#Notas
-class NotaFacturaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = NotaFactura
-        fields = '__all__'
 
 class NotaCompraSerializer(serializers.ModelSerializer):
     class Meta:

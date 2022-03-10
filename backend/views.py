@@ -1,4 +1,4 @@
-# Rest framework imports
+# Importes de Rest framework
 from email import header
 from urllib import response
 from numpy import indices
@@ -11,7 +11,7 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.utils import json
 from django_filters.rest_framework import DjangoFilterBackend
-# Django imports
+# Importes de Django
 from django.apps import apps
 from django.db.models import Count, Q, Sum
 from django.contrib.auth import login
@@ -21,11 +21,11 @@ from django.http import JsonResponse, HttpResponse, request
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-# Raiz imports
+# Raiz
 from .serializers import *
 from .models import *
 from .menu import *
-# Recover password
+# Recuperar contraseña
 from knox.views import LoginView as KnoxLoginView
 from django.conf import settings
 from django.dispatch import receiver
@@ -33,7 +33,7 @@ from django.core.mail import EmailMessage
 from django_rest_passwordreset.signals import reset_password_token_created
 from django.urls import reverse
 from django.template.loader import render_to_string
-# Import pandas
+# Pandas
 import pandas as pd
 import csv
 
@@ -57,7 +57,6 @@ def password_reset_token_created(sender, instance, reset_password_token, *args, 
     msg = EmailMessage(subject, html_content, from_email, [to])
     msg.content_subtype = "html"  # Main content is now text/html
     msg.send()
-
 
 """ Acceso de KNOX """
 class LoginView(KnoxLoginView):
@@ -3013,21 +3012,47 @@ class PDFPedido(PDFView):
     template_name = 'pedido.html'
     allow_force_html = True
     def get_context_data(self, *args, **kwargs):
-        """Pass some extra context to the template."""
+        # """Pass some extra context to the template."""
         context = super().get_context_data(*args, **kwargs)
         pedido = Pedido.objects.get(id=kwargs['id_pedido'])
+        # totalcosto = float(proforma.total)
         value = {'data':[]}
+        # total_calculado = 0
         agrupador = DetallePedido.objects.filter(pedido=pedido).values('producto').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada'))
         for dato in agrupador:
             productox = Producto.objects.get(id=dato['producto'])
-            detallado = DetallePedido.objects.filter(pedido=pedido,producto=productox).order_by('producto__id')
             valuex = {'datax':[]}
             total_cantidad = 0
-            for detalle in detallado:
-                valuex['datax'].append({'lote':detalle.lote,'cantidad':detalle.cantidada})
-                total_cantidad += detalle.cantidada
-            value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'cantidad':total_cantidad})
+            # precio_unidad = 0
+            # costo_total = 0
+            mostrar = True
+            detallado = DetallePedido.objects.filter(pedido=pedido,producto=productox).order_by('producto__id')
+            if productox.lote == True and len(detallado) > 1:
+                for detalle in detallado:
+                    valuex['datax'].append({'lote':detalle.lote,'cantidad':detalle.cantidada})
+                    total_cantidad += detalle.cantidada
+                    # precio_unidad = detalle.precio
+            elif productox.lote == True and len(detallado) == 1:
+                valuex['datax'] = ''
+                mostrar = False
+                for detalle in detallado:
+                    valuex['datax'] = detalle.lote
+                    total_cantidad += detalle.cantidada
+                    # precio_unidad = detalle.precio
+            else:
+                mostrar = False
+                for detalle in detallado:
+                    total_cantidad += detalle.cantidada
+                    # precio_unidad = detalle.precio
+                valuex['datax'] = None
+            # costo_total = float(precio_unidad) * float(total_cantidad)
+            # total_calculado += round(costo_total, 2)
+            value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'mostrar':mostrar,'cantidad':total_cantidad})
         context['productos'] = value['data']
+        # if (float(total_calculado) == float(totalcosto)):
+        #     context['total'] = total_calculado
+        # else:
+        #     context['total'] = 'Error'
         context['pedido'] = pedido
         return context
 
@@ -3040,7 +3065,6 @@ class PDFProforma(PDFView):
         context = super().get_context_data(*args, **kwargs)
         proforma = Proforma.objects.get(id=kwargs['id_proforma'])
         totalcosto = float(proforma.total)
-
         value = {'data':[]}
         total_calculado = 0
         agrupador = DetalleProforma.objects.filter(proforma=proforma).values('producto','precio').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada'))
