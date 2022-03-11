@@ -15,6 +15,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'backend',
+    'tempro',
     'django_extensions',
     'rest_framework',
     'knox',
@@ -23,6 +24,7 @@ INSTALLED_APPS = [
     'dj_rest_auth',
     'corsheaders',
     'simple_history',
+    'django_tables2',
     'django_rest_passwordreset',]
 
 
@@ -80,12 +82,14 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
 DATE_INPUT_FORMATS = ('%d-%m-%Y','%Y-%m-%d')
 DATE_FORMAT = ('%d-%m-%Y','%Y-%m-%d')
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 RESET_PASSWORD_ROUTE = 'http://localhost:8080/reset-password/'
 ROOT_URLCONF = 'administrador_back.urls'
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
