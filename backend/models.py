@@ -339,7 +339,7 @@ class Proforma(models.Model):
 
     history = HistoricalRecords()
     def __str__(self):
-        return "ID: #%s, $%s (%s/%s)" % (self.id,self.total,self.producto,self.cliente.nombre,self.empresa.nombre)
+        return "ID: #%s, $%s (%s/%s)" % (self.id,self.total,self.cliente.nombre,self.empresa.nombre)
 
 class DetalleProforma(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
@@ -361,15 +361,18 @@ class Factura(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     proforma = models.ForeignKey(Proforma, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="proforma asociada")
     # Cliente
+    id_cliente = models.IntegerField(blank=False, null=False, help_text="Nombre del cliente en la venta")
     nombre_cliente = models.TextField(max_length=150, blank=False, null=False, help_text="Nombre del cliente en la venta")
     identificador_fiscal = models.TextField(max_length=150, blank=False, null=False, help_text="Identificador fiscal del cliente en la venta")
     direccion_cliente = models.TextField(max_length=150, blank=False, null=False, help_text="telefono del cliente en la venta")
     telefono_cliente = models.TextField(max_length=150, null=False, blank=False, help_text="empresa asociada")
+    correo_cliente = models.TextField(max_length=150, null=False, blank=False, help_text="empresa asociada")
     # Empresa
     nombre_empresa = models.TextField(max_length=150, null=False, blank=False, help_text="empresa asociada")
     telefonocontacto_empresa = models.TextField(max_length=150, null=False, blank=False, help_text="empresa asociada")
     direccion_empresa = models.TextField(max_length=150, null=False, blank=False, help_text="empresa asociada")
     # Vendedor
+    id_vendedor = models.IntegerField(blank=False, null=False, help_text="Nombre del cliente en la venta")
     nombre_vendedor = models.TextField(max_length=150, null=True, blank=False, help_text="vendedor asociado")
     telefono_vendedor = models.TextField(max_length=150, null=False, blank=False, help_text="empresa asociada")
     # Total
@@ -388,7 +391,7 @@ class Factura(models.Model):
     fecha_factura = models.DateTimeField(auto_now_add=True, help_text="fecha de generacion del pedido")
     history = HistoricalRecords()
     def __str__(self):
-        return "Factura: #%s, $%s (%s/%s)" % (self.proforma.id,self.total,self.cliente.nombre,self.empresa.nombre)
+        return "Factura: #%s, $%s (%s/%s)" % (self.proforma.id,self.total,self.nombre_cliente,self.nombre_empresa)
 
 class DetalleFactura(models.Model):
     # Relaciones foraneas principales

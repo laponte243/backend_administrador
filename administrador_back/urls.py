@@ -19,6 +19,7 @@ from dj_rest_auth.views import PasswordResetConfirmView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('apis/v1/', include('backend.urls')),
+    # path('tempro/v2/', include('tempro.urls')),
     path('dj-rest-auth/', include('dj_rest_auth.urls')),
     path(
         'rest-auth/password/reset/confirm/<slug:uidb64>/<slug:token>/',

@@ -15,7 +15,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'backend',
-    'tempro',
+    # 'tempro',
     'django_extensions',
     'rest_framework',
     'knox',

@@ -27,9 +27,7 @@ def user_dashboard(request):
     for entry in dataset:
         categories.append(entry['Nodo__nombre'])
         promedios.append(entry['promedio'])
-
     datax = []
-
     nodos = Nodo.objects.all()
     for nodo in nodos:
         datay = []

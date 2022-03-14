@@ -3105,6 +3105,64 @@ class PDFProforma(PDFView):
         context['proforma'] = proforma
         return context
 
+""" """
+class PDFFactura(PDFView):
+    template_name = 'factura.html'
+    allow_force_html = True
+    def get_context_data(self, *args, **kwargs):
+        conversion = None
+        try:
+            conversion = TasaConversion.objects.filter(fecha_tasa__date=datetime.datetime.today().date()).latest('fecha_tasa__date')
+        except:
+            conversion = TasaConversion.objects.latest('fecha_tasa__date')
+        # """Pass some extra context to the template."""
+        context = super().get_context_data(*args, **kwargs)
+        factura = Factura.objects.get(id=kwargs['id_factura'])
+        subtotal = float(factura.subtotal)
+        totalcosto = round(float(factura.total) * conversion.valor,2)
+        value = {'data':[]}
+        total_calculado = 0
+        agrupador = DetalleFactura.objects.filter(factura=factura).values('producto','precio').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada'))
+        for dato in agrupador:
+            productox = Producto.objects.get(id=dato['producto'])
+            valuex = {'datax':[]}
+            total_cantidad = 0
+            precio_unidad = 0.0
+            costo_total = 0.0
+            mostrar = True
+            detallado = DetalleFactura.objects.filter(factura=factura,producto=productox).order_by('producto__id')
+            if productox.lote == True and len(detallado) > 1:
+                for detalle in detallado:
+                    valuex['datax'].append({'lote':detalle.lote,'cantidad':detalle.cantidada})
+                    total_cantidad += float(detalle.cantidada)
+                    precio_unidad = float(detalle.precio) * conversion.valor
+            elif productox.lote == True and len(detallado) == 1:
+                valuex['datax'] = ''
+                mostrar = False
+                for detalle in detallado:
+                    valuex['datax'] = detalle.lote
+                    total_cantidad += float(detalle.cantidada)
+                    precio_unidad = float(detalle.precio) * conversion.valor
+            else:
+                mostrar = False
+                for detalle in detallado:
+                    total_cantidad += float(detalle.cantidada)
+                    precio_unidad = float(detalle.precio) * conversion.valor
+                valuex['datax'] = None
+            costo_total = precio_unidad * total_cantidad
+            total_calculado += costo_total
+            value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'mostrar':mostrar,'cantidad':total_cantidad,'precio':precio_unidad,'total_producto':round(costo_total, 2)})
+        context['productos'] = value['data']
+        subtotal_conversion = subtotal * conversion.valor
+        if (float(total_calculado) == float(subtotal_conversion)):
+            context['subtotal'] = subtotal_conversion
+            context['total'] = totalcosto
+        else:
+            context['subtotal'] = 'Error'
+            context['total'] = 'Error'
+        context['factura'] = factura
+        return context
+
 @api_view(["POST"])
 @csrf_exempt
 @authentication_classes([TokenAuthentication])
@@ -3120,10 +3178,13 @@ def generar_factura(request):
         nueva_factura = Factura(proforma=proforma,instancia=instancia)
         nueva_factura.nombre_empresa = proforma.empresa.nombre
         nueva_factura.direccion_empresa =  proforma.empresa.direccion_fiscal
+        nueva_factura.id_cliente = proforma.cliente.id
         nueva_factura.nombre_cliente = proforma.cliente.nombre
         nueva_factura.identificador_fiscal = proforma.cliente.identificador
         nueva_factura.direccion_cliente = proforma.cliente.ubicacion
         nueva_factura.telefono_cliente = proforma.cliente.telefono
+        nueva_factura.correo_cliente = proforma.cliente.correo
+        nueva_factura.id_vendedor = proforma.cliente.id
         nueva_factura.nombre_vendedor = proforma.vendedor.nombre
         nueva_factura.telefono_vendedor = proforma.vendedor.telefono
         nueva_factura.impuesto = 16
@@ -3199,7 +3260,7 @@ def actualiza_proforma(request):
             # print(inventario.disponible) # 41 (37)
         proforma_id.total = total_proforma
         proforma_id.save()
-        print(id_proformas)
+        # print(id_proformas)
         DetalleProforma.objects.filter(id__in=id_proformas).delete()
         return JsonResponse({'exitoso': 'exitoso'}, safe=False, status=status.HTTP_200_OK)
     except ObjectDoesNotExist as e:

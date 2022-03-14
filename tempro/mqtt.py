@@ -1,11 +1,14 @@
-from datetime import timedelta, datetime
-import paho.mqtt.client as mqtt
+# Importes de Django
 from django.core import mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
-from .models import Nodo, Sensor, Registro_temperatura, PuertaEstatus, Correo_alerta, Correo
 from django.conf import settings
 from django.db.models import Avg, Func, Count
+# Utiles
+from datetime import timedelta, datetime
+from .models import Nodo, Sensor, Registro_temperatura, PuertaEstatus, Correo_alerta, Correo
+# MQTT
+import paho.mqtt.client as mqtt
 
 broker = "localhost"
 
@@ -13,25 +16,31 @@ class Round(Func):
   function = 'ROUND'
   arity = 2
 
-
+# Funcion para Registrar cambios
 def on_message(client, userdata, msg):
-
     data = str(msg.payload.decode("utf-8")).split('|')
+    # Intentar conseguir nodo
     try:
         nodo = Nodo.objects.get(MAC=data[0])
     except Nodo.DoesNotExist:
         nodo = Nodo(MAC=data[0])
         nodo.save()
     if msg.topic == "mensajes/temperatura" and data[2] != '-127' :
+        # Intentar conseguir sensor y registrar
         try:
+            # Obtener objetos
             nodo = Nodo.objects.get(MAC=data[0])
             sensor = Sensor.objects.get(serial=data[1])
+            # Registrar cambio
             registro = Registro_temperatura(Nodo=nodo, Sensor=sensor, temperatura=data[2])
             registro.save()
+            # Obtener horas
             now = datetime.now()
             earlier = now - timedelta(hours=1)
+            # Filtrar objetos recientes
             dataset = Registro_temperatura.objects.filter(created_at__range=(earlier, now)).aggregate(promedio=Round(Avg('temperatura'), 2))
             cantidad_envios = Correo_alerta.objects.filter(Nodo__id=nodo.id,created_at__range=(earlier, now)).aggregate(conteo=Count('id'))
+            # 
             if cantidad_envios['conteo'] == 0:
                 diff = 10000
             else:
@@ -43,7 +52,6 @@ def on_message(client, userdata, msg):
 
                 if dataset['promedio'] < nodo.temperatura_min:
                     correo_temperatura_baja(nodo,dataset['promedio'],cantidad_envios=cantidad_envios['conteo'])
-
         except Sensor.DoesNotExist:
             nodo = Nodo.objects.get(MAC=data[0])
             sensor = Sensor(serial=data[1],Nodo=nodo)

@@ -75,6 +75,7 @@ urlpatterns = [
     path('validacion_pedido/', views.validacion_pedido),
     path('pdf-pedido/<int:id_pedido>', views.PDFPedido.as_view()),
     path('pdf-proforma/<int:id_proforma>', views.PDFProforma.as_view()),
+    path('pdf-factura/<int:id_factura>', views.PDFFactura.as_view()),
     path('generar_factura/', views.generar_factura),
     # Login
     path('auth/login/', LoginView.as_view(), name='knox_login'),
