@@ -280,7 +280,7 @@ class ListaPrecio(models.Model):
     porcentaje = models.FloatField(null= False, blank=False, help_text="Porcentaje de la lista de precio")
     history = HistoricalRecords()
     def __str__(self):
-        return '%s (%s%)' % (self.nombre, self.porcentaje)
+        return '%s' % (self.nombre)
 
 class DetalleListaPrecio(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
@@ -289,7 +289,7 @@ class DetalleListaPrecio(models.Model):
     precio = models.FloatField(null=False, default=0, blank=False, help_text="precio del producto en la lista")
     history = HistoricalRecords()
     def __str__(self):
-        return '%s' % (self.lista.nombre)
+        return '%s' % (self.listaprecio.nombre)
 
 class Pedido(models.Model): # Pedido 
     ESTATUS = (
