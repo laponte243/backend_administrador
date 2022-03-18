@@ -22,6 +22,7 @@ modelosMENU = {'modelos':[
     {"router": "Almacenes",             "parent":3,"orden":1}, # -Inventarios id:4
     {"router": "Productos",             "parent":3,"orden":2}, # -Inventarios id:5
     {"router": "Inventario",            "parent":3,"orden":3}, # -Inventarios id:6
+    {"router": "Tempro",                "parent":3,"orden":4}, # -Inventarios id:25
     # {"router": "Marca",                 "parent":6,"orden":1},
     # {"router": "Unidad",                "parent":6,"orden":2}, # Eliminado
     # {"router": "Producto",              "parent":6,"orden":3},
@@ -60,6 +61,7 @@ modelosMENU = {'modelos':[
     {"router": "ConfiguracionPapeleria","parent":21,"orden":1}, # Avanzado id:22
     {"router": "Impuesto",              "parent":21,"orden":2}, # Avanzado id:23
     {"router": "TasaConversion",        "parent":21,"orden":3}, # Avanzado id:24
+    {"router": "Tempro",                "parent":18,"orden":4}, # Avanzado id:26
     # {"router": "User",                  "parent":19,"orden":1},
     # {"router": "Perfil",                "parent":19,"orden":2},
     # {"router": "Permiso",               "parent":19,"orden":3},
