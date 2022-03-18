@@ -37,6 +37,7 @@ from django.template.loader import render_to_string
 import pandas as pd
 import csv
 import xlwt
+import requests
 
 # Utiles
 """ Reseteo de contraseña """
@@ -2962,15 +2963,16 @@ def validacion_pedido(request):
             nueva_proforma.save()
             # Se crea el detalle de la proforma con la información asociada en el detalle pedido
             for deta in detashepedido:
-                nuevo_detalle = DetalleProforma(proforma=nueva_proforma,
-                lista_precio = deta.lista_precio,
-                inventario=deta.inventario,
-                cantidada=deta.cantidada,
-                lote = deta.lote,
-                producto = deta.producto,
-                precio = deta.producto.costo + (deta.producto.costo * (deta.lista_precio.porcentaje / 100)),
-                total_producto = deta.total_producto,
-                instancia=instancia
+                nuevo_detalle = DetalleProforma(
+                    proforma=nueva_proforma,
+                    lista_precio = deta.lista_precio,
+                    inventario=deta.inventario,
+                    cantidada=deta.cantidada,
+                    lote = deta.lote,
+                    producto = deta.producto,
+                    precio = deta.producto.costo + (deta.producto.costo * (deta.lista_precio.porcentaje / 100)),
+                    total_producto = deta.total_producto,
+                    instancia=instancia
                 )
                 nuevo_detalle.save()
                 nueva_proforma.total += deta.total_producto
@@ -3083,6 +3085,8 @@ class PDFProforma(PDFView):
         else:
             context['total'] = 'Error'
         context['proforma'] = proforma
+            # with open('/log/proforma%s.pdf'%datetime(), 'wb') as f:
+            #     pdf.write(response.content)
         return context
 
 """ """
@@ -3225,7 +3229,6 @@ def actualiza_proforma(request):
             producto = Producto.objects.get(id=i["producto"])
             instancia = Instancia.objects.get(perfil=perfil.id)
             cantidad = int(i["cantidada"])
-
             """totalp = cantidad * (producto.costo + (producto.costo * (lista_precio.porcentaje /100)))""" # Dividir totalp en dos partes
             precio_unidad = float(producto.costo) + (float(producto.costo) * (float(lista_precio.porcentaje)/100.0)) # Calcular el precio del producto en la venta
             totalp = cantidad * precio_unidad # Calcular el precio final del detalle segun la cantidad
@@ -3251,10 +3254,9 @@ def actualiza_proforma(request):
 
 def XLSVista(request):
     response = HttpResponse(content_type='application/ms-excel')
-    response['Content-Disposition'] = 'attachment; filename="users.xls"'
+    response['Content-Disposition'] = 'attachment; filename="productos.xls"'
     wb = xlwt.Workbook(encoding='utf-8')
-    ws = wb.add_sheet('Styling Data') # this will make a sheet named Users Data - First Sheet
-    valores = [{'row_a':'valor 1','row_b':'valor 2','row_c':'valor 3'},{'row_a':'valor 3','row_b':'valor 4','row_c':'valor 5'}]
+    ws = wb.add_sheet('Styling Data')
     i = 0
     for m in Marca.objects.all().values():
         estilo = xlwt.easyxf('font: bold 1')
@@ -3301,3 +3303,22 @@ def Value(request):
                 texto.append(precio.precio)
             writer.writerow(texto)
     return response
+
+@api_view(["GET"])
+@csrf_exempt
+# @authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def PDFGuardar(request):
+    try:
+        data = request.data
+        if not data:
+            data['id'] = 1
+        host = str(request.get_host())
+        principal_url = 'http://%s'%(host)
+        url = principal_url+'/apis/v1/pdf-proforma/%s'%(data['id'])
+        response = requests.get(url)
+        with open('proformas/proforma-%s.pdf'%data['id'], 'wb') as f:
+            f.write(response.content)
+        return Response(True)
+    except:
+        return Response(False)

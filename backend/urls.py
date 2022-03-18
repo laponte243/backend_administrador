@@ -62,6 +62,7 @@ urlpatterns = [
     path('', include(router.urls)),
     path('api-token-auth/', vx.obtain_auth_token),
     # Utiles
+    path('inventario/', views.Inven),
     path('create-super-user/', views.CreateSuperUser),
     path('columna-get/', views.ObtenerColumnas),
     path('menu-get/', views.ObtenerMenu),
@@ -70,12 +71,12 @@ urlpatterns = [
     # path('crear-lista/', views.crearlista),
     path('actualiza-pedido/', views.actualiza_pedido),
     path('actualiza-proforma/', views.actualiza_proforma),
-    path('xls-generador/', views.XLSVista),
-    path('inventario/', views.Inven),
-    path('validacion_pedido/', views.validacion_pedido),
     path('pdf-pedido/<int:id_pedido>', views.PDFPedido.as_view()),
     path('pdf-proforma/<int:id_proforma>', views.PDFProforma.as_view()),
+    path('pdf-proforma-guardar/', views.PDFGuardar),
     path('pdf-factura/<int:id_factura>', views.PDFFactura.as_view()),
+    path('xls-generador/', views.XLSVista),
+    path('validacion_pedido/', views.validacion_pedido),
     path('generar_factura/', views.generar_factura),
     # path('export/excel-styling', views.export_styling_xls, name='export_styling_excel'),
     # Login
