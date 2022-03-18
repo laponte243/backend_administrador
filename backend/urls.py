@@ -45,8 +45,8 @@ router.register(r'proforma', views.ProformaVS, basename='proforma')
 router.register(r'proforma-detalle', views.DetalleProformaVS, basename='proforma-detalle')
 router.register(r'factura', views.FacturaVS, basename='factura')
 router.register(r'factura-detalle', views.DetalleFacturaVS, basename='factura-detalle')
-router.register(r'lista-precio', views.ListaPrecioVS, basename='lista-precio')
-router.register(r'lista-precio-detalle', views.DetalleListaPrecioVS, basename='lista-precio-detalle')
+# router.register(r'lista-precio', views.ListaPrecioVS, basename='lista-precio')
+# router.register(r'lista-precio-detalle', views.DetalleListaPrecioVS, basename='lista-precio-detalle')
 router.register(r'factura-impuesto', views.ImpuestosFacturaVS, basename='factura-impuesto')
 router.register(r'factura-numerologia', views.NumerologiaFacturaVS, basename='factura-numerologia')
 router.register(r'factura-nota', views.NotaFacturaVS, basename='factura-nota')
@@ -67,16 +67,17 @@ urlpatterns = [
     path('menu-get/', views.ObtenerMenu),
     path('historico-get/', views.ObtenerHistorico),
     path('user-creator/', views.CrearNuevoUsuario),
-    path('crear-lista/', views.crearlista),
+    # path('crear-lista/', views.crearlista),
     path('actualiza-pedido/', views.actualiza_pedido),
     path('actualiza-proforma/', views.actualiza_proforma),
-    path('excel_lista/', views.export_users_csv),
+    path('xls-generador/', views.XLSVista),
     path('inventario/', views.Inven),
     path('validacion_pedido/', views.validacion_pedido),
     path('pdf-pedido/<int:id_pedido>', views.PDFPedido.as_view()),
     path('pdf-proforma/<int:id_proforma>', views.PDFProforma.as_view()),
     path('pdf-factura/<int:id_factura>', views.PDFFactura.as_view()),
     path('generar_factura/', views.generar_factura),
+    # path('export/excel-styling', views.export_styling_xls, name='export_styling_excel'),
     # Login
     path('auth/login/', LoginView.as_view(), name='knox_login'),
     path('auth/logout/', knox_views.LogoutView.as_view(), name='knox_logout'),

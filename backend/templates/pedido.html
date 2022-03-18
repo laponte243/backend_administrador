@@ -87,7 +87,11 @@
             <img src="ejemplologo.jpeg" alt="LOGO MEDICALVET CENTRO, C.A" width="800" height="500">
         </div>
         <div class="item2">
-            <p>Direccion: Av. Bolivar <br> Telefono: 0000-000-00-00 Correo: empresa@dominio.red</p>
+            <p>
+                Ctra. Vieja Tocuyito, Edif. 15, Apto. 12, Conjunto Residencial 'El Portal de Luis', Tocuyito - Edo.Carabobo <br>
+                Telefono: 
+                Correo: medicalvetcentro@homail.com
+            </p>
         </div>
         <div class="item3" style="text-align: right">
             <strong><p> PEDIDO: {{pedido.id}}</p></strong>
@@ -130,9 +134,8 @@
                 <table class="table table-responsive table-condensed" style="border-bottom: none;">
                     <thead style="border-bottom: none;">
                         <tr style="border-bottom: none;">
-                            <th style="width: 5%">ID</th>
-                            <th style="width: 20%">SKU.</th>
-                            <th style="width: 35%">PRODUCTO</th>
+                            <th style="width: 10%">ID</th>
+                            <th style="width: 50%">PRODUCTO</th>
                             <th style="width: 10%">LOTES</th>
                             <th style="width: 30%; text-align:right;">CANTIDAD</th>
                         </tr>
@@ -141,7 +144,6 @@
                         {% for producto in productos %}
                             <tr style="border-bottom: none; border-top: none;">
                                 <td class="filaDetalle">{{forloop.counter}}</td>
-                                <td class="filaDetalle">{{producto.producto_sku}}</td>
                                 <td class="filaDetalle">{{producto.producto_nombre}}</td>
                                 <td class="filaDetalle">
                                     {% if not producto.mostrar %}
@@ -155,7 +157,7 @@
                             {% if producto.mostrar %}
                                 {% for subdeta in producto.detalle %}
                                     <tr style="visibility:visible; font-size: 8px; border-top: none; height: 20px;">
-                                        <td colspan="3" style="text-align:right; border-top: none; border-bottom: none;">
+                                        <td colspan="2" style="text-align:right; border-top: none; border-bottom: none;">
                                             -
                                         </td>
                                         <td colspan="1" style="text-align:center; border-top: none; border-bottom: none;">

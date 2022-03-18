@@ -294,9 +294,9 @@ class DetallePedidoSerializer(serializers.ModelSerializer):
     nombreProducto = serializers.SerializerMethodField('LoadNombreProducto')
     def LoadNombreProducto(self, obj):
        return obj.producto.nombre 
-    nombreListaPrecio = serializers.SerializerMethodField('LoadNombreListaPrecio')
-    def LoadNombreListaPrecio(self, obj):
-       return obj.lista_precio.nombre
+    # nombreListaPrecio = serializers.SerializerMethodField('LoadNombreListaPrecio')
+    # def LoadNombreListaPrecio(self, obj):
+    #    return obj.lista_precio.nombre
     almacen = serializers.SerializerMethodField('LoadNombreAlmacen')
     def LoadNombreAlmacen(self, obj):
        return obj.inventario.almacen.id
@@ -325,9 +325,9 @@ class DetalleProformaSerializer(serializers.ModelSerializer):
     nombreProducto = serializers.SerializerMethodField('LoadNombreProducto')
     def LoadNombreProducto(self, obj):
        return obj.producto.nombre 
-    nombreListaPrecio = serializers.SerializerMethodField('LoadNombreListaPrecio')
-    def LoadNombreListaPrecio(self, obj):
-       return obj.lista_precio.nombre
+    # nombreListaPrecio = serializers.SerializerMethodField('LoadNombreListaPrecio')
+    # def LoadNombreListaPrecio(self, obj):
+    #    return obj.lista_precio.nombre
     almacen = serializers.SerializerMethodField('LoadNombreAlmacen')
     def LoadNombreAlmacen(self, obj):
        return obj.inventario.almacen.id
@@ -352,33 +352,33 @@ class DetalleFacturaSerializer(serializers.ModelSerializer):
     def LoadNombreAlmacen(self, obj):
        return obj.inventario.almacen.id
 
-class ListaPrecioSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ListaPrecio
-        fields = '__all__'
-    nombreInstancia = serializers.SerializerMethodField('LoadNombreInstancia')
-    def LoadNombreInstancia(self, obj):
-        return obj.instancia.nombre
+# class ListaPrecioSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = ListaPrecio
+#         fields = '__all__'
+#     nombreInstancia = serializers.SerializerMethodField('LoadNombreInstancia')
+#     def LoadNombreInstancia(self, obj):
+#         return obj.instancia.nombre
 
-class DetalleListaPrecioSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = DetalleListaPrecio
-        fields = '__all__'
-    nombreProducto = serializers.SerializerMethodField('LoadNombreProducto')
-    def LoadNombreProducto(self, obj):
-        return obj.producto.nombre
-    estadoProducto = serializers.SerializerMethodField('LoadEstadoProducto')
-    def LoadEstadoProducto(self, obj):
-        return obj.producto.activo
-    precioproducto = serializers.SerializerMethodField('nprecioproducto')
-    def nprecioproducto(self, obj):
-       return obj.producto.costo 
-    skuProductoo = serializers.SerializerMethodField('skuProducto')
-    def skuProducto(self, obj):
-       return obj.producto.sku 
-    marcaProductoo = serializers.SerializerMethodField('marcaProducto')
-    def marcaProducto(self, obj):
-       return obj.producto.marca.nombre
+# class DetalleListaPrecioSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = DetalleListaPrecio
+#         fields = '__all__'
+#     nombreProducto = serializers.SerializerMethodField('LoadNombreProducto')
+#     def LoadNombreProducto(self, obj):
+#         return obj.producto.nombre
+#     estadoProducto = serializers.SerializerMethodField('LoadEstadoProducto')
+#     def LoadEstadoProducto(self, obj):
+#         return obj.producto.activo
+#     precioproducto = serializers.SerializerMethodField('nprecioproducto')
+#     def nprecioproducto(self, obj):
+#        return obj.producto.costo 
+#     skuProductoo = serializers.SerializerMethodField('skuProducto')
+#     def skuProducto(self, obj):
+#        return obj.producto.sku 
+#     marcaProductoo = serializers.SerializerMethodField('marcaProducto')
+#     def marcaProducto(self, obj):
+#        return obj.producto.marca.nombre
 
 class ImpuestosFacturaSerializer(serializers.ModelSerializer):
     class Meta:
