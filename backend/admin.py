@@ -33,8 +33,8 @@ admin.site.register(Factura)
 admin.site.register(DetalleFactura)
 
 
-admin.site.register(ListaPrecio)
-admin.site.register(DetalleListaPrecio)
+# admin.site.register(ListaPrecio)
+# admin.site.register(DetalleListaPrecio)
 admin.site.register(ImpuestosFactura)
 admin.site.register(NumerologiaFactura)
 admin.site.register(Proveedor)

@@ -275,24 +275,24 @@ class ContactoCliente(models.Model):
     def __str__(self):
         return 'Contacto del cliente %s' % (self.cliente)
 
-class ListaPrecio(models.Model):
-    instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
-    nombre = models.TextField(max_length=150, blank=False, null=True, help_text="nombre de la lista de precios?")
-    activo = models.BooleanField(default=True, help_text="esta lista de precios esta activa?")
-    predeterminada = models.BooleanField(default=False, help_text="esta lista es la predeterminada?")
-    porcentaje = models.FloatField(null= False, blank=False, help_text="Porcentaje de la lista de precio")
-    history = HistoricalRecords()
-    def __str__(self):
-        return '%s' % (self.nombre)
+# class ListaPrecio(models.Model):
+#     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
+#     nombre = models.TextField(max_length=150, blank=False, null=True, help_text="nombre de la lista de precios?")
+#     activo = models.BooleanField(default=True, help_text="esta lista de precios esta activa?")
+#     predeterminada = models.BooleanField(default=False, help_text="esta lista es la predeterminada?")
+#     porcentaje = models.FloatField(null= False, blank=False, help_text="Porcentaje de la lista de precio")
+#     history = HistoricalRecords()
+#     def __str__(self):
+#         return '%s' % (self.nombre)
 
-class DetalleListaPrecio(models.Model):
-    instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
-    listaprecio = models.ForeignKey(ListaPrecio, null=False, blank=False, on_delete=models.DO_NOTHING,help_text="Lista de precio asociada")
-    producto = models.ForeignKey(Producto, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="producto asociado")
-    precio = models.FloatField(null=False, default=0, blank=False, help_text="precio del producto en la lista")
-    history = HistoricalRecords()
-    def __str__(self):
-        return '%s' % (self.listaprecio.nombre)
+# class DetalleListaPrecio(models.Model):
+#     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
+#     listaprecio = models.ForeignKey(ListaPrecio, null=False, blank=False, on_delete=models.DO_NOTHING,help_text="Lista de precio asociada")
+#     producto = models.ForeignKey(Producto, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="producto asociado")
+#     precio = models.FloatField(null=False, default=0, blank=False, help_text="precio del producto en la lista")
+#     history = HistoricalRecords()
+#     def __str__(self):
+#         return '%s' % (self.listaprecio.nombre)
 
 class Pedido(models.Model): # Pedido 
     ESTATUS = (
@@ -314,7 +314,7 @@ class Pedido(models.Model): # Pedido
 class DetallePedido(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     pedido = models.ForeignKey(Pedido, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Pedido asociado")
-    lista_precio = models.ForeignKey(ListaPrecio, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Lista de precio asociada")
+    # lista_precio = models.ForeignKey(ListaPrecio, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Lista de precio asociada")
     producto = models.ForeignKey(Producto, null=True, blank=False, on_delete=models.DO_NOTHING, help_text="Producto asociado")
     lote = models.TextField(max_length=150, blank=False, null=True, help_text="lote del producto")
     cantidada = models.FloatField(null=False, default=0, blank=False, help_text="Cantidad vendida")
@@ -347,7 +347,7 @@ class Proforma(models.Model):
 class DetalleProforma(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     proforma = models.ForeignKey(Proforma, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="proforma asociada")
-    lista_precio = models.ForeignKey(ListaPrecio, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Lista de precio asociada")
+    # lista_precio = models.ForeignKey(ListaPrecio, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Lista de precio asociada")
     producto = models.ForeignKey(Producto, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="detallepedido asociada")
     lote = models.TextField(max_length=150, blank=False, null=True, help_text="lote del producto")
     cantidada = models.IntegerField(null=False, default=0, blank=False, help_text="Cantidad vendida")

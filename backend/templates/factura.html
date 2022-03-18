@@ -85,7 +85,11 @@
             <img src="ejemplologo.jpeg" alt="LOGO MEDICALVET CENTRO, C.A" width="800" height="500">
         </div>
         <div class="item2">
-            <p>Direccion: Av. Bolivar <br> Telefono: 0000-000-00-00 Correo: empresa@dominio.red</p>
+            <p>
+                Ctra. Vieja Tocuyito, Edif. 15, Apto. 12, Conjunto Residencial 'El Portal de Luis', Tocuyito - Edo.Carabobo <br>
+                Telefono: 
+                Correo: medicalvetcentro@homail.com
+            </p>
         </div>
         <div class="item3" style="text-align: right">
             <strong><p> FACTURA: {{factura.id}}</p></strong>
@@ -128,10 +132,9 @@
                 <table class="table table-responsive table-condensed" style="border-bottom: none;">
                     <thead style="border-bottom: none;">
                         <tr style="border-bottom: none;">
-                            <th style="width: 5%">ID</th>
-                            <th style="width: 15%">SKU.</th>
-                            <th style="width: 30%">PRODUCTO</th>
-                            <th style="width: 10%">LOTES</th>
+                            <th style="width: 10%">ID</th>
+                            <th style="width: 35%">PRODUCTO</th>
+                            <th style="width: 15%">LOTES</th>
                             <th style="width: 10%">CANT.</th>
                             <th style="width: 20%">P/UNIDAD</th>
                             <th style="width: 10%">TOTAL</th>
@@ -141,7 +144,6 @@
                         {% for producto in productos %}
                             <tr style="border-bottom: none; height: 28px;">
                                 <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{forloop.counter}}</td>
-                                <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{producto.producto_sku}}</td>
                                 <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{producto.producto_nombre}}</td>
                                 <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">
                                     {% if not producto.mostrar %}
@@ -157,10 +159,10 @@
                             {% if producto.mostrar %}
                                 {% for subdeta in producto.detalle %}
                                     <tr style="visibility:visible;font-size: 8px; border-top: none; height: 20px;">
-                                        <td colspan="3" style="text-align:right; border-top: none; border-bottom: none;">
+                                        <td colspan="2" style="text-align:right; border-top: none; border-bottom: none;">
                                             -
                                         </td>
-                                        <td colspan="1" style="text-align:center; border-top: none; border-bottom: none;">
+                                        <td colspan="1" style="text-align:left; border-top: none; border-bottom: none;">
                                             {{subdeta.lote}}
                                         </td>
                                         <td colspan="3" style="text-align:left; border-top: none; border-bottom: none;"">

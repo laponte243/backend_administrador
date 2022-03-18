@@ -36,6 +36,7 @@ from django.template.loader import render_to_string
 # Pandas
 import pandas as pd
 import csv
+import xlwt
 
 # Utiles
 """ Reseteo de contraseña """
@@ -918,12 +919,12 @@ class ProductoVS(viewsets.ModelViewSet):
             serializer = self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
-            for lp in ListaPrecio.objects.filter(instancia_id=perfil.instancia.id):
-                pro = Producto.objects.get(id=serializer.data['id'])
-                costo_final = pro.costo + (pro.costo * (lp.porcentaje / 100))
-                detalle = DetalleListaPrecio(
-                    instancia=perfil.instancia, listaprecio=lp, producto=pro, precio=costo_final)
-                detalle.save()
+            # for lp in ListaPrecio.objects.filter(instancia_id=perfil.instancia.id):
+            #     pro = Producto.objects.get(id=serializer.data['id'])
+            #     costo_final = pro.costo + (pro.costo * (lp.porcentaje / 100))
+            #     detalle = DetalleListaPrecio(
+            #         instancia=perfil.instancia, listaprecio=lp, producto=pro, precio=costo_final)
+            #     detalle.save()
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         elif (perfil.tipo == 'A'):
@@ -931,12 +932,12 @@ class ProductoVS(viewsets.ModelViewSet):
             serializer = self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
-            for lp in ListaPrecio.objects.filter(instancia_id=perfil.instancia.id):
-                pro = Producto.objects.get(id=serializer.data['id'])
-                costo_final = pro.costo + (pro.costo * (lp.porcentaje / 100))
-                detalle = DetalleListaPrecio(
-                    instancia=perfil.instancia, listaprecio=lp, producto=pro, precio=costo_final)
-                detalle.save()
+            # for lp in ListaPrecio.objects.filter(instancia_id=perfil.instancia.id):
+            #     pro = Producto.objects.get(id=serializer.data['id'])
+            #     costo_final = pro.costo + (pro.costo * (lp.porcentaje / 100))
+            #     detalle = DetalleListaPrecio(
+            #         instancia=perfil.instancia, listaprecio=lp, producto=pro, precio=costo_final)
+            #     detalle.save()
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         else:
@@ -951,11 +952,11 @@ class ProductoVS(viewsets.ModelViewSet):
                 instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
-            for lp in DetalleListaPrecio.objects.filter(instancia_id=perfil.instancia.id, producto_id=serializer.data['id']):
-                costo_final = serializer.data['costo'] + (
-                    serializer.data['costo'] * (lp.listaprecio.porcentaje / 100))
-                lp.precio = costo_final
-                lp.save()
+            # for lp in DetalleListaPrecio.objects.filter(instancia_id=perfil.instancia.id, producto_id=serializer.data['id']):
+            #     costo_final = serializer.data['costo'] + (
+            #         serializer.data['costo'] * (lp.listaprecio.porcentaje / 100))
+            #     lp.precio = costo_final
+            #     lp.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             if (str(request.data['instancia']) == str(perfil.instancia.id)):
@@ -965,11 +966,11 @@ class ProductoVS(viewsets.ModelViewSet):
                     instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
-                for lp in DetalleListaPrecio.objects.filter(instancia_id=perfil.instancia.id, producto_id=serializer.data['id']):
-                    costo_final = serializer.data['costo'] + \
-                        (serializer.data['costo'] * (lp.porcentaje / 100))
-                    lp.precio = costo_final
-                    lp.save()
+                # for lp in DetalleListaPrecio.objects.filter(instancia_id=perfil.instancia.id, producto_id=serializer.data['id']):
+                #     costo_final = serializer.data['costo'] + \
+                #         (serializer.data['costo'] * (lp.porcentaje / 100))
+                #     lp.precio = costo_final
+                #     lp.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
@@ -1938,198 +1939,198 @@ class DetalleFacturaVS(viewsets.ModelViewSet):
             return DetalleFactura.objects.filter(instancia=perfil.instancia)
 
 """ """
-class ListaPrecioVS(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]
-    serializer_class = ListaPrecioSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['activo']
+# class ListaPrecioVS(viewsets.ModelViewSet):
+#     permission_classes = [IsAuthenticated]
+#     authentication_classes = [TokenAuthentication]
+#     serializer_class = ListaPrecioSerializer
+#     filter_backends = [DjangoFilterBackend]
+#     filterset_fields = ['activo']
 
-    def create(self, request):
-        perfil = Perfil.objects.get(usuario=self.request.user)
-        datos = request.data
-        if (perfil.tipo == 'S'):
-            datos['instancia'] = str(perfil.instancia.id)
-            if (datos['predeterminada'] == True):
-                if ListaPrecio.objects.filter(predeterminada=True).exists():
-                    error = 'Ya existe una lista predeterminada'
-                    return Response(error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            serializer = self.get_serializer(data=datos)
-            serializer.is_valid(raise_exception=True)
-            self.perform_create(serializer)
-            headers = self.get_success_headers(serializer.data)
-            productos = Producto.objects.filter(
-                instancia_id=perfil.instancia.id)
-            for o in productos:
-                costo_final = o.costo + \
-                    (o.costo * (serializer.data['porcentaje'] / 100))
-                listad = DetalleListaPrecio.objects.create(
-                    instancia_id=datos['instancia'], producto=o, precio=costo_final, listaprecio_id=serializer.data['id'])
-            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'):
-            datos['instancia'] = str(perfil.instancia.id)
-            if datos['predeterminada'] == True:
-                if ListaPrecio.objects.filter(predeterminada=True).exists():
-                    error = 'Ya existe una lista predeterminada'
-                    return Response(error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            serializer = self.get_serializer(data=datos)
-            serializer.is_valid(raise_exception=True)
-            self.perform_create(serializer)
-            headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        else:
-            return Response(status=status.HTTP_403_FORBIDDEN)
+#     def create(self, request):
+#         perfil = Perfil.objects.get(usuario=self.request.user)
+#         datos = request.data
+#         if (perfil.tipo == 'S'):
+#             datos['instancia'] = str(perfil.instancia.id)
+#             if (datos['predeterminada'] == True):
+#                 if ListaPrecio.objects.filter(predeterminada=True).exists():
+#                     error = 'Ya existe una lista predeterminada'
+#                     return Response(error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#             serializer = self.get_serializer(data=datos)
+#             serializer.is_valid(raise_exception=True)
+#             self.perform_create(serializer)
+#             headers = self.get_success_headers(serializer.data)
+#             productos = Producto.objects.filter(
+#                 instancia_id=perfil.instancia.id)
+#             for o in productos:
+#                 costo_final = o.costo + \
+#                     (o.costo * (serializer.data['porcentaje'] / 100))
+#                 listad = DetalleListaPrecio.objects.create(
+#                     instancia_id=datos['instancia'], producto=o, precio=costo_final, listaprecio_id=serializer.data['id'])
+#             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+#         elif (perfil.tipo == 'A'):
+#             datos['instancia'] = str(perfil.instancia.id)
+#             if datos['predeterminada'] == True:
+#                 if ListaPrecio.objects.filter(predeterminada=True).exists():
+#                     error = 'Ya existe una lista predeterminada'
+#                     return Response(error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#             serializer = self.get_serializer(data=datos)
+#             serializer.is_valid(raise_exception=True)
+#             self.perform_create(serializer)
+#             headers = self.get_success_headers(serializer.data)
+#             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+#         else:
+#             return Response(status=status.HTTP_403_FORBIDDEN)
 
-    def update(self, request, *args, **kwargs):
-        perfil = Perfil.objects.get(usuario=self.request.user)
-        datos = request.data
-        if (perfil.tipo == 'S'):
-            datos['instancia'] = str(perfil.instancia.id)
-            if datos['predeterminada'] == True:
-                if ListaPrecio.objects.filter(predeterminada=True).exclude(id=kwargs['pk']).exists():
-                    error = 'Ya existe una lista predeterminada'
-                    return Response(error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            partial = True  # Here I change partial to True
-            instance = self.get_object()
-            serializer = self.get_serializer(
-                instance, data=request.data, partial=partial)
-            serializer.is_valid(raise_exception=True)
-            self.perform_update(serializer)
-            DetalleListaPrecio.objects.filter(
-                instancia_id=perfil.instancia.id, listaprecio=serializer.data['id']).delete()
-            productos = Producto.objects.filter(
-                instancia_id=perfil.instancia.id)
-            for o in productos:
-                costo_final = o.costo + \
-                    (o.costo * (serializer.data['porcentaje'] / 100))
-                listad = DetalleListaPrecio.objects.create(
-                    instancia_id=datos['instancia'], producto=o, precio=costo_final, listaprecio_id=serializer.data['id'])
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-            if (str(request.data['instancia']) == str(perfil.instancia.id)):
-                datos['instancia'] = str(perfil.instancia.id)
-                if datos['predeterminada'] == True:
-                    if ListaPrecio.objects.filter(predeterminada=True).exists():
-                        return Response({'error': 'Ya existe una lista predeterminada'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                partial = True  # Here I change partial to True
-                instance = self.get_object()
-                serializer = self.get_serializer(
-                    instance, data=request.data, partial=partial)
-                serializer.is_valid(raise_exception=True)
-                self.perform_update(serializer)
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            else:
-                return Response(status=status.HTTP_403_FORBIDDEN)
+#     def update(self, request, *args, **kwargs):
+#         perfil = Perfil.objects.get(usuario=self.request.user)
+#         datos = request.data
+#         if (perfil.tipo == 'S'):
+#             datos['instancia'] = str(perfil.instancia.id)
+#             if datos['predeterminada'] == True:
+#                 if ListaPrecio.objects.filter(predeterminada=True).exclude(id=kwargs['pk']).exists():
+#                     error = 'Ya existe una lista predeterminada'
+#                     return Response(error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#             partial = True  # Here I change partial to True
+#             instance = self.get_object()
+#             serializer = self.get_serializer(
+#                 instance, data=request.data, partial=partial)
+#             serializer.is_valid(raise_exception=True)
+#             self.perform_update(serializer)
+#             DetalleListaPrecio.objects.filter(
+#                 instancia_id=perfil.instancia.id, listaprecio=serializer.data['id']).delete()
+#             productos = Producto.objects.filter(
+#                 instancia_id=perfil.instancia.id)
+#             for o in productos:
+#                 costo_final = o.costo + \
+#                     (o.costo * (serializer.data['porcentaje'] / 100))
+#                 listad = DetalleListaPrecio.objects.create(
+#                     instancia_id=datos['instancia'], producto=o, precio=costo_final, listaprecio_id=serializer.data['id'])
+#             return Response(serializer.data, status=status.HTTP_200_OK)
+#         else:
+#             if (str(request.data['instancia']) == str(perfil.instancia.id)):
+#                 datos['instancia'] = str(perfil.instancia.id)
+#                 if datos['predeterminada'] == True:
+#                     if ListaPrecio.objects.filter(predeterminada=True).exists():
+#                         return Response({'error': 'Ya existe una lista predeterminada'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#                 partial = True  # Here I change partial to True
+#                 instance = self.get_object()
+#                 serializer = self.get_serializer(
+#                     instance, data=request.data, partial=partial)
+#                 serializer.is_valid(raise_exception=True)
+#                 self.perform_update(serializer)
+#                 return Response(serializer.data, status=status.HTTP_200_OK)
+#             else:
+#                 return Response(status=status.HTTP_403_FORBIDDEN)
 
-    def destroy(self, request, *args, **kwargs):
-        perfil = Perfil.objects.get(usuario=self.request.user)
-        instance = self.get_object()
-        if (perfil.tipo == 'S'):
-            instance.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        else:
-            if (str(instance.instancia.id) == str(perfil.instancia.id)):
-                instance.delete()
-                return Response(status=status.HTTP_204_NO_CONTENT)
-            else:
-                return Response(status=status.HTTP_403_FORBIDDEN)
+#     def destroy(self, request, *args, **kwargs):
+#         perfil = Perfil.objects.get(usuario=self.request.user)
+#         instance = self.get_object()
+#         if (perfil.tipo == 'S'):
+#             instance.delete()
+#             return Response(status=status.HTTP_204_NO_CONTENT)
+#         else:
+#             if (str(instance.instancia.id) == str(perfil.instancia.id)):
+#                 instance.delete()
+#                 return Response(status=status.HTTP_204_NO_CONTENT)
+#             else:
+#                 return Response(status=status.HTTP_403_FORBIDDEN)
 
-    def get_queryset(self):
-        perfil = Perfil.objects.get(usuario=self.request.user)
-        listas = ListaPrecio.objects.filter(
-            instancia=perfil.instancia, predeterminada=True)
-        if listas.exists() and listas.count() > 1:
-            for l in listas:
-                l.predeterminada = False
-                l.save()
-            lista = ListaPrecio.objects.filter(
-                instancia=perfil.instancia, activo=True).first()
-            lista.predeterminada = True
-            lista.save()
-        if (perfil.tipo == 'S'):
-            return ListaPrecio.objects.all().order_by('id')
-        else:
-            return ListaPrecio.objects.filter(instancia=perfil.instancia).order_by('id')
+#     def get_queryset(self):
+#         perfil = Perfil.objects.get(usuario=self.request.user)
+#         listas = ListaPrecio.objects.filter(
+#             instancia=perfil.instancia, predeterminada=True)
+#         if listas.exists() and listas.count() > 1:
+#             for l in listas:
+#                 l.predeterminada = False
+#                 l.save()
+#             lista = ListaPrecio.objects.filter(
+#                 instancia=perfil.instancia, activo=True).first()
+#             lista.predeterminada = True
+#             lista.save()
+#         if (perfil.tipo == 'S'):
+#             return ListaPrecio.objects.all().order_by('id')
+#         else:
+#             return ListaPrecio.objects.filter(instancia=perfil.instancia).order_by('id')
 
-""" """
-class DetalleListaPrecioVS(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]
-    serializer_class = DetalleListaPrecioSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['listaprecio', 'producto__activo']
+# """ """
+# class DetalleListaPrecioVS(viewsets.ModelViewSet):
+#     permission_classes = [IsAuthenticated]
+#     authentication_classes = [TokenAuthentication]
+#     serializer_class = DetalleListaPrecioSerializer
+#     filter_backends = [DjangoFilterBackend]
+#     filterset_fields = ['listaprecio', 'producto__activo']
 
-    def create(self, request):
-        perfil = Perfil.objects.get(usuario=self.request.user)
-        datos = request.data
-        if (perfil.tipo == 'S'):
-            _mutable = datos._mutable
-            datos._mutable = True
-            datos['instancia'] = str(perfil.instancia.id)
-            datos._mutable = _mutable
-            serializer = self.get_serializer(data=datos)
-            serializer.is_valid(raise_exception=True)
-            self.perform_create(serializer)
-            headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        elif (perfil.tipo == 'A'):
-            _mutable = datos._mutable
-            datos._mutable = True
-            datos['instancia'] = str(perfil.instancia.id)
-            datos._mutable = _mutable
-            serializer = self.get_serializer(data=datos)
-            serializer.is_valid(raise_exception=True)
-            self.perform_create(serializer)
-            headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        else:
-                return Response(status=status.HTTP_403_FORBIDDEN)
+#     def create(self, request):
+#         perfil = Perfil.objects.get(usuario=self.request.user)
+#         datos = request.data
+#         if (perfil.tipo == 'S'):
+#             _mutable = datos._mutable
+#             datos._mutable = True
+#             datos['instancia'] = str(perfil.instancia.id)
+#             datos._mutable = _mutable
+#             serializer = self.get_serializer(data=datos)
+#             serializer.is_valid(raise_exception=True)
+#             self.perform_create(serializer)
+#             headers = self.get_success_headers(serializer.data)
+#             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+#         elif (perfil.tipo == 'A'):
+#             _mutable = datos._mutable
+#             datos._mutable = True
+#             datos['instancia'] = str(perfil.instancia.id)
+#             datos._mutable = _mutable
+#             serializer = self.get_serializer(data=datos)
+#             serializer.is_valid(raise_exception=True)
+#             self.perform_create(serializer)
+#             headers = self.get_success_headers(serializer.data)
+#             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+#         else:
+#                 return Response(status=status.HTTP_403_FORBIDDEN)
 
-    def update(self, request, *args, **kwargs):
-        perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo == 'S'):
-            partial = True  # Here I change partial to True
-            instance = self.get_object()
-            serializer = self.get_serializer(
-                instance, data=request.data, partial=partial)
-            serializer.is_valid(raise_exception=True)
-            self.perform_update(serializer)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-            if (str(request.data['instancia']) == str(perfil.instancia.id)):
-                _mutable = datos._mutable
-                datos._mutable = True
-                datos['instancia'] = str(perfil.instancia.id)
-                datos._mutable = _mutable
-                partial = True  # Here I change partial to True
-                instance = self.get_object()
-                serializer = self.get_serializer(
-                    instance, data=request.data, partial=partial)
-                serializer.is_valid(raise_exception=True)
-                self.perform_update(serializer)
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            else:
-                return Response(status=status.HTTP_403_FORBIDDEN)
+#     def update(self, request, *args, **kwargs):
+#         perfil = Perfil.objects.get(usuario=self.request.user)
+#         if (perfil.tipo == 'S'):
+#             partial = True  # Here I change partial to True
+#             instance = self.get_object()
+#             serializer = self.get_serializer(
+#                 instance, data=request.data, partial=partial)
+#             serializer.is_valid(raise_exception=True)
+#             self.perform_update(serializer)
+#             return Response(serializer.data, status=status.HTTP_200_OK)
+#         else:
+#             if (str(request.data['instancia']) == str(perfil.instancia.id)):
+#                 _mutable = datos._mutable
+#                 datos._mutable = True
+#                 datos['instancia'] = str(perfil.instancia.id)
+#                 datos._mutable = _mutable
+#                 partial = True  # Here I change partial to True
+#                 instance = self.get_object()
+#                 serializer = self.get_serializer(
+#                     instance, data=request.data, partial=partial)
+#                 serializer.is_valid(raise_exception=True)
+#                 self.perform_update(serializer)
+#                 return Response(serializer.data, status=status.HTTP_200_OK)
+#             else:
+#                 return Response(status=status.HTTP_403_FORBIDDEN)
 
-    def destroy(self, request, *args, **kwargs):
-        perfil = Perfil.objects.get(usuario=self.request.user)
-        instance = self.get_object()
-        if (perfil.tipo == 'S'):
-            instance.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        else:
-            if (str(instance.instancia.id) == str(perfil.instancia.id)):
-                instance.delete()
-                return Response(status=status.HTTP_204_NO_CONTENT)
-            else:
-                return Response(status=status.HTTP_403_FORBIDDEN)
+#     def destroy(self, request, *args, **kwargs):
+#         perfil = Perfil.objects.get(usuario=self.request.user)
+#         instance = self.get_object()
+#         if (perfil.tipo == 'S'):
+#             instance.delete()
+#             return Response(status=status.HTTP_204_NO_CONTENT)
+#         else:
+#             if (str(instance.instancia.id) == str(perfil.instancia.id)):
+#                 instance.delete()
+#                 return Response(status=status.HTTP_204_NO_CONTENT)
+#             else:
+#                 return Response(status=status.HTTP_403_FORBIDDEN)
 
-    def get_queryset(self):
-        perfil = Perfil.objects.get(usuario=self.request.user)
-        if (perfil.tipo == 'S'):
-            return DetalleListaPrecio.objects.all().order_by('producto', '-precio')
-        else:
-            return DetalleListaPrecio.objects.filter(instancia=perfil.instancia).order_by('producto', '-precio')
+#     def get_queryset(self):
+#         perfil = Perfil.objects.get(usuario=self.request.user)
+#         if (perfil.tipo == 'S'):
+#             return DetalleListaPrecio.objects.all().order_by('producto', '-precio')
+#         else:
+#             return DetalleListaPrecio.objects.filter(instancia=perfil.instancia).order_by('producto', '-precio')
 
 """ """
 class ImpuestosFacturaVS(viewsets.ModelViewSet):
@@ -2817,18 +2818,18 @@ def ObtenerColumnas(request):
     except ObjectDoesNotExist as e:
         return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_404_NOT_FOUND)
 
-@api_view(["POST"])
-@csrf_exempt
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def crearlista(request):
-    data = json.loads(request.body)
-    try:
-        lista = ListaPrecio(nombre= data['nombre'], activo=data['activo'])
-        lista.save()
-        return Response('exitoso')
-    except ObjectDoesNotExist as e:
-        return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_404_NOT_FOUND)
+# @api_view(["POST"])
+# @csrf_exempt
+# @authentication_classes([TokenAuthentication])
+# @permission_classes([IsAuthenticated])
+# def crearlista(request):
+#     data = json.loads(request.body)
+#     try:
+#         lista = ListaPrecio(nombre= data['nombre'], activo=data['activo'])
+#         lista.save()
+#         return Response('exitoso')
+#     except ObjectDoesNotExist as e:
+#         return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_404_NOT_FOUND)
 
 
 @api_view(["POST"])
@@ -2924,27 +2925,6 @@ def ObtenerHistorico(request):
         return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-def export_users_csv(request):
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="lista.csv"'
-    marcas = Marca.objects.all()
-    writer = csv.writer(response)  
-    for m in marcas:
-        writer.writerow(['Marca:' , m.nombre])
-        titulos = ['Codigo', 'Producto', 'Costo']
-        listas = ListaPrecio.objects.filter(activo=True).order_by('id')
-        for lista in listas:
-            titulos.append(lista.nombre) 
-        writer.writerow(titulos)
-        productos = Producto.objects.filter(activo=True,venta=True, marca=m)
-        for p in productos:
-            texto = [p.sku, p.nombre, p.costo]
-            precios = DetalleListaPrecio.objects.filter(producto= p).order_by('listaprecio__id')
-            for precio in precios:
-                texto.append(precio.precio)
-            writer.writerow(texto)
-    return response
-
 @api_view(["POST"])
 @csrf_exempt
 @authentication_classes([TokenAuthentication])
@@ -3015,7 +2995,7 @@ class PDFPedido(PDFView):
         # """Pass some extra context to the template."""
         context = super().get_context_data(*args, **kwargs)
         pedido = Pedido.objects.get(id=kwargs['id_pedido'])
-        # totalcosto = float(proforma.total)
+        # total_costo = float(proforma.total)
         value = {'data':[]}
         # total_calculado = 0
         agrupador = DetallePedido.objects.filter(pedido=pedido).values('producto').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada'))
@@ -3049,7 +3029,7 @@ class PDFPedido(PDFView):
             # total_calculado += round(costo_total, 2)
             value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'mostrar':mostrar,'cantidad':total_cantidad})
         context['productos'] = value['data']
-        # if (float(total_calculado) == float(totalcosto)):
+        # if (float(total_calculado) == float(total_costo)):
         #     context['total'] = total_calculado
         # else:
         #     context['total'] = 'Error'
@@ -3065,7 +3045,7 @@ class PDFProforma(PDFView):
         # """Pass some extra context to the template."""
         context = super().get_context_data(*args, **kwargs)
         proforma = Proforma.objects.get(id=kwargs['id_proforma'])
-        totalcosto = float(proforma.total)
+        total_costo = float(proforma.total)
         value = {'data':[]}
         total_calculado = 0
         agrupador = DetalleProforma.objects.filter(proforma=proforma).values('producto','precio').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada'))
@@ -3099,7 +3079,7 @@ class PDFProforma(PDFView):
             total_calculado += round(costo_total, 2)
             value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'mostrar':mostrar,'cantidad':total_cantidad,'precio':precio_unidad,'total_producto':round(costo_total, 2)})
         context['productos'] = value['data']
-        if (float(total_calculado) == float(totalcosto)):
+        if (float(total_calculado) == float(total_costo)):
             context['total'] = total_calculado
         else:
             context['total'] = 'Error'
@@ -3120,7 +3100,7 @@ class PDFFactura(PDFView):
         context = super().get_context_data(*args, **kwargs)
         factura = Factura.objects.get(id=kwargs['id_factura'])
         subtotal = float(factura.subtotal)
-        totalcosto = round(float(factura.total) * conversion.valor,2)
+        total_costo = round(float(factura.total) * conversion.valor,2)
         value = {'data':[]}
         total_calculado = 0
         agrupador = DetalleFactura.objects.filter(factura=factura).values('producto','precio').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada'))
@@ -3157,7 +3137,7 @@ class PDFFactura(PDFView):
         subtotal_conversion = subtotal * conversion.valor
         if (float(total_calculado) == float(subtotal_conversion)):
             context['subtotal'] = subtotal_conversion
-            context['total'] = totalcosto
+            context['total'] = total_costo
         else:
             context['subtotal'] = 'Error'
             context['total'] = 'Error'
@@ -3269,3 +3249,56 @@ def actualiza_proforma(request):
     except Exception as e:
         return JsonResponse({'error': e}, safe=False,
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+def XLSVista(request):
+    response = HttpResponse(content_type='application/ms-excel')
+    response['Content-Disposition'] = 'attachment; filename="users.xls"'
+    wb = xlwt.Workbook(encoding='utf-8')
+    ws = wb.add_sheet('Styling Data') # this will make a sheet named Users Data - First Sheet
+    valores = [{'row_a':'valor 1','row_b':'valor 2','row_c':'valor 3'},{'row_a':'valor 3','row_b':'valor 4','row_c':'valor 5'}]
+    i = 0
+    for m in Marca.objects.all().values():
+        estilo = xlwt.easyxf('font: bold 1')
+        ws.write(i, 0, 'Marca:',estilo)
+        ws.write(i, 1, m['nombre'])
+        i = i+1
+        ws.write(i, 0, 'Codigo')
+        ws.write(i, 1, 'Producto')
+        ws.write(i, 2, 'Costo A')
+        ws.write(i, 3, 'Costo B')
+        ws.write(i, 4, 'Costo c')
+        i = i+1
+        for p in Producto.objects.filter(marca=m['id']).values():
+            ws.write(i, 0, p['sku'])
+            ws.write(i, 1, p['nombre'])
+            ws.write(i, 2, p['costo'])
+            ws.write(i, 3, p['costo_2'])
+            ws.write(i, 4, p['costo_3'])
+            i = i+1
+    wb.save(response)
+    return response
+
+# @api_view(["POST, GET"])
+# @csrf_exempt
+# @authentication_classes([TokenAuthentication])
+# @permission_classes([IsAuthenticated])
+def Value(request):
+    response = HttpResponse(content_type='application/ms-excel')
+    response['Content-Disposition'] = 'attachment; filename="lista.xls"'
+    marcas = Marca.objects.all()
+    writer = csv.writer(response)  
+    for m in marcas:
+        writer.writerow(['Marca:' , m.nombre])
+        titulos = ['Codigo', 'Producto', 'Costo']
+        listas = ListaPrecio.objects.filter(activo=True).order_by('id')
+        for lista in listas:
+            titulos.append(lista.nombre) 
+        writer.writerow(titulos)
+        productos = Producto.objects.filter(activo=True,venta=True, marca=m)
+        for p in productos:
+            texto = [p.sku, p.nombre, p.costo]
+            precios = DetalleListaPrecio.objects.filter(producto= p).order_by('listaprecio__id')
+            for precio in precios:
+                texto.append(precio.precio)
+            writer.writerow(texto)
+    return response
