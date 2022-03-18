@@ -177,6 +177,9 @@ class Producto(models.Model):
     MovimientoInventario_producto = models.BooleanField(default=False, help_text="¿Esta en un MovimientoInventario?")
     # Datos financieros
     costo = models.FloatField(null=True, help_text="Costo del producto")
+    precio_1 = models.FloatField(default= 0,null=False, blank= False,help_text="Precio del producto 1")
+    precio_2 = models.FloatField(default= 0,null=False, blank= False,help_text="Precio del producto 2")
+    precio_3 = models.FloatField(default= 0,null=True, help_text="Precio del producto 3")
     exonerado = models.BooleanField(default=False, help_text="¿Esta exonerado el impuesto?")
     venta_sin_inventario = models.BooleanField(default=False, help_text="¿Se permite la venta del producto sin inventario?")
     lote = models.BooleanField(default=False, help_text="¿Viene en lote?")

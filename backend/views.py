@@ -3054,6 +3054,7 @@ class PDFPedido(PDFView):
         # else:
         #     context['total'] = 'Error'
         context['pedido'] = pedido
+        print(value['data'])
         return context
 
 """ """
