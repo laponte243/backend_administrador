@@ -1,17 +1,27 @@
 from django.core.serializers.json import DjangoJSONEncoder
-from django.shortcuts import render, redirect
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import login, authenticate
+from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
+from django.db.models import Avg, Func
 from django.contrib import messages
+
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
+from rest_framework import authentication, permissions
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from datetime import datetime, timedelta
 from django_tables2 import RequestConfig
 from django_tables2.export.export import TableExport
-import json
-from datetime import datetime, timedelta
-from django.db.models import Avg, Func
+
 from .tables import *
 from .models import *
+
+import json
 
 class Round(Func):
   function = 'ROUND'
@@ -123,3 +133,9 @@ def log_puerta(request):
         return exporter.response("table.{}".format(export_format))
     return render(request, "log_puerta.html", {"table": table})
 
+@api_view(["GET"])
+@csrf_exempt
+# @authentication_classes([TokenAuthentication])
+@permission_classes([AllowAny])
+def guardar_datos(request):
+    return Response('Holo')
