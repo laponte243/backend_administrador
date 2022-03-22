@@ -15,5 +15,6 @@ urlpatterns = [
     path('deactivate/user/<int:user_id>', views.user_deactivate, name='deactivate_user'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('registro_temperatura', views.registros, name='registro_temperatura'),
-    path('log_puertas', views.log_puerta, name='log_puertas')
+    path('log_puertas', views.log_puerta, name='log_puertas'),
+    path('guardar-datos/', views.guardar_datos)
 ]
