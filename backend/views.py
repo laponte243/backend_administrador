@@ -3264,16 +3264,16 @@ def XLSVista(request):
         i = i+1
         ws.write(i, 0, 'Codigo')
         ws.write(i, 1, 'Producto')
-        ws.write(i, 2, 'Costo A')
-        ws.write(i, 3, 'Costo B')
-        ws.write(i, 4, 'Costo c')
+        ws.write(i, 2, 'Precio A')
+        ws.write(i, 3, 'Precio B')
+        ws.write(i, 4, 'Precio c')
         i = i+1
         for p in Producto.objects.filter(marca=m['id']).values():
             ws.write(i, 0, p['sku'])
             ws.write(i, 1, p['nombre'])
-            ws.write(i, 2, p['costo'])
-            ws.write(i, 3, p['costo_2'])
-            ws.write(i, 4, p['costo_3'])
+            ws.write(i, 2, p['precio_1'])
+            ws.write(i, 3, p['precio_2'])
+            ws.write(i, 4, p['precio_3'])
             i = i+1
     wb.save(response)
     return response
