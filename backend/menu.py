@@ -18,11 +18,11 @@ modelosMENU = {'modelos':[
     {"router": "-Inicio",               "parent":None,"orden":0}, # Principal id:1
     {"router": "Dashboard",             "parent":1,"orden":1}, # -dashboard id:2
 
-    {"router": "-Inventarios",           "parent":None,"orden":1}, # Principal id:3
+    {"router": "-Inventarios",          "parent":None,"orden":1}, # Principal id:3
     {"router": "Almacenes",             "parent":3,"orden":1}, # -Inventarios id:4
     {"router": "Productos",             "parent":3,"orden":2}, # -Inventarios id:5
     {"router": "Inventario",            "parent":3,"orden":3}, # -Inventarios id:6
-    {"router": "Tempro",                "parent":3,"orden":4}, # -Inventarios id:25
+    {"router": "Tempro",                "parent":3,"orden":4}, # -Inventarios id:7
     # {"router": "Marca",                 "parent":6,"orden":1},
     # {"router": "Unidad",                "parent":6,"orden":2}, # Eliminado
     # {"router": "Producto",              "parent":6,"orden":3},
@@ -30,14 +30,14 @@ modelosMENU = {'modelos':[
     # {"router": "Almacen",               "parent":6,"orden":5},
     # {"router": "ProductoImagen",        "parent":6,"orden":6},
 
-    {"router": "-Venta",                "parent":None,"orden":2}, # Principal id:7
-    {"router": "Cliente",               "parent":7,"orden":1}, # -Ventas id:8
-    {"router": "Vendedor",              "parent":7,"orden":2}, # -Ventas id:9
-    {"router": "Facturacion",           "parent":7,"orden":5}, # -Ventas id:10
-    # {"router": "ListaPrecio",           "parent":7,"orden":6}, # -Ventas id:11
-    {"router": "Pedido",                "parent":10,"orden":3}, # -Ventas id:12
-    {"router": "Proforma",              "parent":10,"orden":4}, # -Ventas id:13
-    {"router": "Factura",               "parent":10,"orden":4}, # -Ventas id:14
+    {"router": "-Venta",                "parent":None,"orden":2}, # Principal id:8
+    {"router": "Cliente",               "parent":8,"orden":1}, # -Ventas id:9
+    {"router": "Vendedor",              "parent":8,"orden":2}, # -Ventas id:10
+    {"router": "Facturacion",           "parent":8,"orden":5}, # -Ventas id:11
+    {"router": "Pedido",                "parent":11,"orden":3}, # -Facturacion id:12
+    {"router": "Proforma",              "parent":11,"orden":4}, # -Facturacion id:13
+    {"router": "Factura",               "parent":11,"orden":4}, # -Facturacion id:14
+    # {"router": "ListaPrecio",           "parent":7,"orden":6}, # Eliminado
     # {"router": "ContactoCliente",       "parent":8,"orden":1},
     # {"router": "DetallePedido",         "parent":12,"orden":1},
     # {"router": "DetalleProforma",       "parent":13,"orden":1},
@@ -55,13 +55,13 @@ modelosMENU = {'modelos':[
 
 
     {"router": "-Configuracion",        "parent":None,"orden":4}, # Principal id:18
-    {"router": "Usuarios_y_permisos",   "parent":18,"orden":1}, # -Configuracion id:19
-    {"router": "Empresa",               "parent":18,"orden":2}, # -Configuracion id:20
-    {"router": "Avanzado",              "parent":18,"orden":3}, # -Configuracion id:21
-    {"router": "ConfiguracionPapeleria","parent":21,"orden":1}, # Avanzado id:22
-    {"router": "Impuesto",              "parent":21,"orden":2}, # Avanzado id:23
-    {"router": "TasaConversion",        "parent":21,"orden":3}, # Avanzado id:24
-    {"router": "Tempro",                "parent":18,"orden":4}, # Avanzado id:26
+    {"router": "Usuarios_y_permisos",   "parent":19,"orden":1}, # -Configuracion id:19
+    {"router": "Empresa",               "parent":19,"orden":2}, # -Configuracion id:20
+    {"router": "Avanzado",              "parent":19,"orden":3}, # -Configuracion id:21
+    {"router": "Tempro",                "parent":19,"orden":4}, # -Configuracion id:22
+    {"router": "ConfiguracionPapeleria","parent":21,"orden":1}, # Avanzado id:23
+    {"router": "Impuesto",              "parent":21,"orden":2}, # Avanzado id:24
+    {"router": "TasaConversion",        "parent":21,"orden":3}, # Avanzado id:25
     # {"router": "User",                  "parent":19,"orden":1},
     # {"router": "Perfil",                "parent":19,"orden":2},
     # {"router": "Permiso",               "parent":19,"orden":3},
