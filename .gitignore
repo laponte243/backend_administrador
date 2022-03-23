@@ -131,4 +131,5 @@ dmypy.json
 # Carpetas en la Raiz del proyecto
 proformas/
 
-migrations/
+backend/migrations/
+tempro/migrations/
