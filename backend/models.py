@@ -314,7 +314,7 @@ class Pedido(models.Model): # Pedido
 class DetallePedido(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     pedido = models.ForeignKey(Pedido, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Pedido asociado")
-    # lista_precio = models.ForeignKey(ListaPrecio, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Lista de precio asociada")
+    precio_seleccionado = models.FloatField(null= False, blank=False)
     producto = models.ForeignKey(Producto, null=True, blank=False, on_delete=models.DO_NOTHING, help_text="Producto asociado")
     lote = models.TextField(max_length=150, blank=False, null=True, help_text="lote del producto")
     cantidada = models.FloatField(null=False, default=0, blank=False, help_text="Cantidad vendida")
@@ -347,7 +347,7 @@ class Proforma(models.Model):
 class DetalleProforma(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     proforma = models.ForeignKey(Proforma, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="proforma asociada")
-    # lista_precio = models.ForeignKey(ListaPrecio, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Lista de precio asociada")
+    precio_seleccionado = models.FloatField(null= False, blank=False)
     producto = models.ForeignKey(Producto, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="detallepedido asociada")
     lote = models.TextField(max_length=150, blank=False, null=True, help_text="lote del producto")
     cantidada = models.IntegerField(null=False, default=0, blank=False, help_text="Cantidad vendida")

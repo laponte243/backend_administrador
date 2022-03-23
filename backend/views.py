@@ -38,6 +38,7 @@ import pandas as pd
 import csv
 import xlwt
 import requests
+import datetime
 
 # Utiles
 """ Reseteo de contraseña """
@@ -2840,6 +2841,7 @@ def ObtenerColumnas(request):
 def actualiza_pedido(request):
     payload = json.loads(request.body)
     try:
+        print(payload)
         pedido_id = Pedido.objects.get(id=payload['idpedido'])
         detashepedido = DetallePedido.objects.filter(pedido=pedido_id)
         id_dpedidos = []
@@ -2860,18 +2862,18 @@ def actualiza_pedido(request):
                 inventario.disponible -= nuevodisponible
                 inventario.bloqueado += nuevodisponible
             perfil = Perfil.objects.get(usuario=request.user)
-            lista_precio = ListaPrecio.objects.get(id=i['lista_precio'])
+            precio_seleccionado = i['precio_seleccionado']
             producto = Producto.objects.get(id=i["producto"])
             instancia = Instancia.objects.get(perfil=perfil.id)
             cantidad = int(i["cantidada"])
 
             """totalp = cantidad * (producto.costo + (producto.costo * (lista_precio.porcentaje /100)))""" # Dividir totalp en dos partes
-            precio_unidad = producto.costo + (producto.costo * (lista_precio.porcentaje /100)) # Calcular el precio de cada producto
-            totalp = cantidad * precio_unidad # Calcular el precio final segun la cantidad
+            precio_unidad = float(precio_seleccionado) # Calcular el precio de cada producto
+            totalp = cantidad * float(precio_unidad) # Calcular el precio final segun la cantidad
             total_proforma += float(totalp)
 
             pedido = pedido_id
-            nuevo_componente = DetallePedido(lote=i["lote"],total_producto=totalp,lista_precio=lista_precio,instancia_id=instancia.id,pedido=pedido,cantidada=cantidad,producto=producto,inventario=inventario)
+            nuevo_componente = DetallePedido(lote=i["lote"],total_producto=totalp,precio_seleccionado=precio_seleccionado,instancia_id=instancia.id,pedido=pedido,cantidada=cantidad,producto=producto,inventario=inventario)
             nuevo_componente.save()
             if i['id'] == None:
                 inventario.disponible = int(inventario.disponible) - cantidad
@@ -2965,12 +2967,12 @@ def validacion_pedido(request):
             for deta in detashepedido:
                 nuevo_detalle = DetalleProforma(
                     proforma=nueva_proforma,
-                    lista_precio = deta.lista_precio,
+                    precio_seleccionado = deta.precio_seleccionado,
                     inventario=deta.inventario,
                     cantidada=deta.cantidada,
                     lote = deta.lote,
                     producto = deta.producto,
-                    precio = deta.producto.costo + (deta.producto.costo * (deta.lista_precio.porcentaje / 100)),
+                    precio = deta.precio_seleccionado,
                     total_producto = deta.total_producto,
                     instancia=instancia
                 )
@@ -3098,8 +3100,10 @@ class PDFFactura(PDFView):
         conversion = None
         try:
             conversion = TasaConversion.objects.filter(fecha_tasa__date=datetime.datetime.today().date()).latest('fecha_tasa__date')
+            print(conversion.valor, 'try')
         except:
-            conversion = TasaConversion.objects.latest('fecha_tasa__date')
+            conversion = TasaConversion.objects.latest('-fecha_tasa')
+            print(conversion.valor, 'except')
         # """Pass some extra context to the template."""
         context = super().get_context_data(*args, **kwargs)
         factura = Factura.objects.get(id=kwargs['id_factura'])
@@ -3119,22 +3123,22 @@ class PDFFactura(PDFView):
             if productox.lote == True and len(detallado) > 1:
                 for detalle in detallado:
                     valuex['datax'].append({'lote':detalle.lote,'cantidad':detalle.cantidada})
-                    total_cantidad += float(detalle.cantidada)
+                    total_cantidad += int(detalle.cantidada)
                     precio_unidad = float(detalle.precio) * conversion.valor
             elif productox.lote == True and len(detallado) == 1:
                 valuex['datax'] = ''
                 mostrar = False
                 for detalle in detallado:
                     valuex['datax'] = detalle.lote
-                    total_cantidad += float(detalle.cantidada)
+                    total_cantidad += int(detalle.cantidada)
                     precio_unidad = float(detalle.precio) * conversion.valor
             else:
                 mostrar = False
                 for detalle in detallado:
-                    total_cantidad += float(detalle.cantidada)
+                    total_cantidad += int(detalle.cantidada)
                     precio_unidad = float(detalle.precio) * conversion.valor
                 valuex['datax'] = None
-            costo_total = precio_unidad * total_cantidad
+            costo_total = precio_unidad * float(total_cantidad)
             total_calculado += costo_total
             value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'mostrar':mostrar,'cantidad':total_cantidad,'precio':precio_unidad,'total_producto':round(costo_total, 2)})
         context['productos'] = value['data']
@@ -3168,25 +3172,25 @@ def generar_factura(request):
         nueva_factura.identificador_fiscal = proforma.cliente.identificador
         nueva_factura.direccion_cliente = proforma.cliente.ubicacion
         nueva_factura.telefono_cliente = proforma.cliente.telefono
-        nueva_factura.correo_cliente = proforma.cliente.correo
+        nueva_factura.correo_cliente = proforma.cliente.mail
         nueva_factura.id_vendedor = proforma.cliente.id
         nueva_factura.nombre_vendedor = proforma.vendedor.nombre
         nueva_factura.telefono_vendedor = proforma.vendedor.telefono
         nueva_factura.impuesto = 16
         nueva_factura.save()
         for deta in detasheproforma:
-                nuevo_detalle = DetalleFactura(factura=nueva_factura,
-                inventario=deta.inventario,
-                inventario_fijo = deta.inventario,
-                cantidada=deta.cantidada,
-                lote = deta.lote,
-                fecha_vencimiento = deta.inventario.fecha_vencimiento,
-                producto = deta.producto,
-                producto_fijo = deta.producto.nombre,
-                precio = deta.producto.costo,
-                total_producto = deta.total_producto,
-                instancia=instancia
-                )
+                nuevo_detalle = DetalleFactura(
+                    factura=nueva_factura,
+                    inventario=deta.inventario,
+                    inventario_fijo = deta.inventario,
+                    cantidada=deta.cantidada,
+                    lote = deta.lote,
+                    fecha_vencimiento = deta.inventario.fecha_vencimiento,
+                    producto = deta.producto,
+                    producto_fijo = deta.producto.nombre,
+                    precio = deta.precio_seleccionado,
+                    total_producto = deta.total_producto,
+                    instancia=instancia)
                 nuevo_detalle.save()
                 nueva_factura.subtotal += float( deta.total_producto)
                 nueva_factura.total += float( deta.total_producto) + (float( deta.total_producto) * (float(nueva_factura.impuesto) / 100))
@@ -3226,17 +3230,17 @@ def actualiza_proforma(request):
                 nuevodisponible = i['cantidada'] - cantidadanterior
                 inventario.disponible -= nuevodisponible
             perfil = Perfil.objects.get(usuario=request.user)
-            lista_precio = ListaPrecio.objects.get(id=i['lista_precio'])
+            precio_seleccionado = i['precio_seleccionado']
             producto = Producto.objects.get(id=i["producto"])
             instancia = Instancia.objects.get(perfil=perfil.id)
             cantidad = int(i["cantidada"])
             """totalp = cantidad * (producto.costo + (producto.costo * (lista_precio.porcentaje /100)))""" # Dividir totalp en dos partes
-            precio_unidad = float(producto.costo) + (float(producto.costo) * (float(lista_precio.porcentaje)/100.0)) # Calcular el precio del producto en la venta
+            precio_unidad = float(precio_seleccionado) # Calcular el precio del producto en la venta
             totalp = cantidad * precio_unidad # Calcular el precio final del detalle segun la cantidad
             total_proforma += float(totalp)
 
             proforma = proforma_id
-            nuevo_componente = DetalleProforma(proforma=proforma,lote=i["lote"],total_producto=totalp,lista_precio=lista_precio,precio=precio_unidad,instancia_id=instancia.id,cantidada=cantidad,producto=producto,inventario=inventario)
+            nuevo_componente = DetalleProforma(proforma=proforma,lote=i["lote"],total_producto=totalp,precio_seleccionado=precio_seleccionado,precio=precio_unidad,instancia_id=instancia.id,cantidada=cantidad,producto=producto,inventario=inventario)
             nuevo_componente.save()
             if i['id'] == None:
                 inventario.disponible = int(inventario.disponible) - cantidad
@@ -3321,5 +3325,6 @@ def PDFGuardar(request):
         with open('proformas/proforma-%s.pdf'%data['id'], 'wb') as f:
             f.write(response.content)
         return Response(True)
-    except:
+    except Exception as e:
+        print(e)
         return Response(False)
