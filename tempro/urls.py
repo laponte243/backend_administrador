@@ -18,5 +18,6 @@ urlpatterns = [
     path('log_puertas', views.log_puerta, name='log_puertas'),
     path('cambio-temperatura/', views.cambio_temp),
     path('cambio-puerta/', views.cambio_puer),
-    path('errores/', views.errores)
+    path('errores/', views.errores),
+    path('obtener-grafica/', views.obtener_grafica)
 ]

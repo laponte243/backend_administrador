@@ -12,6 +12,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.conf import settings
 from django.core import mail
+from django.core import serializers
 
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
@@ -174,27 +175,31 @@ class Round(Func):
 # @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def cambio_temp(request): # , MAC, serial, temperatura
-    data = request.data
-    nodo = None
-    sensor = None
-    nodo, created = Nodo.objects.get_or_create(direccion_MAC=data['mac'])
-    if created:
-        sensor = Sensor.objects.create(nodo=nodo, serial=data['serial'])
-        sensor.nombre = 'Sensor#%s'%(str(sensor.id))
-        sensor.save()
-        nodo.nombre = 'Nodo#%s'%(str(nodo.id))
-        nodo.save()
-    else:
-        sensor, created = Sensor.objects.get_or_create(nodo=nodo, serial=data['serial'])
+    error = False
+    try:
+        data = request.data
+        nodo = None
+        sensor = None
+        nodo, created = Nodo.objects.get_or_create(direccion_MAC=data['mac'])
         if created:
+            sensor = Sensor.objects.create(nodo=nodo, serial=data['serial'])
             sensor.nombre = 'Sensor#%s'%(str(sensor.id))
             sensor.save()
-    registro = RegistroTemperatura.objects.create(nodo=nodo,sensor=sensor,temperatura=data['temperatura'])
-    ahora = timezone.now()
-    antes = ahora-timezone.timedelta(hours=1)
-    rango = [antes,ahora]
-    prueba = RegistroTemperatura.objects.filter(nodo=nodo,sensor=sensor,created_at__range=rango)
-    recientes = prueba.aggregate(promedio=Avg('temperatura'))
+            nodo.nombre = 'Nodo#%s'%(str(nodo.id))
+            nodo.save()
+        else:
+            sensor, created = Sensor.objects.get_or_create(nodo=nodo, serial=data['serial'])
+            if created:
+                sensor.nombre = 'Sensor#%s'%(str(sensor.id))
+                sensor.save()
+        registro = RegistroTemperatura.objects.create(nodo=nodo,sensor=sensor,temperatura=data['temperatura'])
+        ahora = timezone.now()
+        antes = ahora-timezone.timedelta(hours=1)
+        rango = [antes,ahora]
+        prueba = RegistroTemperatura.objects.filter(nodo=nodo,sensor=sensor,created_at__range=rango)
+        recientes = prueba.aggregate(promedio=Avg('temperatura'))
+    except:
+        error = True
     try:
         if recientes['promedio'] > nodo.temperatura_max:
             correo_temperatura_alta(nodo,recientes['promedio'])
@@ -205,32 +210,38 @@ def cambio_temp(request): # , MAC, serial, temperatura
             correo_temperatura_baja(nodo,recientes['promedio'])
     except:
         pass
-    return Response(registro.values())
+    if error:
+        return Response('Error')
+    else:
+        return Response(registro.values())
 
 @api_view(["POST", "GET"])
 @csrf_exempt
 # @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def cambio_puer(request):
-    data = request.data
-    nodo = None
-    puerta = None
-    estado = None
-    if (data['estado'] == '0'):
-        estado = 'C'
-    else:
-        estado = 'A'
-    nodo, created = Nodo.objects.get_or_create(direccion_MAC=data['mac'])
-    if created:
-        puerta = Puerta.objects.create(nodo=nodo, estado=estado)
-        puerta.save()
-        nodo.nombre = 'Nodo#%s'%(str(nodo.id))
-        nodo.save()
-    else:
-        puerta, created = Puerta.objects.get_or_create(nodo=nodo)
-        puerta.estado = estado
-        puerta.save()
-    return Response(puerta.values())
+    try:
+        data = request.data
+        nodo = None
+        puerta = None
+        estado = None
+        if (data['estado'] == '0'):
+            estado = 'C'
+        else:
+            estado = 'A'
+        nodo, created = Nodo.objects.get_or_create(direccion_MAC=data['mac'])
+        if created:
+            puerta = Puerta.objects.create(nodo=nodo, estado=estado)
+            puerta.save()
+            nodo.nombre = 'Nodo#%s'%(str(nodo.id))
+            nodo.save()
+        else:
+            puerta, created = Puerta.objects.get_or_create(nodo=nodo)
+            puerta.estado = estado
+            puerta.save()
+        return Response(puerta.values())
+    except:
+        return Response('Error')
 
 
 @api_view(["POST", "GET"])
@@ -279,6 +290,41 @@ def errores(request):
             error.contador += 1
             error.save()
         return Response(True)
-    except Exception as e:
-        print(e, 'except')
+    except:
         return Response(False)
+    
+@api_view(["POST", "GET"])
+@csrf_exempt
+# @authentication_classes([TokenAuthentication])
+@permission_classes([AllowAny])
+def obtener_grafica(request):
+    data = request.data
+    if not data:
+        data['nodo'] = 1
+    try:
+        nodo = Nodo.objects.get(id=data['nodo'])
+    except:
+        nodo = None
+    if nodo:
+        try:
+            tfha = timezone.now().replace(microsecond=0, second=0)
+            if tfha.minute > 30:
+                tfha = tfha.replace(minute=30)
+            else:
+                tfha = tfha.replace(minute=0)
+            thdh = tfha-timezone.timedelta(hours=12)
+            trad = [thdh,tfha]
+            rudh = RegistroTemperatura.objects.filter(nodo=data['nodo'],created_at__range=trad)
+            promedio = {'nodo': nodo.id, 'max':nodo.temperatura_max, 'min':nodo.temperatura_min, 'grafica':[]}
+            vuelta = 0
+            while vuelta < 24:
+                thmh = tfha-timezone.timedelta(minutes=30)
+                tram = [thmh,tfha]
+                promedio['grafica'].append({'fecha': tfha.date(),'hora': tfha.time(), 'promedio':round(rudh.filter(created_at__range=tram).aggregate(promedio=Avg('temperatura'))['promedio'],4)})
+                tfha = tfha-timezone.timedelta(minutes=30)
+                vuelta += 1
+            return Response(promedio)
+        except:
+            return Response('Error')
+    else:
+        return Response('Error al intentar encontrar el nodo')

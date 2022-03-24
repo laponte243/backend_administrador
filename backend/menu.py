@@ -55,9 +55,9 @@ modelosMENU = {'modelos':[
 
 
     {"router": "-Configuracion",        "parent":None,"orden":4}, # Principal id:18
-    {"router": "Usuarios_y_permisos",   "parent":19,"orden":1}, # -Configuracion id:19
-    {"router": "Empresa",               "parent":19,"orden":2}, # -Configuracion id:20
-    {"router": "Avanzado",              "parent":19,"orden":3}, # -Configuracion id:21
+    {"router": "Usuarios_y_permisos",   "parent":18,"orden":1}, # -Configuracion id:19
+    {"router": "Empresa",               "parent":18,"orden":2}, # -Configuracion id:20
+    {"router": "Avanzado",              "parent":18,"orden":3}, # -Configuracion id:21
     {"router": "Tempro",                "parent":19,"orden":4}, # -Configuracion id:22
     {"router": "ConfiguracionPapeleria","parent":21,"orden":1}, # Avanzado id:23
     {"router": "Impuesto",              "parent":21,"orden":2}, # Avanzado id:24
