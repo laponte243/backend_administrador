@@ -239,8 +239,7 @@ def obtener_grafica(request):
                 ahora = ahora-timezone.timedelta(minutes=30)
                 vuelta += 1
             return Response(promedio)
-        except Exception as e:
-            print(e)
+        except:
             return Response('Error')
     else:
         return Response('Error al intentar encontrar el nodo')
