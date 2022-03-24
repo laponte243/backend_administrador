@@ -29,6 +29,7 @@ from .models import *
 from .serializers import *
 
 import json
+from django.utils.dateformat import format
 
 class RegistroTemperaturaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -229,7 +230,7 @@ def obtener_grafica(request):
             while vuelta < 24:
                 thmh = tfha-timezone.timedelta(minutes=30)
                 tram = [thmh,tfha]
-                promedio['grafica'].append({'fecha_hora': tfha, 'promedio':round(rudh.filter(created_at__range=tram).aggregate(promedio=Avg('temperatura'))['promedio'],4)})
+                promedio['grafica'].append({'fecha_hora': tfha.timestamp(), 'promedio':round(rudh.filter(created_at__range=tram).aggregate(promedio=Avg('temperatura'))['promedio'],4)})
                 tfha = tfha-timezone.timedelta(minutes=30)
                 vuelta += 1
             return Response(promedio)
