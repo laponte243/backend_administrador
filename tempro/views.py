@@ -16,7 +16,7 @@ from django.core import serializers
 
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
-from rest_framework import authentication, permissions
+from rest_framework import authentication, permissions, viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -26,119 +26,29 @@ from django_tables2.export.export import TableExport
 
 from .tables import *
 from .models import *
+from .serializers import *
 
 import json
 
-class Round(Func):
-  function = 'ROUND'
-  arity = 2
+class RegistroTemperaturaVS(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    # authentication_classes = [TokenAuthentication]
+    queryset = RegistroTemperatura.objects.all()
+    serializer_class = RegistroTemperaturaSerializer
+    def get_queryset(self):
+        return RegistroTemperatura.objects.all()
 
-@login_required()
-def user_dashboard(request):
-    now = datetime.now()
-    earlier = now - timedelta(hours=12)
-    dataset = RegistroTemperatura.objects.values('Nodo__nombre').filter(created_at__range=(earlier,now)).annotate(promedio=Round(Avg('temperatura'),2))
-    categories = list()
-    promedios = list()
-    for entry in dataset:
-        categories.append(entry['Nodo__nombre'])
-        promedios.append(entry['promedio'])
-    datax = []
-    nodos = Nodo.objects.all()
-    for nodo in nodos:
-        datay = []
-        registros = RegistroTemperatura.objects.filter(Nodo__id=nodo.id).values('created_at__date').annotate(
-            promedio=Avg('temperatura'))
-        for registro in registros:
-            datay.append({'name': registro['created_at__date'], 'y': registro['promedio']})
-        datax.append({
-            "name": nodo.nombre,
-            "data": datay
-        })
-    arreglo = json.dumps(datax, cls=DjangoJSONEncoder)
+class NodoVS(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    # authentication_classes = [TokenAuthentication]
+    queryset = Nodo.objects.all()
+    serializer_class = NodoSerializer
 
-    return render(request, 'dashboard.html',{ 'categories': json.dumps(categories),'promedios': json.dumps(promedios),'series':arreglo})
-
-def sign_in(request):
-    msg = []
-    if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
-        user = authenticate(username=username, password=password)
-
-        if user is not None:
-            if user.is_active:
-                login(request, user)
-                return redirect('user_dashboard')
-            else:
-                msg.append('Tu cuenta esta desactivada')
-    else:
-        msg.append('Datos incorrectos, intenta otra vez')
-    return render(request, 'login.html', {'errors': msg})
-
-
-@login_required()
-def registered_users(request):
-    users = User.objects.all()
-
-    context = {
-        'users': users
-    }
-    return render(request, 'users.html', context)
-
-
-@login_required()
-def user_deactivate(request, user_id):
-    user = User.objects.get(pk=user_id)
-    user.is_active = False
-    user.save()
-    messages.success(request, "Cuenta desactivada de manera satisfactoria!")
-    return redirect('system_users')
-
-
-@login_required()
-def user_activate(request, user_id):
-    user = User.objects.get(pk=user_id)
-    user.is_active = True
-    user.save()
-    messages.success(request, "Cuenta activada de manera satisfactoria!")
-    return redirect('system_users')
-
-@login_required()
-def sign_up(request):
-    if request.method == 'POST':
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            form.save()
-            username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password1')
-            user = authenticate(username=username, password=password)
-            login(request, user)
-            return redirect('system_users')
-    else:
-        form = UserCreationForm()
-    return render(request, 'register.html', {'form': form})
-
-@login_required()
-def registros(request):
-    table = Temp_table(RegistroTemperatura.objects.all(), order_by="-created_at")
-    RequestConfig(request, paginate={"per_page": 15}).configure(table)
-    export_format = request.GET.get("_export", None)
-    if TableExport.is_valid_format(export_format):
-        exporter = TableExport(export_format, table)
-        return exporter.response("table.{}".format(export_format))
-    return render(request, "registro_temperatura.html", {"table": table})
-
-@login_required()
-def log_puerta(request):
-    table = Door_table(EstadoPuerta.objects.all(), order_by="-created_at")
-    RequestConfig(request, paginate={"per_page": 15}).configure(table)
-    export_format = request.GET.get("_export", None)
-    if TableExport.is_valid_format(export_format):
-        exporter = TableExport(export_format, table)
-        return exporter.response("table.{}".format(export_format))
-    return render(request, "log_puerta.html", {"table": table})
-
+# class NodoVS(viewsets.ModelViewSet):
+#     permission_classes = [IsAuthenticated]
+#     # authentication_classes = [TokenAuthentication]
+#     queryset = Nodo.objects.all()
+#     serializer_class = NodoSerializer
 
 def correo_temperatura_alta(nodo, promedio):
     subject = 'Alerta de temperatura alta (Tempro)'
@@ -164,7 +74,6 @@ def correo_temperatura_baja(nodo, promedio):
     mail.send_mail(subject, plain_message, email_from,recievers, html_message=html_message)
     correo = CorreoAlerta(nodo=nodo, tipo_alerta='B')
     correo.save()
-
 
 class Round(Func):
   function = 'ROUND'
@@ -320,7 +229,7 @@ def obtener_grafica(request):
             while vuelta < 24:
                 thmh = tfha-timezone.timedelta(minutes=30)
                 tram = [thmh,tfha]
-                promedio['grafica'].append({'fecha': tfha.date(),'hora': tfha.time(), 'promedio':round(rudh.filter(created_at__range=tram).aggregate(promedio=Avg('temperatura'))['promedio'],4)})
+                promedio['grafica'].append({'fecha_hora': tfha, 'promedio':round(rudh.filter(created_at__range=tram).aggregate(promedio=Avg('temperatura'))['promedio'],4)})
                 tfha = tfha-timezone.timedelta(minutes=30)
                 vuelta += 1
             return Response(promedio)
