@@ -40,7 +40,7 @@ class RegistroTemperaturaVS(viewsets.ModelViewSet):
 class NodoVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     # authentication_classes = [TokenAuthentication]
-    queryset = Nodo.objects.all()
+    queryset = Nodo.objects.all().order_by('-id')
     serializer_class = NodoSerializer
 
 # class NodoVS(viewsets.ModelViewSet):
