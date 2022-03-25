@@ -20,7 +20,6 @@ class Sensor(models.Model):
     def __str__(self):
         return "%s %s" % (self.serial, self.nombre)
 
-
 class Puerta(models.Model):
     ESTADO = (
         ('A', 'Abierta'),
@@ -79,3 +78,10 @@ class Error(models.Model):
     fecha_hora = models.DateTimeField(auto_now_add=True)
     def __str__(self):
         return "%s %s"%(self.razon, self.origen)
+
+class Suscripcion(models.Model):
+    chat = models.IntegerField(null=False, blank=False)
+    usuario = models.IntegerField(null=True, blank=True)
+    alertar = models.BooleanField(default=True)
+    def __str__(self):
+        return "%s (%s)"%(self.usuario, self.chat)

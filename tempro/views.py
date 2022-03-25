@@ -46,6 +46,13 @@ class NodoVS(viewsets.ModelViewSet):
     queryset = Nodo.objects.all().order_by('-id')
     serializer_class = NodoSerializer
 
+class SuscripcionVS(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    # authentication_classes = [TokenAuthentication]
+    queryset = Suscripcion.objects.all().order_by('-id')
+    serializer_class = SuscripcionSerializer
+
+
 # class NodoVS(viewsets.ModelViewSet):
 #     permission_classes = [IsAuthenticated]
 #     # authentication_classes = [TokenAuthentication]
@@ -249,7 +256,18 @@ def obtener_grafica(request):
 @csrf_exempt
 # @authentication_classes([TokenAuthentication])
 @permission_classes([AllowAny])
-def alerta(request):
-    from .bot import pruebita
-    pruebita('123456789')
-    return Response('Hola')
+def suscribir(request):
+    try:
+        data = request.data
+        print(data)
+        if data:
+            suscripcion = Suscripcion.objects.get(chat=data['chat_id'])
+            if data['alerta']==True:
+                suscripcion.alertar = True
+            else:
+                suscripcion.alertar = False
+            return Response(status=status.HTTP_201_CREATED)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response('%s'%(e),status=status.HTTP_400_BAD_REQUEST)

@@ -17,3 +17,8 @@ class NodoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Nodo
         fields = '__all__'
+
+class SuscripcionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Suscripcion
+        fields = '__all__'
