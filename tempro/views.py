@@ -126,7 +126,7 @@ def cambio_temp(request): # , MAC, serial, temperatura
     except:
         pass
     if error:
-        return Response('Error')
+        return Response('Error',status=status.HTTP_400_BAD_REQUEST)
     else:
         return Response(registro.values())
 
@@ -156,7 +156,7 @@ def cambio_puer(request):
             puerta.save()
         return Response(puerta.values())
     except:
-        return Response('Error')
+        return Response('Error',status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["POST", "GET"])
@@ -206,7 +206,7 @@ def errores(request):
             error.save()
         return Response(True)
     except:
-        return Response(False)
+        return Response(False,status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(["POST", "GET"])
 @csrf_exempt
@@ -268,3 +268,44 @@ def suscribir(request):
             return Response(status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response('%s'%(e),status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(["POST", "GET"])
+@csrf_exempt
+# @authentication_classes([TokenAuthentication])
+@permission_classes([AllowAny])
+def promedios_tres_dias(request):
+    data = request.data
+    if not data:
+        data['nodo'] = 1
+    try:
+        nodo = Nodo.objects.get(id=data['nodo'])
+    except:
+        nodo = None
+    if nodo:
+        try:
+            ahora = timezone.now().replace(microsecond=0, second=0)
+            if ahora.minute > 30:
+                ahora = ahora.replace(minute=30)
+            else:
+                ahora = ahora.replace(minute=0)
+            antes_30h = ahora-timezone.timedelta(hours=30)
+            rango_mayor = [antes_30h,ahora]
+            registros = RegistroTemperatura.objects.filter(nodo=data['nodo'],created_at__range=rango_mayor).order_by('created_at')
+            registro_final = registros.latest('-created_at').created_at
+            promedio = {'nodo': nodo.id, 'max':nodo.temperatura_max, 'min':nodo.temperatura_min, 'promedios':[]}
+            vuelta = 0
+            crear = True
+            while crear:
+                antes_30m = ahora-timezone.timedelta(minutes=30)
+                rango_menor = [antes_30m,ahora]
+                grupos = registros.filter(created_at__range=rango_menor)
+                if not grupos:
+                    break
+                promedio['promedios'].append({'fecha_hora': ahora.timestamp(), 'promedio':round(grupos.aggregate(promedio=Avg('temperatura'))['promedio'],4)})
+                ahora = ahora-timezone.timedelta(minutes=30)
+                vuelta += 1
+            return Response(promedio)
+        except:
+            return Response('Error',status=status.HTTP_400_BAD_REQUEST)
+    else:
+        return Response('Error al intentar encontrar el nodo',status=status.HTTP_400_BAD_REQUEST)

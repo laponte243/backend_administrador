@@ -13,5 +13,6 @@ urlpatterns = [
     path('cambio-temperatura/', views.cambio_temp),
     path('cambio-puerta/', views.cambio_puer),
     path('errores/', views.errores),
-    path('obtener-grafica/', views.obtener_grafica)
+    path('obtener-grafica/', views.obtener_grafica),
+    path('promedios-tres-dias/', views.promedios_tres_dias)
 ]
