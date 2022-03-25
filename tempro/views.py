@@ -222,16 +222,16 @@ def obtener_grafica(request):
                 ahora = ahora.replace(minute=30)
             else:
                 ahora = ahora.replace(minute=0)
-            antes_12 = ahora-timezone.timedelta(hours=12)
-            rango_mayor = [antes_12,ahora]
+            antes_24h = ahora-timezone.timedelta(hours=24)
+            rango_mayor = [antes_24h,ahora]
             registros = RegistroTemperatura.objects.filter(nodo=data['nodo'],created_at__range=rango_mayor).order_by('created_at')
             registro_final = registros.latest('-created_at').created_at
             promedio = {'nodo': nodo.id, 'max':nodo.temperatura_max, 'min':nodo.temperatura_min, 'grafica':[]}
             vuelta = 0
             crear = True
             while crear:
-                antes_30 = ahora-timezone.timedelta(minutes=30)
-                rango_menor = [antes_30,ahora]
+                antes_30m = ahora-timezone.timedelta(minutes=30)
+                rango_menor = [antes_30m,ahora]
                 grupos = registros.filter(created_at__range=rango_menor)
                 if not grupos:
                     break
@@ -243,3 +243,12 @@ def obtener_grafica(request):
             return Response('Error')
     else:
         return Response('Error al intentar encontrar el nodo')
+
+@api_view(["POST", "GET"])
+@csrf_exempt
+# @authentication_classes([TokenAuthentication])
+@permission_classes([AllowAny])
+def alerta(request):
+    from .bot import pruebita
+    pruebita('123456789')
+    return Response('Hola')

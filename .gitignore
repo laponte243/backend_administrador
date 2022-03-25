@@ -130,3 +130,6 @@ dmypy.json
 
 # Carpetas en la Raiz del proyecto
 proformas/
+
+bot.py
+telegram/
