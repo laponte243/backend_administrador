@@ -13,7 +13,7 @@ from django.utils import timezone
 from django.conf import settings
 from django.core import mail
 from django.core import serializers
-
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
 from rest_framework import authentication, permissions, viewsets, status
@@ -33,11 +33,12 @@ from django.utils.dateformat import format
 
 class RegistroTemperaturaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # authentication_classes = [TokenAuthentication]
-    queryset = RegistroTemperatura.objects.all()
+    authentication_classes = [TokenAuthentication]
+    hoy = timezone.now()
+    dias = hoy-timezone.timedelta(days=3)
+    rango = [dias,hoy]
+    queryset = RegistroTemperatura.objects.filter(created_at__range=rango).order_by('-id')
     serializer_class = RegistroTemperaturaSerializer
-    def get_queryset(self):
-        return RegistroTemperatura.objects.all()
 
 class NodoVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
