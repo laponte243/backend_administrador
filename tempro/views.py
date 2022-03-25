@@ -203,7 +203,7 @@ def errores(request):
         return Response(True)
     except:
         return Response(False)
-    
+
 @api_view(["POST", "GET"])
 @csrf_exempt
 # @authentication_classes([TokenAuthentication])
@@ -218,21 +218,26 @@ def obtener_grafica(request):
         nodo = None
     if nodo:
         try:
-            tfha = timezone.now().replace(microsecond=0, second=0)
-            if tfha.minute > 30:
-                tfha = tfha.replace(minute=30)
+            ahora = timezone.now().replace(microsecond=0, second=0)
+            if ahora.minute > 30:
+                ahora = ahora.replace(minute=30)
             else:
-                tfha = tfha.replace(minute=0)
-            thdh = tfha-timezone.timedelta(hours=12)
-            trad = [thdh,tfha]
-            rudh = RegistroTemperatura.objects.filter(nodo=data['nodo'],created_at__range=trad)
+                ahora = ahora.replace(minute=0)
+            antes_12 = ahora-timezone.timedelta(hours=12)
+            rango_mayor = [antes_12,ahora]
+            registros = RegistroTemperatura.objects.filter(nodo=data['nodo'],created_at__range=rango_mayor).order_by('created_at')
+            registro_final = registros.latest('-created_at').created_at
             promedio = {'nodo': nodo.id, 'max':nodo.temperatura_max, 'min':nodo.temperatura_min, 'grafica':[]}
             vuelta = 0
-            while vuelta < 24:
-                thmh = tfha-timezone.timedelta(minutes=30)
-                tram = [thmh,tfha]
-                promedio['grafica'].append({'fecha_hora': tfha.timestamp(), 'promedio':round(rudh.filter(created_at__range=tram).aggregate(promedio=Avg('temperatura'))['promedio'],4)})
-                tfha = tfha-timezone.timedelta(minutes=30)
+            crear = True
+            while crear:
+                antes_30 = ahora-timezone.timedelta(minutes=30)
+                rango_menor = [antes_30,ahora]
+                grupos = registros.filter(created_at__range=rango_menor)
+                if not grupos:
+                    break
+                promedio['grafica'].append({'fecha_hora': ahora.timestamp(), 'promedio':round(grupos.aggregate(promedio=Avg('temperatura'))['promedio'],4)})
+                ahora = ahora-timezone.timedelta(minutes=30)
                 vuelta += 1
             return Response(promedio)
         except:
