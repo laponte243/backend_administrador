@@ -4,7 +4,7 @@ from . import views
 from django.contrib.auth import views as auth_views
 
 router = routers.DefaultRouter()
-router.register(r'tegistro-tempera', views.RegistroTemperaturaVS)
+router.register(r'registros-temperatura', views.RegistroTemperaturaVS)
 
 urlpatterns = [
     path('', include(router.urls)),
