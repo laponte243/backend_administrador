@@ -32,12 +32,9 @@ import json
 from django.utils.dateformat import format
 
 class RegistroTemperaturaVS(viewsets.ModelViewSet):
-    hoy = timezone.now()
-    dias = hoy-timezone.timedelta(days=3)
-    rango = [dias,hoy]
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
-    queryset = RegistroTemperatura.objects.filter(created_at__range=rango).order_by('-id')
+    queryset = RegistroTemperatura.objects.all().order_by('-id')
     serializer_class = RegistroTemperaturaSerializer
 
 class NodoVS(viewsets.ModelViewSet):
