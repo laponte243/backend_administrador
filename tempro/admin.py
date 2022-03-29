@@ -10,6 +10,7 @@ admin.site.register(Correo)
 admin.site.register(CorreoAlerta)
 admin.site.register(RegistroTemperatura)
 admin.site.register(Error)
+admin.site.register(Suscripcion)
 
 # Eliminar del Admin
 # admin.site.unregister(Group)
