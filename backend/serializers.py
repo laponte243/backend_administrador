@@ -20,6 +20,20 @@ class PermissionMSerializer(serializers.ModelSerializer):
         model = Permission
         fields = '__all__'
 
+class NotaPagoMSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NotasPago
+        fields = '__all__'
+    nombreCliente = serializers.SerializerMethodField('LoadNombreCliente')
+    def LoadNombreCliente(self, obj):
+        return obj.cliente.nombre
+
+class DetalleNotaPagoMSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DetalleNotasPago
+        fields = '__all__'
+
+
 class UsuarioMSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     class Meta:

@@ -68,6 +68,11 @@ modelosMENU = {'modelos':[
     # {"router": "ContactoEmpresa",       "parent":20,"orden":2},
     # {"router": "Menu",                  "parent":None,"orden":2},
     # {"router": "MenuInstancia",         "parent":None,"orden":1},
+
+    {"router": "Cobranza",              "parent":8,"orden":4}, # Avanzado id:26
+    {"router": "Cobranza",              "parent":26,"orden":1}, # Avanzado id:27
+    {"router": "Notasdepago",         "parent":26,"orden":2}, # Avanzado id:28
+    {"router": "Comisiones",            "parent":26,"orden":3}, # Avanzado id:28
 ]}
 
 # bases = { "modelos": [

@@ -336,7 +336,7 @@ class Proforma(models.Model):
     identificador_fiscal = models.TextField(max_length=150, blank=False, null=False, help_text="Identificador fiscal del cliente en la venta")
     direccion_cliente = models.TextField(max_length=150, blank=False, null=False, help_text="telefono del cliente en la proforma")
     telefono_cliente = models.TextField(max_length=150, blank=False, null=False, help_text="fecha de generacion de la proforma")
-
+    saldo_proforma = models.FloatField(null=False, default=0, blank=False, help_text="saldo pendiente de la proforma")
     total = models.FloatField(null=False, default=0, blank=False, help_text="total de la proforma")
     fecha_proforma = models.DateTimeField(auto_now_add=True, help_text="fecha de generacion del pedido")
 
@@ -440,7 +440,17 @@ class NotaFactura(Nota):
     history = HistoricalRecords()
     def __str__(self):
         return 'Nota asociada a "%s"' % (self.factura)
+class NotasPago(models.Model):
+    instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
+    cliente = models.ForeignKey(Cliente, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="cliente asociado")
+    total = models.FloatField(null=False, default=0, blank=False, help_text="total de la nota")
+    descripcion = models.TextField(max_length=150, blank=False, null=False, help_text="pequeña descripcion")
 
+class DetalleNotasPago(models.Model):
+    instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
+    notapago = models.ForeignKey(NotasPago, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="nota de pago asociada")
+    proforma = models.ForeignKey(Proforma, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="proforma a la que afecta")
+    monto = models.FloatField(null=False, default=0, blank=False, help_text="monto a descontar")
 #Compras
 class Proveedor(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")

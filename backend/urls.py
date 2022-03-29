@@ -45,6 +45,8 @@ router.register(r'proforma', views.ProformaVS, basename='proforma')
 router.register(r'proforma-detalle', views.DetalleProformaVS, basename='proforma-detalle')
 router.register(r'factura', views.FacturaVS, basename='factura')
 router.register(r'factura-detalle', views.DetalleFacturaVS, basename='factura-detalle')
+router.register(r'notas-pago', views.NotaPagoVS, basename='notas-pago')
+router.register(r'detalle-notas-pago', views.DetalleNotaPagoVS, basename='detalle-notas-pago')
 # router.register(r'lista-precio', views.ListaPrecioVS, basename='lista-precio')
 # router.register(r'lista-precio-detalle', views.DetalleListaPrecioVS, basename='lista-precio-detalle')
 router.register(r'factura-impuesto', views.ImpuestosFacturaVS, basename='factura-impuesto')
@@ -70,6 +72,7 @@ urlpatterns = [
     path('user-creator/', views.CrearNuevoUsuario),
     # path('crear-lista/', views.crearlista),
     path('actualiza-pedido/', views.actualiza_pedido),
+    path('actualiza-nota/', views.actualiza_nota),
     path('actualiza-proforma/', views.actualiza_proforma),
     path('pdf-pedido/<int:id_pedido>', views.PDFPedido.as_view()),
     path('pdf-proforma/<int:id_proforma>', views.PDFProforma.as_view()),

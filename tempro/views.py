@@ -32,8 +32,8 @@ import json
 from django.utils.dateformat import format
 
 class RegistroTemperaturaVS(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]
+    permission_classes = [AllowAny]
+    #authentication_classes = [TokenAuthentication]
     queryset = RegistroTemperatura.objects.all().order_by('-id')
     serializer_class = RegistroTemperaturaSerializer
 
