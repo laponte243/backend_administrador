@@ -12,7 +12,9 @@ from django.contrib import messages
 from django.utils import timezone
 from django.conf import settings
 from django.core import mail
-from django.core import serializers
+from django.core import serializers as srz
+from django.utils.dateformat import format
+
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
@@ -27,34 +29,68 @@ from django_tables2.export.export import TableExport
 from .tables import *
 from .models import *
 from .serializers import *
+from .telegram.constantes import *
 
+from telebot import *
 import json
-from django.utils.dateformat import format
+import time
+import requests
 
 class RegistroTemperaturaVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
-    queryset = RegistroTemperatura.objects.all().order_by('-id')
+    # queryset = RegistroTemperatura.objects.all().order_by('-id')
     serializer_class = RegistroTemperaturaSerializer
+
+    def update(self):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def get_queryset(self):
+        perfil = Perfil.objects.get(usuario=self.request.user)
+        instancia = perfil.instancia
+        if (perfil.tipo == 'S'):
+            return RegistroTemperatura.objects.all().order_by('-id')
+        else:
+            return RegistroTemperatura.objects.filter(instancia=instancia).order_by('-id')
 
 class NodoVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # authentication_classes = [TokenAuthentication]
-    queryset = Nodo.objects.all().order_by('-id')
+    authentication_classes = [TokenAuthentication]
+    # queryset = Nodo.objects.all().order_by('-id')
     serializer_class = NodoSerializer
+
+    def get_queryset(self):
+        perfil = Perfil.objects.get(usuario=self.request.user)
+        instancia = perfil.instancia
+        if (perfil.tipo == 'S'):
+            return Nodo.objects.all().order_by('-id')
+        else:
+            return Nodo.objects.filter(instancia=instancia).order_by('-id')
 
 class SuscripcionVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # authentication_classes = [TokenAuthentication]
-    queryset = Suscripcion.objects.all().order_by('-id')
+    authentication_classes = [TokenAuthentication]
+    # queryset = Suscripcion.objects.all().order_by('-id')
     serializer_class = SuscripcionSerializer
 
+    def get_queryset(self):
+        perfil = Perfil.objects.get(usuario=self.request.user)
+        instancia = perfil.instancia
+        if (perfil.tipo == 'S'):
+            return Suscripcion.objects.all().order_by('-id')
+        else:
+            return Suscripcion.objects.filter(instancia=instancia).order_by('-id')
 
-# class NodoVS(viewsets.ModelViewSet):
-#     permission_classes = [IsAuthenticated]
-#     # authentication_classes = [TokenAuthentication]
-#     queryset = Nodo.objects.all()
-#     serializer_class = NodoSerializer
+def func_alertar(info):
+    try:
+        API_KEY_BOT = '5260903251:AAFuenEYma01kNHnm6AO9BFioGDn-cNrXEY'
+        suscripciones = Suscripcion.objects.filter(alertar=True).values()
+        bot = telebot.TeleBot(API_KEY_BOT)
+        for suscripcion in suscripciones:
+            bot.send_message(suscripcion['chat'], info)
+        return Response(status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
 def correo_temperatura_alta(nodo, promedio):
     subject = 'Alerta de temperatura alta (Tempro)'
@@ -95,19 +131,27 @@ def cambio_temp(request): # , MAC, serial, temperatura
         data = request.data
         nodo = None
         sensor = None
+        instancia = None
         nodo, created = Nodo.objects.get_or_create(direccion_MAC=data['mac'])
         if created:
+            instancia = Instancia.objects.all().first()
             sensor = Sensor.objects.create(nodo=nodo, serial=data['serial'])
             sensor.nombre = 'Sensor#%s'%(str(sensor.id))
+            sensor.instancia = instancia
             sensor.save()
             nodo.nombre = 'Nodo#%s'%(str(nodo.id))
+            sensor.instancia = instancia
             nodo.save()
         else:
+            instancia = Instancia.objects.all().first()
             sensor, created = Sensor.objects.get_or_create(nodo=nodo, serial=data['serial'])
             if created:
                 sensor.nombre = 'Sensor#%s'%(str(sensor.id))
+                sensor.instancia = instancia
                 sensor.save()
-        registro = RegistroTemperatura.objects.create(nodo=nodo,sensor=sensor,temperatura=data['temperatura'])
+        if not instancia:
+            instancia = Instancia.objects.get(instancia__id=nodo.instancia.id)
+        registro = RegistroTemperatura.objects.create(instancia=instancia,nodo=nodo,sensor=sensor,temperatura=data['temperatura'])
         ahora = timezone.now()
         antes = ahora-timezone.timedelta(hours=1)
         rango = [antes,ahora]
@@ -115,14 +159,17 @@ def cambio_temp(request): # , MAC, serial, temperatura
         recientes = prueba.aggregate(promedio=Avg('temperatura'))
     except:
         error = True
+    hora = datetime.now()
     try:
         if recientes['promedio'] > nodo.temperatura_max:
-            correo_temperatura_alta(nodo,recientes['promedio'])
+            # correo_temperatura_alta(nodo,recientes['promedio'])
+            func_alertar('¡Temperatura alta (%sºc) en %s!'%(round(recientes['promedio'],2),nodo.nombre))
     except:
         pass
     try:
         if recientes['promedio'] < nodo.temperatura_min:
-            correo_temperatura_baja(nodo,recientes['promedio'])
+            # correo_temperatura_baja(nodo,recientes['promedio'])
+            func_alertar('¡Temperatura baja (%sºc) en %s!'%(round(recientes['promedio'],2),nodo.nombre))
     except:
         pass
     if error:
@@ -146,12 +193,15 @@ def cambio_puer(request):
             estado = 'A'
         nodo, created = Nodo.objects.get_or_create(direccion_MAC=data['mac'])
         if created:
+            instancia = Instancia.objects.all().first()
             puerta = Puerta.objects.create(nodo=nodo, estado=estado)
             puerta.save()
             nodo.nombre = 'Nodo#%s'%(str(nodo.id))
             nodo.save()
         else:
             puerta, created = Puerta.objects.get_or_create(nodo=nodo)
+            if created:
+                instancia = Instancia.objects.all().first()
             puerta.estado = estado
             puerta.save()
         return Response(puerta.values())
@@ -214,65 +264,89 @@ def errores(request):
 @permission_classes([AllowAny])
 def obtener_grafica(request):
     data = request.data
-    if not data:
-        data['nodo'] = 1
+    nodos = None
     try:
-        nodo = Nodo.objects.get(id=data['nodo'])
+        if data['todos'] == 'True':
+            nodos = Nodo.objects.all()
+            suscripcion = Suscripcion.objects.get(chat=data['chat'])
+        else:
+            nodos = Nodo.objects.filter(id=data['nodo'])
     except:
-        nodo = None
-    if nodo:
         try:
+            nodos = Nodo.objects.filter(id=data['nodo'])
+        except:
+            nodos = None
+    if nodos:
+        graficas = []
+        for nodo in nodos:
             ahora = timezone.now().replace(microsecond=0, second=0)
-            if ahora.minute > 30:
+            if ahora.minute >= 30:
                 ahora = ahora.replace(minute=30)
             else:
                 ahora = ahora.replace(minute=0)
             antes_24h = ahora-timezone.timedelta(hours=24)
             rango_mayor = [antes_24h,ahora]
-            registros = RegistroTemperatura.objects.filter(nodo=data['nodo'],created_at__range=rango_mayor).order_by('created_at')
-            registro_final = registros.latest('-created_at').created_at
-            promedio = {'nodo': nodo.id, 'max':nodo.temperatura_max, 'min':nodo.temperatura_min, 'grafica':[]}
-            vuelta = 0
-            crear = True
-            while crear:
-                antes_30m = ahora-timezone.timedelta(minutes=30)
-                rango_menor = [antes_30m,ahora]
-                grupos = registros.filter(created_at__range=rango_menor)
-                if not grupos:
-                    break
-                promedio['grafica'].append({'fecha_hora': ahora.timestamp(), 'promedio':round(grupos.aggregate(promedio=Avg('temperatura'))['promedio'],4)})
-                ahora = ahora-timezone.timedelta(minutes=30)
-                vuelta += 1
-            return Response(promedio)
-        except:
-            return Response('Error')
+            registros_nodo = RegistroTemperatura.objects.filter(nodo=nodo)
+            registros = registros_nodo.filter(created_at__range=rango_mayor).order_by('created_at')
+            if len(registros) > 1:
+                registro_final = registros.latest('-created_at').created_at
+                promedio = {'nodo': nodo.id, 'nombre':nodo.nombre, 'max':nodo.temperatura_max, 'min':nodo.temperatura_min, 'grafica':[], 'ultima_hora':None,'ultima_temp':None}
+                vuelta = 0
+                crear = True
+                while crear:
+                    antes_30m = ahora-timezone.timedelta(minutes=30)
+                    rango_menor = [antes_30m,ahora]
+                    grupos = registros.filter(created_at__range=rango_menor)
+                    if not grupos:
+                        ahora = ahora-timezone.timedelta(minutes=30)
+                        vuelta += 1
+                        if vuelta == 49:
+                            break
+                        continue
+                    promedio['grafica'].append({'fecha_hora': ahora.timestamp(), 'promedio':round(grupos.aggregate(promedio=Avg('temperatura'))['promedio'],4)})
+                    ahora = ahora-timezone.timedelta(minutes=30)
+                    vuelta += 1
+                    if vuelta == 49:
+                        break
+                try:
+                    if data['todos'] == 'True':
+                        ultima = registros_nodo.last()
+                        promedio['ultima_temp'] = ultima.temperatura
+                        promedio['ultima_hora'] = ultima.created_at
+                        graficas.append(promedio)
+                except:
+                    return Response(promedio)
+        if suscripcion:
+            return Response(graficas,status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
     else:
-        return Response('Error al intentar encontrar el nodo')
+        return Response('Error al intentar encontrar el nodo', status=status.HTTP_404_NOT_FOUND)
 
-@api_view(["POST", "GET"])
+@api_view(["POST"])
 @csrf_exempt
 # @authentication_classes([TokenAuthentication])
 @permission_classes([AllowAny])
 def suscribir(request):
     try:
         data = request.data
-        print(data)
         if data:
             suscripcion = Suscripcion.objects.get(chat=data['chat_id'])
-            if data['alerta']==True:
-                suscripcion.alertar = True
+            if data['cambiar_alertar'] != 'False':
+                suscripcion.alertar = not suscripcion.alertar
+                suscripcion.save()
+                return Response({'cambiado_a':suscripcion.alertar},status=status.HTTP_202_ACCEPTED)
             else:
-                suscripcion.alertar = False
-            return Response(status=status.HTTP_201_CREATED)
+                return Response(status=status.HTTP_200_OK)
         else:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
     except Exception as e:
         return Response('%s'%(e),status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(["POST", "GET"])
 @csrf_exempt
 # @authentication_classes([TokenAuthentication])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def promedios_tres_dias(request):
     data = request.data
     if not data:
