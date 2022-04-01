@@ -2981,8 +2981,22 @@ def ObtenerColumnas(request):
 @permission_classes([IsAuthenticated])
 def actualiza_nota(request):
     payload = json.loads(request.body)
+    print(payload)
     try:
-        print(payload)
+        for obj in payload['data']:
+            try:
+                if obj['monto'] > 0:
+                    DetalleNotasPago.objects.filter(proforma=obj['id']).delete()
+                    proforma = Proforma.objects.get(id=obj['id'])
+                    perfil = Perfil.objects.get(usuario=request.user)
+                    instancia = Instancia.objects.get(perfil=perfil.id)
+                    nota_pago = NotasPago.objects.get(id=payload['idnota'])
+                    detalle_nota = DetalleNotasPago(instancia=instancia,proforma=proforma,notapago=nota_pago,monto=obj['monto'])
+                    detalle_nota.save()
+                    proforma.saldo_proforma = proforma.saldo_proforma - detalle_nota.monto
+                    proforma.save()
+            except Exception as e:
+                print(e)
         return JsonResponse({'exitoso': 'exitoso'}, safe=False, status=status.HTTP_200_OK)
     except ObjectDoesNotExist as e:
         return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_404_NOT_FOUND)
