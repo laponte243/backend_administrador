@@ -48,7 +48,7 @@ class RegistroTemperaturaVS(viewsets.ModelViewSet):
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
         instancia = perfil.instancia
-        if (perfil.tipo == 'S'):
+        if (perfil.tipo=='S'):
             return RegistroTemperatura.objects.all().order_by('-id')
         else:
             return RegistroTemperatura.objects.filter(instancia=instancia).order_by('-id')
@@ -62,7 +62,7 @@ class NodoVS(viewsets.ModelViewSet):
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
         instancia = perfil.instancia
-        if (perfil.tipo == 'S'):
+        if (perfil.tipo=='S'):
             return Nodo.objects.all().order_by('-id')
         else:
             return Nodo.objects.filter(instancia=instancia).order_by('-id')
@@ -76,7 +76,7 @@ class SuscripcionVS(viewsets.ModelViewSet):
     def get_queryset(self):
         perfil = Perfil.objects.get(usuario=self.request.user)
         instancia = perfil.instancia
-        if (perfil.tipo == 'S'):
+        if (perfil.tipo=='S'):
             return Suscripcion.objects.all().order_by('-id')
         else:
             return Suscripcion.objects.filter(instancia=instancia).order_by('-id')
@@ -155,19 +155,18 @@ def cambio_temp(request): # , MAC, serial, temperatura
         ahora = timezone.now()
         antes = ahora-timezone.timedelta(hours=1)
         rango = [antes,ahora]
-        prueba = RegistroTemperatura.objects.filter(nodo=nodo,sensor=sensor,created_at__range=rango)
+        prueba = RegistroTemperatura.objects.filter(nodo=nodo,created_at__range=rango)
         recientes = prueba.aggregate(promedio=Avg('temperatura'))
     except:
         error = True
-    hora = datetime.now()
     try:
-        if recientes['promedio'] > nodo.temperatura_max:
+        if recientes['promedio']>nodo.temperatura_max and (registro.id%2)==0:
             # correo_temperatura_alta(nodo,recientes['promedio'])
             func_alertar('¡Temperatura alta (%sºc) en %s!'%(round(recientes['promedio'],2),nodo.nombre))
     except:
         pass
     try:
-        if recientes['promedio'] < nodo.temperatura_min:
+        if recientes['promedio']<nodo.temperatura_min and (registro.id%2)==0:
             # correo_temperatura_baja(nodo,recientes['promedio'])
             func_alertar('¡Temperatura baja (%sºc) en %s!'%(round(recientes['promedio'],2),nodo.nombre))
     except:
@@ -187,7 +186,7 @@ def cambio_puer(request):
         nodo = None
         puerta = None
         estado = None
-        if (data['estado'] == '0'):
+        if (data['estado']=='0'):
             estado = 'C'
         else:
             estado = 'A'
@@ -229,7 +228,7 @@ def errores(request):
             temperatura=data['temperatura'],
             estado=data['estado'])
         if created:
-            if data['topic'] == 'temperatura':
+            if data['topic']=='temperatura':
                 error.origen = data['topic']
                 if len(data['receive'].split('|')) != 3:
                     error.nodo = 'N/A'
@@ -239,7 +238,7 @@ def errores(request):
                     error.nodo = data['mac']
                     error.sensor = data['serial']
                     error.temperatura = data['temperatura']
-            if data['topic'] == 'puerta':
+            if data['topic']=='puerta':
                 error.origen = data['topic']
                 if len(data['receive'].split('|')) != 2:
                     error.nodo = 'N/A'
@@ -266,7 +265,7 @@ def obtener_grafica(request):
     data = request.data
     nodos = None
     try:
-        if data['todos'] == 'True':
+        if data['todos']=='True':
             nodos = Nodo.objects.all()
             suscripcion = Suscripcion.objects.get(chat=data['chat'])
         else:
@@ -300,16 +299,16 @@ def obtener_grafica(request):
                     if not grupos:
                         ahora = ahora-timezone.timedelta(minutes=30)
                         vuelta += 1
-                        if vuelta == 49:
+                        if vuelta==49:
                             break
                         continue
                     promedio['grafica'].append({'fecha_hora': ahora.timestamp(), 'promedio':round(grupos.aggregate(promedio=Avg('temperatura'))['promedio'],4)})
                     ahora = ahora-timezone.timedelta(minutes=30)
                     vuelta += 1
-                    if vuelta == 49:
+                    if vuelta==49:
                         break
                 try:
-                    if data['todos'] == 'True':
+                    if data['todos']=='True':
                         ultima = registros_nodo.last()
                         promedio['ultima_temp'] = ultima.temperatura
                         promedio['ultima_hora'] = ultima.created_at
