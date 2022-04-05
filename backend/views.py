@@ -1875,6 +1875,8 @@ class DetalleNotaPagoVS(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
     serializer_class = DetalleNotaPagoMSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['notapago']
 
     def create(self, request):
         perfil = Perfil.objects.get(usuario=self.request.user)
@@ -2981,22 +2983,43 @@ def ObtenerColumnas(request):
 @permission_classes([IsAuthenticated])
 def actualiza_nota(request):
     payload = json.loads(request.body)
-    print(payload)
     try:
+        print(payload)
         for obj in payload['data']:
             try:
                 if obj['monto'] > 0:
-                    DetalleNotasPago.objects.filter(proforma=obj['id']).delete()
-                    proforma = Proforma.objects.get(id=obj['id'])
+                    DetalleNotasPago.objects.filter(proforma=obj['proforma']).delete()
+                    proforma = Proforma.objects.get(id=obj['proforma'])
                     perfil = Perfil.objects.get(usuario=request.user)
                     instancia = Instancia.objects.get(perfil=perfil.id)
                     nota_pago = NotasPago.objects.get(id=payload['idnota'])
-                    detalle_nota = DetalleNotasPago(instancia=instancia,proforma=proforma,notapago=nota_pago,monto=obj['monto'])
+                    detalle_nota = DetalleNotasPago(instancia=instancia,proforma=proforma,notapago=nota_pago,monto=obj['monto'],saldo_anterior=obj['saldo_anterior'])
                     detalle_nota.save()
                     proforma.saldo_proforma = proforma.saldo_proforma - detalle_nota.monto
                     proforma.save()
-            except Exception as e:
+            except Exception as e:  
                 print(e)
+        return JsonResponse({'exitoso': 'exitoso'}, safe=False, status=status.HTTP_200_OK)
+    except ObjectDoesNotExist as e:
+        return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return JsonResponse({'error': e}, safe=False,
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(["POST"])
+@csrf_exempt
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def delete_nota(request):
+    payload = json.loads(request.body)
+    try:
+        nota = NotasPago.objects.get(id=payload['idnota'])
+        for obj in DetalleNotasPago.objects.filter(notapago=nota):
+            proforma = Proforma.objects.get(id=obj.proforma.id)
+            proforma.saldo_proforma = float(proforma.saldo_proforma) + float(obj.monto)
+            proforma.save()
+            obj.delete()
+        nota.delete()
         return JsonResponse({'exitoso': 'exitoso'}, safe=False, status=status.HTTP_200_OK)
     except ObjectDoesNotExist as e:
         return JsonResponse({'error': str(e)}, safe=False, status=status.HTTP_404_NOT_FOUND)

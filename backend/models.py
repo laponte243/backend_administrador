@@ -450,6 +450,7 @@ class DetalleNotasPago(models.Model):
     instancia = models.ForeignKey(Instancia, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="Instancia asociada")
     notapago = models.ForeignKey(NotasPago, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="nota de pago asociada")
     proforma = models.ForeignKey(Proforma, null=False, blank=False, on_delete=models.DO_NOTHING, help_text="proforma a la que afecta")
+    saldo_anterior = models.FloatField(null=False, default=0, blank=False, help_text="saldo anterior de la proforma")
     monto = models.FloatField(null=False, default=0, blank=False, help_text="monto a descontar")
 #Compras
 class Proveedor(models.Model):

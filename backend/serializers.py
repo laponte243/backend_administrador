@@ -32,6 +32,12 @@ class DetalleNotaPagoMSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetalleNotasPago
         fields = '__all__'
+    cliente_nombre = serializers.SerializerMethodField('LoadNombreCliente')
+    def LoadNombreCliente(self, obj):
+        return obj.proforma.cliente.nombre
+    cliente = serializers.SerializerMethodField('LoadCliente')
+    def LoadCliente(self, obj):
+        return obj.proforma.cliente.id
 
 
 class UsuarioMSerializer(serializers.ModelSerializer):

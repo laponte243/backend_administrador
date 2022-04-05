@@ -74,6 +74,7 @@ urlpatterns = [
     path('actualiza-pedido/', views.actualiza_pedido),
     path('actualiza-nota/', views.actualiza_nota),
     path('actualiza-proforma/', views.actualiza_proforma),
+    path('delete_nota/', views.delete_nota),
     path('pdf-pedido/<int:id_pedido>', views.PDFPedido.as_view()),
     path('pdf-proforma/<int:id_proforma>', views.PDFProforma.as_view()),
     path('pdf-proforma-guardar/', views.PDFGuardar),
