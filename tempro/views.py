@@ -29,7 +29,7 @@ from django_tables2.export.export import TableExport
 from .tables import *
 from .models import *
 from .serializers import *
-from .telegram.constantes import *
+#from .telegram.constantes import *
 
 from telebot import *
 import json
