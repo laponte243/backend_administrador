@@ -1291,12 +1291,15 @@ class DetalleInventarioVS(viewsets.ModelViewSet):
 @csrf_exempt
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def Inven(request):
-    perfil = Perfil.objects.get(usuario=request.user)
+def inven(request):
+    perfil=Perfil.objects.get(usuario=request.user)
     if perfil:
-        objeto_inventario = Inventario.objects.filter(instancia=perfil.instancia).values(
-            'almacen', 'almacen__nombre', 'producto', 'producto__nombre').annotate(sum_disponible=Sum('disponible'), sum_bloqueado=Sum('bloqueado'))
-        return Response(objeto_inventario, status=status.HTTP_200_OK)
+        inventarios=Inventario.objects.filter(instancia=perfil.instancia)
+        for o in inventarios:
+            if o.disponible==0 and o.bloqueado==0:
+                inventarios=inventarios.exclude(id=o.id)
+        inventarios=inventarios.values('almacen','almacen_nombre','producto','producto_nombre').annotate(sum_disponible=Sum('disponible'),sum_bloqueado=Sum('bloqueado'))
+        return Response(inventarios,status=status.HTTP_200_OK)
 
 # ventas
 
