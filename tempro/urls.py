@@ -1,7 +1,7 @@
+from django.contrib.auth import views as auth_views
 from django.urls import include, path
 from rest_framework import routers
 from . import views
-from django.contrib.auth import views as auth_views
 
 router = routers.DefaultRouter()
 router.register(r'registros-temperatura', views.RegistroTemperaturaVS,basename='registro')
@@ -14,6 +14,6 @@ urlpatterns = [
     path('cambio-puerta/', views.cambio_puer),
     path('errores/', views.errores),
     path('obtener-grafica/', views.obtener_grafica),
-    path('promedios-tres-dias/', views.promedios_tres_dias),
+    path('promedios-tres-dias/', views.promedio_tres_dias),
     path('suscribir-usuario/', views.suscribir)
 ]

@@ -13,6 +13,25 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script> 
     <title>Factura</title>
+    <!-- <style>
+        .separator {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .separator::before, .separator::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #000;
+        }
+        .separator::before {
+            margin-right: .25em;
+        }
+        .separator::after {
+            margin-left: .25em;
+        }
+    </style> -->
 </head>
 
 <style>
@@ -76,8 +95,8 @@
     }
     .item8 {
         /* CONTENIDO */
-        position: absolute;
-        top: 35mm;
+        position: relative;
+        top: 27mm;
         left: 5%;
         width: 90%;
     }
@@ -148,10 +167,35 @@
 
 <body>
     <div class="container">
+        <div class="item1">
+            <img src="ejemplologo.jpeg" alt="MEDICALVET" width="800" height="500">
+        </div>
+        <div class="item2">
+            <p style="line-height: 3.5mm">
+                <strong><u>Direccion fiscal:</u></strong><br>
+                Direccion fiscal: Ctra. Vieja Tocuyito, Edif. 15, Apto. 12, Conjunto Residencial 'El Portal de Luis', Tocuyito 
+                Edo.Carabobo Telf.: 0000-000-0000. Cel.: 0000-000-0000. Correo: medicalvetcentro@homail.com
+            </p>
+        </div>
         <div class="item3">
             <h6>
-                <div class="bold">FACTURA: {{factura.id}}</div>
+                <div class="bold">FACTURA: 0000{{factura.id}}</div>
             </h6>
+        </div>
+        <div class="item4">
+            <h5>
+                <div class="bold">Nº de Control</div>
+            </h5>
+        </div>
+        <div class="item5">
+            <h6>
+                <div class="bold">RIF.: 0000{{rif}}</div>
+            </h6>
+        </div>
+        <div class="item6">
+        </div>
+        <div class="item7">
+            <hr class="solid">
         </div>
         <div class="item8">
             <p>
@@ -230,6 +274,27 @@
             <p>
                 Total: {{total}} Bs.S
             </p>
+        </div>
+        <div class="item9">
+            <p>
+                Factura Serie "A" Desde Nº 000001 Hasta Nº 003000
+            </p>
+        </div>
+        <div class="item10">
+            <p style="line-height: 2.75mm">
+                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+            </p>
+        </div>
+        <div class="item11">
+            <p>
+                ESTA FACTURA VA SIN TACHAS NI ENMIENDAS
+            </p>
+        </div>
+        <div class="item12">
+            <P style="font-size: 3.5mm;">
+                Blanco: Original - Cliente
+            </P>
         </div>
     </div>
 </body>
