@@ -1,20 +1,4 @@
-# inicio = {'modelos':[
-#     {"router": "-Inicio",               "parent":None,"orden":0},
-#     {"router": "Dashboard",             "parent":0,"orden":1},]}
-# menu = {'modelos': []}
-# parent = 0
-# for i in inicio['modelos']:
-#     counter = 1
-#     if i['parent'] == None:
-#         parent = counter
-#     else:
-#         i['parent'] = parent
-#     menu['modelos'].append(i)
-#     counter += 1
-# print(menu)
-
 modelosMENU = {'modelos':[
-    # Parents
     {"router": "-Inicio",               "parent":None,"orden":0}, # Principal id:1
     {"router": "Dashboard",             "parent":1,"orden":1}, # -dashboard id:2
 
@@ -74,24 +58,3 @@ modelosMENU = {'modelos':[
     {"router": "Notasdepago",         "parent":26,"orden":2}, # Avanzado id:28
     {"router": "Comisiones",            "parent":26,"orden":3}, # Avanzado id:28
 ]}
-
-# bases = { "modelos": [
-#     {"router": "-Utilidades","parent":None,"orden":1}, # Principal
-#     {"router": "-Instancia","parent":None,"orden":2}, # Principal
-#     {"router": "-Empresas","parent":None,"orden":3}, # Principal
-#     {"router": "-Inventarios","parent":None,"orden":4}, # Principal
-#     {"router": "-Ventas","parent":None,"orden":5}, # Principal
-#     {"router": "-Compras","parent":None,"orden":6}, # Principal
-# ]}
-
-# compra = { "modelos": [
-#     # Compras
-#     {"router": "Proveedor","parent":"-Compras","orden":1}, # -Compras
-#     {"router": "Compra","parent":"-Compras","orden":2}, # -Compras
-#     # Detalles en Compras
-#     {"router": "DetalleCompra","parent":"Compra","orden":1}, # -Compras
-#     {"router": "NotaCompra","parent":"Compra","orden":2}, # Compra
-# ]}
-
-# for base in bases:
-#     modelo = {"router":base["router"], "parent":base["parent"], "orden":base['orden']}

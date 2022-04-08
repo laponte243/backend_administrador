@@ -1,5 +1,4 @@
-
-# Importes requeridos para urls.py
+# Importes requeridos para urls del backend (api)
 from rest_framework.authtoken import views as vx
 from rest_framework import routers
 from django.urls import include, path
@@ -7,7 +6,6 @@ from knox import views as knox_views
 # Raiz
 from . import views
 from backend.views import LoginView
-
 # Router
 router = routers.DefaultRouter()
 # Utilidades
@@ -45,44 +43,40 @@ router.register(r'proforma', views.ProformaVS, basename='proforma')
 router.register(r'proforma-detalle', views.DetalleProformaVS, basename='proforma-detalle')
 router.register(r'factura', views.FacturaVS, basename='factura')
 router.register(r'factura-detalle', views.DetalleFacturaVS, basename='factura-detalle')
-router.register(r'notas-pago', views.NotaPagoVS, basename='notas-pago')
-router.register(r'detalle-notas-pago', views.DetalleNotaPagoVS, basename='detalle-notas-pago')
-# router.register(r'lista-precio', views.ListaPrecioVS, basename='lista-precio')
-# router.register(r'lista-precio-detalle', views.DetalleListaPrecioVS, basename='lista-precio-detalle')
 router.register(r'factura-impuesto', views.ImpuestosFacturaVS, basename='factura-impuesto')
 router.register(r'factura-numerologia', views.NumerologiaFacturaVS, basename='factura-numerologia')
 router.register(r'factura-nota', views.NotaFacturaVS, basename='factura-nota')
+router.register(r'notas-pago', views.NotaPagoVS, basename='notas-pago')
+router.register(r'detalle-notas-pago', views.DetalleNotaPagoVS, basename='detalle-notas-pago') 
 # Compras
 router.register(r'proveedor', views.ProveedorVS, basename='proveedor')
 router.register(r'compra', views.CompraVS, basename='compra')
 router.register(r'compra-detalle', views.DetalleCompraVS, basename='compra-detalle')
 router.register(r'compra-nota', views.NotaCompraVS, basename='compra-nota')
-
 # Patterns
 urlpatterns = [
     # Base
     path('', include(router.urls)),
     path('api-token-auth/', vx.obtain_auth_token),
     # Utiles
-    path('inventario/', views.Inven),
-    path('create-super-user/', views.CreateSuperUser),
-    path('columna-get/', views.ObtenerColumnas),
-    path('menu-get/', views.ObtenerMenu),
-    path('historico-get/', views.ObtenerHistorico),
-    path('user-creator/', views.CrearNuevoUsuario),
-    # path('crear-lista/', views.crearlista),
-    path('actualiza-pedido/', views.actualiza_pedido),
-    path('actualiza-nota/', views.actualiza_nota),
-    path('actualiza-proforma/', views.actualiza_proforma),
-    path('delete_nota/', views.delete_nota),
-    path('pdf-pedido/<int:id_pedido>', views.PDFPedido.as_view()),
-    path('pdf-proforma/<int:id_proforma>', views.PDFProforma.as_view()),
-    path('pdf-proforma-guardar/', views.PDFGuardar),
-    path('pdf-factura/<int:id_factura>', views.PDFFactura.as_view()),
-    path('xls-generador/', views.XLSVista),
-    path('validacion_pedido/', views.validacion_pedido),
-    path('generar_factura/', views.generar_factura),
-    # path('export/excel-styling', views.export_styling_xls, name='export_styling_excel'),
+    path('inventario/', views.inven),
+    path('crear-usuario/', views.crear_nuevo_usuario),
+    path('obtener-menu/', views.obtener_menu),
+    path('obtener-columnas/', views.obtener_columnas),
+    # Guardado de registros
+    path('borrar-nota/', views.borrar_nota),
+    path('actualizar-nota/', views.actualizar_nota),
+    path('actualizar-pedido/', views.actualizar_pedido),
+    path('actualizar-proforma/', views.actualizar_proforma),
+    path('validar-pedido/', views.validar_pedido),
+    path('generar-factura/', views.generar_factura),
+    # Mostrar PDFs 
+    path('pdf-pedido/<int:id_pedido>', views.pedido_pdf.as_view()),
+    path('pdf-proforma/<int:id_proforma>', views.proforma_pdf.as_view()),
+    path('pdf-factura/<int:id_factura>', views.factura_pdf.as_view()),
+    path('pdf-proforma-guardar/', views.guardar_pdf),
+    # Excel
+    path('xls-generador/', views.vista_xls),
     # Login
     path('auth/login/', LoginView.as_view(), name='knox_login'),
     path('auth/logout/', knox_views.LogoutView.as_view(), name='knox_logout'),

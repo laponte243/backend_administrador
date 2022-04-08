@@ -21,8 +21,5 @@ urlpatterns = [
     path('apis/v1/', include('backend.urls')),
     path('tempro/v2/', include('tempro.urls')),
     path('dj-rest-auth/', include('dj_rest_auth.urls')),
-    path(
-        'rest-auth/password/reset/confirm/<slug:uidb64>/<slug:token>/',
-        PasswordResetConfirmView.as_view(), name='password_reset_confirm'
-    ),
+    path('rest-auth/password/reset/confirm/<slug:uidb64>/<slug:token>/',PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
 ]

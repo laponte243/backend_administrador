@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
 from backend.models import *
-
 class Nodo(models.Model):
     instancia=models.ForeignKey(Instancia,null=True,on_delete=models.DO_NOTHING)
     nombre=models.CharField(max_length=120,null=True,help_text="Nombre del nodo")
@@ -12,8 +11,7 @@ class Nodo(models.Model):
     created_at=models.DateTimeField(auto_now_add=True)
     updated_at=models.DateTimeField(auto_now=True)
     def __str__(self):
-        return "%s %s" % (self.direccion_MAC,self.nombre)
-
+        return"%s %s"%(self.direccion_MAC,self.nombre)
 class Sensor(models.Model):
     instancia=models.ForeignKey(Instancia,null=True,on_delete=models.DO_NOTHING)
     serial=models.CharField(max_length=120,null=False,blank=False,help_text="Serial del sensor")
@@ -22,18 +20,13 @@ class Sensor(models.Model):
     created_at=models.DateTimeField(auto_now_add=True)
     updated_at=models.DateTimeField(auto_now=True)
     def __str__(self):
-        return "%s %s" % (self.serial,self.nombre)
-
+        return"%s %s"%(self.serial,self.nombre)
 class Puerta(models.Model):
     instancia=models.ForeignKey(Instancia,null=True,on_delete=models.DO_NOTHING)
-    ESTADO=(
-        ('A','Abierta'),
-        ('C','Cerrada'),
-    )
+    ESTADO=(('A','Abierta'),('C','Cerrada'))
     estado=models.CharField(max_length=1,null=False,blank=False,choices=ESTADO)
     nodo=models.ForeignKey(Nodo,null=True,on_delete=models.SET_NULL)
     created_at=models.DateTimeField(auto_now_add=True)
-
 class RegistroTemperatura(models.Model):
     instancia=models.ForeignKey(Instancia,null=True,on_delete=models.DO_NOTHING)
     nodo=models.ForeignKey(Nodo,null=False,on_delete=models.DO_NOTHING)
@@ -47,33 +40,20 @@ class RegistroTemperatura(models.Model):
             nodo=self.Nodo.nombre,
             temperatura=self.temperatura,
             created_at=self.created_at.strftime('%d/%m/%Y %H'))
-
 class Correo(models.Model):
     instancia=models.ForeignKey(Instancia,null=True,on_delete=models.DO_NOTHING)
-    # PRIORIDAD=(
-    #     ('1','Prioridad primera hora'),
-    #     ('2','Prioridad segunda hora'),
-    #     ('3','Prioridad tercera hora'),
-    # )
-    # prioridad=models.CharField(max_length=1,null=False,choices=PRIORIDAD)
     email=models.TextField(max_length=254,null=False,blank=False)
     nombre=models.CharField(max_length=120,null=True,blank=False,help_text="Nombre del receptor")
     created_at=models.DateTimeField(auto_now_add=True)
     updated_at=models.DateTimeField(auto_now=True)
     def __str__(self):
-        return "%s %s" % (self.email,self.nombre)
-
-
+        return"%s %s"%(self.email,self.nombre)
 class CorreoAlerta(models.Model):
     instancia=models.ForeignKey(Instancia,null=True,on_delete=models.DO_NOTHING)
-    TIPO=(
-        ('A','Alta'),
-        ('B','Baja'),
-    )
+    TIPO=(('A','Alta'),('B','Baja'))
     tipo_alerta=models.CharField(max_length=1,choices=TIPO,null=True)
     nodo=models.ForeignKey(Nodo,null=True,on_delete=models.DO_NOTHING)
     created_at=models.DateTimeField(auto_now_add=True)
-
 class Error(models.Model):
     instancia=models.ForeignKey(Instancia,null=True,on_delete=models.DO_NOTHING)
     razon=models.TextField(max_length=254,null=False)
@@ -86,12 +66,11 @@ class Error(models.Model):
     contador=models.IntegerField(null=False,blank=False,default=1)
     fecha_hora=models.DateTimeField(auto_now_add=True)
     def __str__(self):
-        return "%s %s"%(self.razon,self.origen)
-
+        return"%s %s"%(self.razon,self.origen)
 class Suscripcion(models.Model):
     instancia=models.ForeignKey(Instancia,null=True,on_delete=models.DO_NOTHING)
     usuario=models.ForeignKey(User,null=False,blank=False,on_delete=models.CASCADE)
     chat=models.IntegerField(null=False,blank=False,unique=True)
     alertar=models.BooleanField(default=True)
     def __str__(self):
-        return "%s (%s)"%(self.usuario,self.chat)
+        return"%s (%s)"%(self.usuario,self.chat)
