@@ -133,3 +133,5 @@ proformas/
 
 bot.py
 telegram/
+tempro/migrations/
+backend/migrations/

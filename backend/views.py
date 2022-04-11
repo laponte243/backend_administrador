@@ -2752,6 +2752,31 @@ class factura_pdf(PDFView):
             context['total']='Error'
         context['factura']=factura
         return context
+# Generar pagina tipo PDF para notas de pago
+class notapago_pdf(PDFView):
+    template_name='notapago.html'
+    allow_force_html=True
+    def get_context_data(self,*args,**kwargs):
+        # Definicion de contenido extra para el template
+        conversion=None
+        try:
+            conversion=TasaConversion.objects.filter(fecha_tasa__date=datetime.datetime.today().date()).latest('fecha_tasa__date')
+        except:
+            conversion=TasaConversion.objects.latest('-fecha_tasa')
+        context=super().get_context_data(*args,**kwargs)
+        notapago=NotasPago.objects.get(id=kwargs['id_notapago'])
+        total_costo=round(float(notapago.total) * conversion.valor,2)
+        value={'data':[]}
+        total_calculado=0
+        # Setear los valores al template
+        detalles=DetalleNotasPago.objects.filter(notapago_id=notapago.id).order_by('id')
+        reduccion_total=0
+        for detalle in detalles:
+            reduccion_total=reduccion_total+detalle.monto
+        context['detalles']=detalles
+        context['reduccion_total']=reduccion_total
+        context['notapago']=notapago
+        return context
 # Funcion tipo vista para generar facturas
 @api_view(["POST"])
 @csrf_exempt

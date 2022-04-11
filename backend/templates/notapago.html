@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+{% load static %}
+{% load l10n %}
+{% localize on %}
+    {{ value }}
+{% endlocalize %}
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script> 
+    <title>Nota de pago</title>
+    <!-- <style>
+        .separator {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .separator::before, .separator::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #000;
+        }
+        .separator::before {
+            margin-right: .25em;
+        }
+        .separator::after {
+            margin-left: .25em;
+        }
+    </style> -->
+</head>
+
+<style>
+    @page {
+        margin: 0;
+        padding: 0;
+    }
+    .container {
+        margin-left: 5%;
+        margin-right: 5%;
+        font-size: 11px;
+        background: rgb(255, 255, 255);
+    }
+    .item1 {
+        margin-top: 8%;
+        font-size: 0.9em;
+        /* grid-area: header; */
+    }
+    .item2 {
+        margin-top: 2%;
+        font-size: 0.8em;
+        /* grid-area: leyenda; */
+    }
+    .item3 {
+        font-size: 1.1em;
+        /* grid-area: contenido; */
+    }
+    .item4 {
+        font-size: 0.8em;
+        /* grid-area: detalle; */
+    }
+    .item5 {
+        margin-top: 4%;
+        font-size: 1em;
+        /* grid-area: total; */
+    }
+    .table>thead>tr>th {
+        border-bottom: 2px solid rgb(184, 184, 184);
+    }
+    tr { 
+        line-height: 0px;
+    }
+    td { 
+        line-height: 0px;
+    }
+</style>
+
+<body>
+    <div class="container">
+        <div class="item1">
+            <img src="ejemplologo.jpeg" alt="LOGO MEDICALVET CENTRO, C.A" width="800" height="500">
+        </div>
+        <div class="item2">
+            <p>
+                Ctra. Vieja Tocuyito, Edif. 15, Apto. 12, Conjunto Residencial 'El Portal de Luis', Tocuyito - Edo.Carabobo <br>
+                Telefono: 
+                Correo: medicalvetcentro@homail.com
+            </p>
+        </div>
+        <div class="item3" style="text-align: right">
+            <strong><p> NOTA DE PAGO: {{notapago.id}}</p></strong>
+        </div>
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="row" style="margin-top: 1%">
+                    <div class="col-xs-4">Direccion fiscal: {{notapago.cliente.ubicacion}}</div>
+                    <div class="col-xs-4" style="text-align: center">RIF: {{notapago.cliente.identificador}}</div>
+                    <div class="col-xs-4" style="text-align: right">Descripcion: {{notapago.cliente.telefono}}</div>
+                </div>
+                <div class="row" style="margin-top: 1%">
+                    <div class="col-xs-4">Email: {{notapago.cliente.mail}}</div>
+                    <div class="col-xs-4" style="text-align: center">Saldo anterior: {{notapago.saldo_anterior.telefono}}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row" style="margin-top: 5%">
+            <div class="col-xs-12">
+                <table class="table table-responsive table-condensed" style="border-bottom: none;">
+                    <thead style="border-bottom: none;">
+                        <tr style="border-bottom: none;">
+                            <th>ID</th>
+                            <th>Monto reducido</th>
+                            <th>Proforma</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detalle in detalles %}
+                            <tr style="border-bottom: none; height: 28px;">
+                                <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{forloop.counter}}</td>
+                                <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{detalle.monto}}</td>
+                                <td style="border-bottom:1px solid rgb(224, 224, 224); border-top:1px solid rgb(202, 202, 202)">{{detalle.proforma.id}}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="row"">
+            <div class="col-xs-7" style="text-align: right; bottom: 0">
+            </div>
+            <div class="col-xs-4" style="text-align: right; bottom: 0">
+                <p>
+                    MONTO REDUCIDO: {{reduccion_total}} <br>
+                    TOTAL: {{notapago.total}}
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
