@@ -73,13 +73,13 @@ class LoginView(KnoxLoginView):
 # Vista creada para el modelo de Group
 class GroupVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     queryset=Group.objects.all().order_by('name')
     serializer_class=GroupMSerializer
 # Vista creada para el modelo de Permission
 class PermissionVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     queryset=Permission.objects.all().order_by('name')
     serializer_class=PermissionMSerializer
 # Vista modificada para el modelo mixim de User
@@ -123,7 +123,7 @@ class UserVS(viewsets.ModelViewSet):
 # Vista del modelo Modulo
 class ModuloVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=ModuloSerializer
     # Metodo de crear no disponible
     def create(self,request,*args,**kwargs):
@@ -152,7 +152,7 @@ class ModuloVS(viewsets.ModelViewSet):
 # Vista para el modelo Menu
 class MenuVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # # authentication_classes=[TokenAuthentication]
+    # authentication_classes=[TokenAuthentication]
     serializer_class=MenuSerializer
     # Metodo de crear no disponible
     def create(self,request,*args,**kwargs):
@@ -226,7 +226,7 @@ class InstanciaVS(viewsets.ModelViewSet):
 # Menus por instancia
 class MenuInstanciaVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=MenuInstanciaSerializer
     def create(self,request):
         perfil=Perfil.objects.get(usuario=self.request.user)
@@ -282,7 +282,7 @@ class MenuInstanciaVS(viewsets.ModelViewSet):
 # Perfiles de usuarios
 class PerfilVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=PerfilSerializer
     def create(self,request):
         perfil=Perfil.objects.get(usuario=self.request.user)
@@ -353,7 +353,7 @@ class PerfilVS(viewsets.ModelViewSet):
 # Permisos de los usuarios
 class PermisoVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=PermisoSerializer
     def get_queryset(self):
         perfil=Perfil.objects.get(usuario=self.request.user)
@@ -368,7 +368,7 @@ class PermisoVS(viewsets.ModelViewSet):
 # Empresas registradas de la instancia
 class EmpresaVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=EmpresaSerializer
     def create(self,request):
         perfil=Perfil.objects.get(usuario=self.request.user)
@@ -430,7 +430,7 @@ class EmpresaVS(viewsets.ModelViewSet):
 # Contactos de las empresas
 class ContactoEmpresaVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=ContactoEmpresaSerializer
     def create(self,request):
         perfil=Perfil.objects.get(usuario=self.request.user)
@@ -492,7 +492,7 @@ class ContactoEmpresaVS(viewsets.ModelViewSet):
 # Configuracion de papelerias
 class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=ConfiguracionPapeleriaSerializer
     def create(self,request):
         perfil=Perfil.objects.get(usuario=self.request.user)
@@ -554,7 +554,7 @@ class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
 # Tasas de conversiones de la instancia
 class TasaConversionVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=TasaConversionSerializer
     def create(self,request):
         perfil=Perfil.objects.get(usuario=self.request.user)
@@ -616,7 +616,7 @@ class TasaConversionVS(viewsets.ModelViewSet):
 # Impuestos registrados
 class ImpuestosVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=ImpuestosSerializer
     def create(self,request):
         perfil=Perfil.objects.get(usuario=self.request.user)
@@ -678,7 +678,7 @@ class ImpuestosVS(viewsets.ModelViewSet):
 # Marcas registradas en la instancia
 class MarcaVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=MarcaSerializer
     def create(self,request):
         perfil=Perfil.objects.get(usuario=self.request.user)
@@ -740,7 +740,7 @@ class MarcaVS(viewsets.ModelViewSet):
 # Productos registrados en la instancia
 class ProductoVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=ProductoSerializer
     filter_backends=[DjangoFilterBackend]
     filterset_fields=['servicio','menejo_inventario','activo']
@@ -803,7 +803,7 @@ class ProductoVS(viewsets.ModelViewSet):
 # Productos registrados en la instancia
 class ProductoImagenVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=ProductoImagenSerializer
     def create(self,request):
         perfil=Perfil.objects.get(usuario=self.request.user)
@@ -865,7 +865,7 @@ class ProductoImagenVS(viewsets.ModelViewSet):
 # Almacen registrado en la instancia
 class AlmacenVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=AlmacenSerializer
     def create(self,request):
         perfil=Perfil.objects.get(usuario=self.request.user)
@@ -927,7 +927,7 @@ class AlmacenVS(viewsets.ModelViewSet):
 # Movimientos del inventario registrados en el sistema
 class MovimientoInventarioVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=MovimientoInventarioSerializer
     filter_backends=[DjangoFilterBackend]
     filterset_fields=['producto','almacen']
@@ -993,13 +993,15 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
     def get_queryset(self):
         perfil=Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo=='S'):
-            return MovimientoInventario.objects.all().order_by('id')
+            return MovimientoInventario.objects.all()
         else:
-            return MovimientoInventario.objects.filter(instancia=perfil.instancia).order_by('lote')
+            return MovimientoInventario.objects.filter(instancia=perfil.instancia)
+# def filtro_movimientos(params,tipo):
+#     return MovimientoInventario.objects.filter()
 # Detalles del inventario registrados
 class DetalleInventarioVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=InventarioSerializer
     filter_backends=[DjangoFilterBackend]
     filterset_fields=['producto','almacen','disponible','bloqueado']
@@ -1057,13 +1059,13 @@ class DetalleInventarioVS(viewsets.ModelViewSet):
     def get_queryset(self):
         perfil=Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo=='S'):
-            return Inventario.objects.all().order_by('almacen','producto')
+            return Inventario.objects.all().exclude(disponible=0)
         else:
-            return Inventario.objects.filter(instancia=perfil.instancia).order_by('almacen','producto')
+            return Inventario.objects.filter(instancia=perfil.instancia).exclude(disponible=0)
 # Vendedores registrados en la instancia
 class VendedorVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=VendedorSerializer
     filter_backends=[DjangoFilterBackend]
     filterset_fields=['activo']
@@ -1127,7 +1129,7 @@ class VendedorVS(viewsets.ModelViewSet):
 # Clientes registrados en la instancia
 class ClienteVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=ClienteSerializer
     filter_backends=[DjangoFilterBackend]
     filterset_fields=['activo']
@@ -1191,7 +1193,7 @@ class ClienteVS(viewsets.ModelViewSet):
 # Contactos de los clientes de la instancias
 class ContactoClienteVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=ContactoClienteSerializer
     def create(self,request):
         perfil=Perfil.objects.get(usuario=self.request.user)
@@ -1253,7 +1255,7 @@ class ContactoClienteVS(viewsets.ModelViewSet):
 # Pedidos registrados en la instancia
 class PedidoVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=PedidoSerializer
     def create(self,request):
         perfil=Perfil.objects.get(usuario=self.request.user)
@@ -1315,7 +1317,7 @@ class PedidoVS(viewsets.ModelViewSet):
 # Detalles de los pedidos
 class DetallePedidoVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=DetallePedidoSerializer
     filter_backends=[DjangoFilterBackend]
     filterset_fields=['pedido']
@@ -1383,7 +1385,7 @@ class DetallePedidoVS(viewsets.ModelViewSet):
 # Proformas registrados en la instancia
 class ProformaVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=ProformaSerializer
     filter_backends=[DjangoFilterBackend]
     filterset_fields=['cliente']
@@ -1449,7 +1451,7 @@ class ProformaVS(viewsets.ModelViewSet):
 # Detalles de las proformas de la instancia
 class DetalleProformaVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=DetalleProformaSerializer
     filter_backends=[DjangoFilterBackend]
     filterset_fields=['proforma']
@@ -1516,7 +1518,7 @@ class DetalleProformaVS(viewsets.ModelViewSet):
 # Notas de pago
 class NotaPagoVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=NotaPagoMSerializer
     def create(self,request):
         perfil=Perfil.objects.get(usuario=self.request.user)
@@ -1578,7 +1580,7 @@ class NotaPagoVS(viewsets.ModelViewSet):
 # Detalles de las notas de pago de la instancia
 class DetalleNotaPagoVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=DetalleNotaPagoMSerializer
     filter_backends=[DjangoFilterBackend]
     filterset_fields=['notapago']
@@ -1642,7 +1644,7 @@ class DetalleNotaPagoVS(viewsets.ModelViewSet):
 # Facturas registradas en la instancia
 class FacturaVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=FacturaSerializer
     def create(self,request):
         perfil=Perfil.objects.get(usuario=self.request.user)
@@ -1704,7 +1706,7 @@ class FacturaVS(viewsets.ModelViewSet):
 # Detalles de las facturas de la instancia
 class DetalleFacturaVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=DetalleFacturaSerializer
     filter_backends=[DjangoFilterBackend]
     filterset_fields=['factura']
@@ -1768,7 +1770,7 @@ class DetalleFacturaVS(viewsets.ModelViewSet):
 # Impuestos en las facturas de la instancia
 class ImpuestosFacturaVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=ImpuestosFacturaSerializer
     def create(self,request):
         perfil=Perfil.objects.get(usuario=self.request.user)
@@ -1830,7 +1832,7 @@ class ImpuestosFacturaVS(viewsets.ModelViewSet):
 # Numerologia de las facturas de la instancia
 class NumerologiaFacturaVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=NumerologiaFacturaSerializer
     def create(self,request):
         perfil=Perfil.objects.get(usuario=self.request.user)
@@ -1892,7 +1894,7 @@ class NumerologiaFacturaVS(viewsets.ModelViewSet):
 # Notas de las facturas de la instancia
 class NotaFacturaVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=NotaFacturaSerializer
     def create(self,request):
         perfil=Perfil.objects.get(usuario=self.request.user)
@@ -1954,7 +1956,7 @@ class NotaFacturaVS(viewsets.ModelViewSet):
 # Proveedores registrados en la instancia
 class ProveedorVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=ProveedorSerializer
     def create(self,request):
         perfil=Perfil.objects.get(usuario=self.request.user)
@@ -2016,7 +2018,7 @@ class ProveedorVS(viewsets.ModelViewSet):
 # Compras registradas en la instancia
 class CompraVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=CompraSerializer
     def create(self,request):
         perfil=Perfil.objects.get(usuario=self.request.user)
@@ -2078,7 +2080,7 @@ class CompraVS(viewsets.ModelViewSet):
 # Detalle de las compras
 class DetalleCompraVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=DetalleCompraSerializer
     def create(self,request):
         perfil=Perfil.objects.get(usuario=self.request.user)
@@ -2140,7 +2142,7 @@ class DetalleCompraVS(viewsets.ModelViewSet):
 # Notas de las compras de la intancia
 class NotaCompraVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=NotaCompraSerializer
     def create(self,request):
         perfil=Perfil.objects.get(usuario=self.request.user)
@@ -2203,7 +2205,7 @@ class NotaCompraVS(viewsets.ModelViewSet):
 # Funcion tipo vista para obtener objetos del inventario
 @api_view(["GET"])
 @csrf_exempt
-# @authentication_classes([TokenAuthentication])
+@authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def inven(request):
     perfil=Perfil.objects.get(usuario=request.user)
@@ -2250,7 +2252,7 @@ def crear_super_usuario(request):
 # Funcion tipo vista para crear un nuevo usuario
 @api_view(["GET"])
 @csrf_exempt
-# @authentication_classes([TokenAuthentication])
+@authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def crear_nuevo_usuario(request):
     data=json.load(request.body)
@@ -2317,9 +2319,10 @@ def CrearAdmin(data):
 # Funcion tipo vista para obtener el menu de la pagina segun el perfil, los permisos y la intancia del usuario
 @api_view(["GET"])
 @csrf_exempt
-# @authentication_classes([TokenAuthentication])
+@authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def obtener_menu(request):
+
     menus={ 'router': 'root','children': []}
     def VerificarHijos (objetoPadre):
         if (MenuInstancia.objects.filter(parent=objetoPadre.id).count() > 0 or Menu.objects.filter(parent=objetoPadre.id).count() > 0):
@@ -2379,7 +2382,7 @@ def obtener_menu(request):
 # Funcion para obtener las columnas 
 @api_view(["POST"])
 @csrf_exempt
-# @authentication_classes([TokenAuthentication])
+@authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def obtener_columnas(request):
     data=json.loads(request.body)
@@ -2399,7 +2402,7 @@ def obtener_columnas(request):
 # Funcion para obtener el historico de la aplicacion según la instancia
 @api_view(["GET"])
 @csrf_exempt
-# @authentication_classes([TokenAuthentication])
+@authentication_classes([TokenAuthentication])
 # def obtener_historico(request):
 #     from django.db.models import CharField,Value
 #     df=pd.DataFrame()
@@ -2434,7 +2437,7 @@ def obtener_columnas(request):
 # Funcion tipo vista para eliminar las notas de pago
 @api_view(["POST"])
 @csrf_exempt
-# @authentication_classes([TokenAuthentication])
+@authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def borrar_nota(request):
     payload=json.loads(request.body)
@@ -2454,7 +2457,7 @@ def borrar_nota(request):
 # Funcion tipo vista para actualizar las notas de pago
 @api_view(["POST"])
 @csrf_exempt
-# @authentication_classes([TokenAuthentication])
+@authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def actualizar_nota(request):
     payload=json.loads(request.body)
@@ -2481,7 +2484,7 @@ def actualizar_nota(request):
 # Funcion tipo vista para actualizar los pedidos de la instancia
 @api_view(["POST"])
 @csrf_exempt
-# @authentication_classes([TokenAuthentication])
+@authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def actualizar_pedido(request):
     payload=json.loads(request.body)
@@ -2550,7 +2553,7 @@ def Value(request):
 # Funcion tipo vista para hacer la validacion de los pedidos
 @api_view(["POST"])
 @csrf_exempt
-# @authentication_classes([TokenAuthentication])
+@authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def validar_pedido(request):
     payload=json.loads(request.body)
@@ -2755,7 +2758,7 @@ class factura_pdf(PDFView):
 # Funcion tipo vista para generar facturas
 @api_view(["POST"])
 @csrf_exempt
-# @authentication_classes([TokenAuthentication])
+@authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def generar_factura(request):
     payload=json.loads(request.body)
@@ -2804,7 +2807,7 @@ def generar_factura(request):
 # Funcion tipo vista para actualizar proformas 
 @api_view(["POST"])
 @csrf_exempt
-# @authentication_classes([TokenAuthentication])
+@authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def actualizar_proforma(request):
     payload=json.loads(request.body)
@@ -2878,7 +2881,7 @@ def vista_xls(request):
 # Funcion tipo vista para guardar los pdfs de pedidos en el sistema operativo
 @api_view(["GET"])
 @csrf_exempt
-# # @authentication_classes([TokenAuthentication])
+# @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def guardar_pdf(request):
     try:
