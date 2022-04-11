@@ -74,6 +74,7 @@ urlpatterns = [
     path('pdf-pedido/<int:id_pedido>', views.pedido_pdf.as_view()),
     path('pdf-proforma/<int:id_proforma>', views.proforma_pdf.as_view()),
     path('pdf-factura/<int:id_factura>', views.factura_pdf.as_view()),
+    path('pdf-nota-pago/<int:id_notapago>', views.notapago_pdf.as_view()),
     path('pdf-proforma-guardar/', views.guardar_pdf),
     # Excel
     path('xls-generador/', views.vista_xls),
