@@ -229,6 +229,13 @@ class ClienteSerializer(serializers.ModelSerializer):
     nombreInstancia = serializers.SerializerMethodField('LoadNombreInstancia')
     def LoadNombreInstancia(self, obj):
         return obj.instancia.nombre
+    saldo_pendiente = serializers.SerializerMethodField('loadSaldo')
+    def loadSaldo(self, obj):
+            proforma = Proforma.objects.filter(cliente=obj.id)
+            saldo = 0.0
+            for i in proforma:
+                saldo += i.saldo_proforma
+            return saldo
 class ContactoClienteSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactoCliente

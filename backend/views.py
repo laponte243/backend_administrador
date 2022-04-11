@@ -993,9 +993,11 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
     def get_queryset(self):
         perfil=Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo=='S'):
-            return MovimientoInventario.objects.all().order_by('id')
+            return MovimientoInventario.objects.all()
         else:
-            return MovimientoInventario.objects.filter(instancia=perfil.instancia).order_by('lote')
+            return MovimientoInventario.objects.filter(instancia=perfil.instancia)
+# def filtro_movimientos(params,tipo):
+#     return MovimientoInventario.objects.filter()
 # Detalles del inventario registrados
 class DetalleInventarioVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
@@ -1057,9 +1059,9 @@ class DetalleInventarioVS(viewsets.ModelViewSet):
     def get_queryset(self):
         perfil=Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo=='S'):
-            return Inventario.objects.all().order_by('almacen','producto')
+            return Inventario.objects.all().exclude(disponible=0)
         else:
-            return Inventario.objects.filter(instancia=perfil.instancia).order_by('almacen','producto')
+            return Inventario.objects.filter(instancia=perfil.instancia).exclude(disponible=0)
 # Vendedores registrados en la instancia
 class VendedorVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
@@ -2321,6 +2323,7 @@ def CrearAdmin(data):
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def obtener_menu(request):
+
     menus={ 'router': 'root','children': []}
     def VerificarHijos (objetoPadre):
         if (MenuInstancia.objects.filter(parent=objetoPadre.id).count() > 0 or Menu.objects.filter(parent=objetoPadre.id).count() > 0):
