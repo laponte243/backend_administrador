@@ -956,6 +956,7 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
                 headers=self.get_success_headers(serializer.data)
                 return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
             except Exception as e:
+                print(e)
                 return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         elif (perfil.tipo=='A'):
             datos=request.data
@@ -1317,9 +1318,9 @@ class PedidoVS(viewsets.ModelViewSet):
     def get_queryset(self):
         perfil=Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo=='S'):
-            return Pedido.objects.all()
+            return Pedido.objects.all().order_by('-id')
         else:
-            return Pedido.objects.filter(instancia=perfil.instancia)
+            return Pedido.objects.filter(instancia=perfil.instancia).order_by('-id')
 # Detalles de los pedidos
 class DetallePedidoVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
@@ -1451,9 +1452,9 @@ class ProformaVS(viewsets.ModelViewSet):
     def get_queryset(self):
         perfil=Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo=='S'):
-            return Proforma.objects.all()
+            return Proforma.objects.all().order_by('-id')
         else:
-            return Proforma.objects.filter(instancia=perfil.instancia)
+            return Proforma.objects.filter(instancia=perfil.instancia).order_by('-id')
 # Detalles de las proformas de la instancia
 class DetalleProformaVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
@@ -2864,7 +2865,7 @@ def actualizar_proforma(request):
             producto=Producto.objects.get(id=i["producto"])
             instancia=Instancia.objects.get(perfil=perfil.id)
             cantidad=int(i["cantidada"])
-            totalp=cantidad * (producto.costo+(producto.costo * (lista_precio.porcentaje /100)))# Dividir totalp en dos partes
+            totalp=cantidad * precio_seleccionado
             precio_unidad=float(precio_seleccionado) # Calcular el precio del producto en la venta
             totalp=cantidad * precio_unidad # Calcular el precio final del detalle segun la cantidad
             total_proforma += float(totalp)
