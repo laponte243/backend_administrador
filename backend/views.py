@@ -31,6 +31,7 @@ from django_rest_passwordreset.signals import reset_password_token_created
 from django.urls import reverse
 from django.template.loader import render_to_string
 # Utiles
+from django_renderpdf.views import PDFView
 from email import header
 from urllib import response
 from numpy import indices
@@ -39,7 +40,6 @@ import csv
 import xlwt
 import requests
 import datetime
-from django_renderpdf.views import PDFView
 # Reseteo de contraseña
 @receiver(reset_password_token_created)
 def password_reset_token_created(sender,instance,reset_password_token,*args,**kwargs):
@@ -80,7 +80,7 @@ class GroupVS(viewsets.ModelViewSet):
 class PermissionVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
-    queryset=Permission.objects.all().order_by('name')
+    queryset=Permission.objects.all()
     serializer_class=PermissionMSerializer
 # Vista modificada para el modelo mixim de User
 class UserVS(viewsets.ModelViewSet):
@@ -160,16 +160,9 @@ class MenuVS(viewsets.ModelViewSet):
     # Metodo de leer
     def get_queryset(self):
         # Verificar si existen los menus
-        menus=Menu.objects.all()
-        if (menus.count()==0):
-            for m in modelosMENU['modelos']:
-                menu=Menu(router=m['router'],orden=m['orden'])
-                menu.save()
-                if (m['parent']!=None):
-                    menu.parent=Menu.objects.get(id=m['parent'])
-                    menu.save()
         perfil=Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo=='S'):
+            menus=Menu.objects.all()
             return menus
         else:
             return None
@@ -936,19 +929,34 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
-            serializer=self.get_serializer(data=datos)
-            serializer.is_valid(raise_exception=True)
-            objeto=MovimientoInventario.objects.filter(
-                instancia_id=datos['instancia'],producto_id=datos['producto'],almacen_id=datos['almacen'])
-            if objeto.count() > 0:
-                    Inventario.objects.create(instancia_id=datos['instancia'],producto_id=datos['producto'],almacen_id=datos['almacen'],
-                                              disponible=datos['cantidad_recepcion'],bloqueado=0,lote=datos['lote'],fecha_vencimiento=datos['fecha_vencimiento'])
-            else:
-                Inventario.objects.create(instancia_id=datos['instancia'],producto_id=datos['producto'],almacen_id=datos['almacen'],
-                                          disponible=datos['cantidad_recepcion'],bloqueado=0,lote=datos['lote'],fecha_vencimiento=datos['fecha_vencimiento'])
-            self.perform_create(serializer)
-            headers=self.get_success_headers(serializer.data)
-            return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
+            try:
+                inventario=Inventario.objects.get(instancia_id=datos['instancia'],producto_id=datos['producto'],almacen_id=datos['almacen'],lote=datos['lote'])
+            except:
+                inventario=None
+            try:
+                if inventario:
+                    if datos['tipo']=='Salida':
+                        datos['tipo']='S'
+                        inventario.disponible-=float(datos['cantidad'])
+                    elif datos['tipo']=='Entrada':
+                        datos['tipo']='E'
+                        inventario.disponible+=float(datos['cantidad'])
+                    else:
+                        Response('Tipo de movimiento no aceptado',status=status.HTTP_406_NOT_ACCEPTABLE)
+                elif not inventario and datos['tipo']!='Salida':
+                    datos['tipo']='E'
+                    inventario=Inventario.objects.create(instancia_id=datos['instancia'],producto_id=datos['producto'],almacen_id=datos['almacen'],disponible=datos['cantidad'],lote=datos['lote'],fecha_vencimiento=datos['fecha_vencimiento'])
+                else:
+                    return Response('Inventario no encontrado',status=status.HTTP_404_NOT_FOUND)
+                inventario.save()
+                datos['inventario']=inventario.id
+                serializer=self.get_serializer(data=datos)
+                serializer.is_valid(raise_exception=True)
+                self.perform_create(serializer)
+                headers=self.get_success_headers(serializer.data)
+                return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
+            except Exception as e:
+                return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         elif (perfil.tipo=='A'):
             datos=request.data
             datos['instancia']=perfil.instancia.id
@@ -996,8 +1004,6 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
             return MovimientoInventario.objects.all()
         else:
             return MovimientoInventario.objects.filter(instancia=perfil.instancia)
-# def filtro_movimientos(params,tipo):
-#     return MovimientoInventario.objects.filter()
 # Detalles del inventario registrados
 class DetalleInventarioVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
@@ -2207,7 +2213,7 @@ class NotaCompraVS(viewsets.ModelViewSet):
 @csrf_exempt
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def inven(request):
+def inventario(request):
     perfil=Perfil.objects.get(usuario=request.user)
     if perfil:
         inventarios=Inventario.objects.filter(instancia=perfil.instancia)
@@ -2219,20 +2225,20 @@ def inven(request):
 # Funcion para la primera carga del sistema
 def crear_super_usuario(request):
     if Menu.objects.all().count()==0:
-        for m in modelosMENU['modelos']:
-            modulo=Modulo(nombre=m['router'])
+        for modelo in modelosMENU['modelos']:
+            modulo=Modulo(nombre=modelo['router'])
             modulo.save()
-            menu=Menu(router=m['router'],orden=m['orden'])
+            menu=Menu(router=modelo['router'],orden=modelo['orden'])
             menu.modulos=modulo
             menu.save()
-            if (m['parent']!=None):
-                menu.parent=Menu.objects.get(id=m['parent'])
+            if modelo['parent']!=None:
+                menu.parent=Menu.objects.get(router=modelo['parent'])
                 menu.save()
     if Instancia.objects.all().count()==0:
         instancia=Instancia.objects.create(nombre="Primera",activo=True,multiempresa=True,vencimiento=None)
         for mod in Modulo.objects.all():
             instancia.modulos.add(mod)
-        # superuser=User.objects.create_user(username='super',password='super',is_staff=True)
+        superuser=User.objects.create_user(username='super',password='super',is_staff=True, is_superuser=True)
         perfilS=Perfil(instancia=instancia,usuario_id=1,activo=True,avatar=None,tipo="S")
         perfilS.save()
         admin=User.objects.create_user(username='admin',password='admin')
@@ -2323,7 +2329,6 @@ def CrearAdmin(data):
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def obtener_menu(request):
-
     menus={ 'router': 'root','children': []}
     def VerificarHijos (objetoPadre):
         if (MenuInstancia.objects.filter(parent=objetoPadre.id).count() > 0 or Menu.objects.filter(parent=objetoPadre.id).count() > 0):
@@ -2515,7 +2520,7 @@ def actualizar_pedido(request):
             totalp=cantidad * precio_seleccionado
             precio_unidad=float(precio_seleccionado) # Calcular el precio de cada producto
             totalp=cantidad * float(precio_unidad) # Calcular el precio final segun la cantidad
-            total_proforma += float(totalp)
+            total_proforma+=float(totalp)
             pedido=pedido_id
             nuevo_componente=DetallePedido(lote=i["lote"],total_producto=totalp,precio_seleccionado=precio_seleccionado,instancia_id=instancia.id,pedido=pedido,cantidada=cantidad,producto=producto,inventario=inventario)
             nuevo_componente.save()

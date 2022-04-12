@@ -59,7 +59,7 @@ urlpatterns = [
     path('', include(router.urls)),
     path('api-token-auth/', vx.obtain_auth_token),
     # Utiles
-    path('inventario/', views.inven),
+    path('inventario/', views.inventario),
     path('crear-usuario/', views.crear_nuevo_usuario),
     path('obtener-menu/', views.obtener_menu),
     path('obtener-columnas/', views.obtener_columnas),
