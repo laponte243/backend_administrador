@@ -2511,7 +2511,7 @@ def actualizar_pedido(request):
             producto=Producto.objects.get(id=i["producto"])
             instancia=Instancia.objects.get(perfil=perfil.id)
             cantidad=int(i["cantidada"])
-            totalp=cantidad * (producto.costo+(producto.costo * (lista_precio.porcentaje /100))) # Dividir totalp en dos partes
+            totalp=cantidad * precio_seleccionado
             precio_unidad=float(precio_seleccionado) # Calcular el precio de cada producto
             totalp=cantidad * float(precio_unidad) # Calcular el precio final segun la cantidad
             total_proforma += float(totalp)
