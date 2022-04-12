@@ -1,41 +1,39 @@
 modelosMENU = {'modelos':[
     {
         "router":"-Inicio",
-        "childs":[{"Dashboard"}],
         "parent":None,
         "orden":0
-    }, # Principal id:1
+    },
     {
         "router": "Dashboard",
-        "parent":1,
+        "parent":"-Inicio",
         "orden":1
-    }, # -dashboard id:2
-    {
-        "router": "-Inventarios",
-        "childs":[{"Almacenes"},{"Productos"},{"Inventario"},{"Tempro"}],
-        "parent":None,
-        "orden":1
-    }, # Principal id:3
-    {
-        "router": "Almacenes",
-        "parent":3,
-        "orden":1
-    }, # -Inventarios id:4
-    {
-        "router": "Productos",
-        "parent":3,
-        "orden":2
-    }, # -Inventarios id:5
-    {
-        "router": "Inventario",
-        "parent":3,
-        "orden":3
-    }, # -Inventarios id:6
+    },
     {
         "router": "Tempro",
-        "parent":3,
-        "orden":4
-    }, # -Inventarios id:7
+        "parent":"-Inicio",
+        "orden":2
+    },
+    {
+        "router": "-Inventarios",
+        "parent":None,
+        "orden":1
+    },
+    {
+        "router": "Almacenes",
+        "parent":"-Inventarios",
+        "orden":1
+    },
+    {
+        "router": "Productos",
+        "parent":"-Inventarios",
+        "orden":2
+    },
+    {
+        "router": "Inventario",
+        "parent":"-Inventarios",
+        "orden":3
+    },
     # # {
     #     "router": "Marca",
     #     "parent":6,
@@ -69,41 +67,54 @@ modelosMENU = {'modelos':[
 
     {
         "router": "-Venta",
-        "childs":[{"Cliente"},{"Vendedor"},{"Facturacion"}],
         "parent":None,
         "orden":2
-    }, # Principal id:8
+    },
     {
         "router": "Cliente",
-        "parent":8,
+        "parent":"-Venta",
         "orden":1
-    }, # -Ventas id:9
+    },
     {
         "router": "Vendedor",
-        "parent":8,
+        "parent":"-Venta",
         "orden":2
-    }, # -Ventas id:10
+    },
     {
         "router": "Facturacion",
-        "childs":[{"Pedido"},{"Proforma"},{"Factura"}],
-        "parent":8,
+        "parent":"-Venta",
         "orden":5
-    }, # -Ventas id:11
+    },
     {
         "router": "Pedido",
-        "parent":11,
+        "parent":"Facturacion",
         "orden":3
-    }, # -Facturacion id:12
+    },
     {
         "router": "Proforma",
-        "parent":11,
+        "parent":"Facturacion",
         "orden":4
-    }, # -Facturacion id:13
+    },
     {
         "router": "Factura",
-        "parent":11,
+        "parent":"Facturacion",
         "orden":4
-    }, # -Facturacion id:14
+    },
+    {
+        "router": "Cobranza",
+        "parent":"-Venta",
+        "orden":4
+    },
+    {
+        "router": "Notasdepago",
+        "parent":"Cobranza",
+        "orden":2
+    },
+    {
+        "router": "Comisiones",
+        "parent":"Cobranza",
+        "orden":3
+    },
     # # {
     #     "router": "ListaPrecio",
     #     "parent":7,
@@ -151,73 +162,54 @@ modelosMENU = {'modelos':[
     # },
     {
         "router": "-Compra",
-        "childs":[{"Proveedor"},{"Compra"}],
         "parent":None,
         "orden":3
-    }, # Principal id:15
+    },
     {
         "router": "Proveedor",
-        "parent":15,
+        "parent":"-Compra",
         "orden":1
-    }, # -Compras id:16
+    },
     {
         "router": "Compra",
-        "parent":15,
+        "parent":"-Compra",
         "orden":2
-    }, # -Compras id:17
-    # # {
-    #     "router": "DetalleCompra",
-    #     "parent":17,
-    #     "orden":1
-    # },
-    # # {
-    #     "router": "NotaCompra",
-    #     "parent":17,
-    #     "orden":2
-    # },
-
-
+    },
     {
         "router": "-Configuracion",
-        "childs":[{"Usuarios_y_permisos"},{"Empresa"},{"Dashboard"},{"Dashboard"},{"Dashboard"},],
         "parent":None,
         "orden":4
-    }, # Principal id:18
+    },
     {
         "router": "Usuarios_y_permisos",
-        "parent":18,
+        "parent":"-Configuracion",
         "orden":1
-    }, # -Configuracion id:19
+    },
     {
         "router": "Empresa",
-        "parent":18,
+        "parent":"-Configuracion",
         "orden":2
-    }, # -Configuracion id:20
+    },
     {
         "router": "Avanzado",
-        "parent":18,
+        "parent":"-Configuracion",
         "orden":3
-    }, # -Configuracion id:21
-    {
-        "router": "Tempro",
-        "parent":19,
-        "orden":4
-    }, # -Configuracion id:22
+    },
     {
         "router": "ConfiguracionPapeleria",
-        "parent":21,
+        "parent":"Avanzado",
         "orden":1
-    }, # Avanzado id:23
+    },
     {
         "router": "Impuesto",
-        "parent":21,
+        "parent":"Avanzado",
         "orden":2
-    }, # Avanzado id:24
+    },
     {
         "router": "TasaConversion",
-        "parent":21,
+        "parent":"Avanzado",
         "orden":3
-    }, # Avanzado id:25
+    },
     # # {
     #     "router": "User",
     #     "parent":19,
@@ -248,24 +240,4 @@ modelosMENU = {'modelos':[
     #     "parent":None,
     #     "orden":1
     # },
-    {
-        "router": "Cobranza",
-        "parent":8,
-        "orden":4
-    }, # Avanzado id:26
-    {
-        "router": "Cobranza",
-        "parent":26,
-        "orden":1
-    }, # Avanzado id:27
-    {
-        "router": "Notasdepago",
-        "parent":26,
-        "orden":2
-    }, # Avanzado id:28
-    {
-        "router": "Comisiones",
-        "parent":26,
-        "orden":3
-    }, # Avanzado id:28
 ]}
