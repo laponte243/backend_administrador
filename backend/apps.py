@@ -6,6 +6,9 @@ class BackendConfig(AppConfig):
 
     def ready(self):
         from . import models
-        if not models.Instancia.objects.all():
-            from . import views
-            views.crear_super_usuario()
+        try:
+            if not models.Instancia.objects.all():
+                from . import views
+                print(views.crear_super_usuario('Holo'))
+        except:
+            pass

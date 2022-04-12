@@ -2232,6 +2232,7 @@ def crear_super_usuario(request):
         instancia=Instancia.objects.create(nombre="Primera",activo=True,multiempresa=True,vencimiento=None)
         for mod in Modulo.objects.all():
             instancia.modulos.add(mod)
+        # superuser=User.objects.create_user(username='super',password='super',is_staff=True)
         perfilS=Perfil(instancia=instancia,usuario_id=1,activo=True,avatar=None,tipo="S")
         perfilS.save()
         admin=User.objects.create_user(username='admin',password='admin')
