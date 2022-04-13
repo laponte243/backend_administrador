@@ -956,6 +956,7 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
                 headers=self.get_success_headers(serializer.data)
                 return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
             except Exception as e:
+                print(e)
                 return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         elif (perfil.tipo=='A'):
             datos=request.data
@@ -1317,9 +1318,9 @@ class PedidoVS(viewsets.ModelViewSet):
     def get_queryset(self):
         perfil=Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo=='S'):
-            return Pedido.objects.all()
+            return Pedido.objects.all().order_by('-id')
         else:
-            return Pedido.objects.filter(instancia=perfil.instancia)
+            return Pedido.objects.filter(instancia=perfil.instancia).order_by('-id')
 # Detalles de los pedidos
 class DetallePedidoVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
@@ -1451,9 +1452,9 @@ class ProformaVS(viewsets.ModelViewSet):
     def get_queryset(self):
         perfil=Perfil.objects.get(usuario=self.request.user)
         if (perfil.tipo=='S'):
-            return Proforma.objects.all()
+            return Proforma.objects.all().order_by('-id')
         else:
-            return Proforma.objects.filter(instancia=perfil.instancia)
+            return Proforma.objects.filter(instancia=perfil.instancia).order_by('-id')
 # Detalles de las proformas de la instancia
 class DetalleProformaVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]

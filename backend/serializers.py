@@ -186,7 +186,7 @@ class MovimientoInventarioSerializer(serializers.ModelSerializer):
         return obj.almacen.nombre
     date =  serializers.SerializerMethodField('LoadDate')
     def LoadDate(self, obj):
-       return obj.fecha_vencimiento.date()
+        return obj.fecha_vencimiento.date() if obj.fecha_vencimiento else None
 class AlmacenSerializer(serializers.ModelSerializer):
     class Meta:
         model = Almacen
@@ -204,6 +204,9 @@ class InventarioSerializer(serializers.ModelSerializer):
     nombreAlmacen = serializers.SerializerMethodField('LoadNombreAlmacen')
     def LoadNombreAlmacen(self, obj):
         return obj.almacen.nombre
+    lote_cantidad = serializers.SerializerMethodField('LoadLote')
+    def LoadLote(self,obj):
+        return 'Lote: ' + obj.lote + ' - ' + 'Cantidad: ' + str(obj.disponible)
     date =  serializers.SerializerMethodField('LoadDate')
     def LoadDate(self, obj):
         return obj.fecha_vencimiento.date()
