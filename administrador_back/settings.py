@@ -16,14 +16,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'backend',
     'tempro',
-    'django_extensions',
-    'rest_framework',
+    'corsheaders',
     'knox',
-    'django_filters',
+    'rest_framework',
     'rest_framework.authtoken',
     'dj_rest_auth',
-    'corsheaders',
     'simple_history',
+    'django_extensions',
+    'django_filters',
     'django_tables2',
     'django_rest_passwordreset',]
 

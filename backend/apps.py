@@ -10,7 +10,6 @@ class BackendConfig(AppConfig):
         try:
             if not models.Instancia.objects.all():
                 from . import views
-                ret=views.crear_super_usuario('Holo')
-                print(ret)
+                print(views.crear_super_usuario('Holo'))
         except Exception as e:
             print(e)

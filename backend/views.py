@@ -2538,24 +2538,24 @@ def actualizar_pedido(request):
         return JsonResponse({'error': e},safe=False,
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # Funcion para obtener valores del historico
-def Value(request):
-    response=HttpResponse(content_type='application/ms-excel')
-    response['Content-Disposition']='attachment; filename="lista.xls"'
-    writer=csv.writer(response)  
-    for m in Marca.objects.all():
-        writer.writerow(['Marca:' ,m.nombre])
-        titulos=['Codigo','Producto','Costo']
-        listas=ListaPrecio.objects.filter(activo=True).order_by('id')
-        for l in listas:
-            titulos.append(l.nombre) 
-        writer.writerow(titulos)
-        for p in Producto.objects.filter(activo=True,venta=True,marca=m):
-            texto=[p.sku,p.nombre,p.costo]
-            precios=DetalleListaPrecio.objects.filter(producto= p).order_by('listaprecio__id')
-            for precio in precios:
-                texto.append(precio.precio)
-            writer.writerow(texto)
-    return response
+# def Value(request):
+#     response=HttpResponse(content_type='application/ms-excel')
+#     response['Content-Disposition']='attachment; filename="lista.xls"'
+#     writer=csv.writer(response)  
+#     for m in Marca.objects.all():
+#         writer.writerow(['Marca:' ,m.nombre])
+#         titulos=['Codigo','Producto','Costo']
+#         listas=ListaPrecio.objects.filter(activo=True).order_by('id')
+#         for l in listas:
+#             titulos.append(l.nombre) 
+#         writer.writerow(titulos)
+#         for p in Producto.objects.filter(activo=True,venta=True,marca=m):
+#             texto=[p.sku,p.nombre,p.costo]
+#             precios=DetalleListaPrecio.objects.filter(producto= p).order_by('listaprecio__id')
+#             for precio in precios:
+#                 texto.append(precio.precio)
+#             writer.writerow(texto)
+#     return response
 # Funcion tipo vista para hacer la validacion de los pedidos
 @api_view(["POST"])
 @csrf_exempt
@@ -2864,7 +2864,7 @@ def actualizar_proforma(request):
             producto=Producto.objects.get(id=i["producto"])
             instancia=Instancia.objects.get(perfil=perfil.id)
             cantidad=int(i["cantidada"])
-            totalp=cantidad * (producto.costo+(producto.costo * (lista_precio.porcentaje /100)))# Dividir totalp en dos partes
+            totalp=cantidad * precio_seleccionado
             precio_unidad=float(precio_seleccionado) # Calcular el precio del producto en la venta
             totalp=cantidad * precio_unidad # Calcular el precio final del detalle segun la cantidad
             total_proforma += float(totalp)
