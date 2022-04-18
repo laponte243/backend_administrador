@@ -86,73 +86,85 @@ class PermissionVS(viewsets.ModelViewSet):
 # Vista modificada para el modelo mixim de User
 class UserVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=UsuarioMSerializer
     # Motodo de crear no permitido
     def create(self,request):
         perfil=obt_per(self.request.user)
-        datos=request.data
-        serializer=self.get_serializer(data=datos)
-        serializer.is_valid(raise_exception=True)
-        if perfil.tipo == 'S':
-            self.perform_create(serializer)
-            headers=self.get_success_headers(serializer.data)
-            return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
-        elif (perfil.tipo == 'A' or perfil.tipo == 'U') and (datos['tipo'] == 'U' or datos['tipo'] == 'V'):
-            self.perform_create(serializer)
-            headers=self.get_success_headers(serializer.data)
-            return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
+        if verificar_permiso(perfil,'Usuarios_y_permisos','escribir'):
+            datos=request.data
+            serializer=self.get_serializer(data=datos)
+            serializer.is_valid(raise_exception=True)
+            if perfil.tipo == 'S':
+                self.perform_create(serializer)
+                headers=self.get_success_headers(serializer.data)
+                return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
+            elif (perfil.tipo == 'A' or perfil.tipo == 'U') and (datos['tipo'] == 'U' or datos['tipo'] == 'V'):
+                self.perform_create(serializer)
+                headers=self.get_success_headers(serializer.data)
+                return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
+            else:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
         else:
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
+            return Response(status=status.HTTP_403_FORBIDDEN)
     # Metodo de leer
     def get_queryset(self):
         perfil=obt_per(self.request.user)
-        instancia=Perfil.objects.get(usuario=self.request.user).instancia
-        menu=Menu.objects.get(router__contains='Usuario')
-        menu_instancia=MenuInstancia.objects.get(menu__id=menu.id)
-        try:
-            permiso=Permiso.objects.get(instancia=instancia,perfil=perfil,menuinstancia=menu_instancia)
-        except:
-            permiso=Permiso(leer=False)
-        if perfil.tipo=='S':
-            return User.objects.all()
-        elif perfil.tipo=='A':
-            return User.objects.filter(perfil__instancia=instancia)
-        elif perfil.tipo=='U' or perfil.tipo=='V':
-            return User.objects.filter(perfil__instancia=instancia).exclude(perfil__tipo__in=['A','S']) if permiso.leer else User.objects.filter(id=self.request.user.id)
+        if verificar_permiso(perfil,'Usuarios_y_permisos','leer'):
+            instancia=perfil.instancia
+            menu=Menu.objects.get(router__contains='Usuario')
+            menu_instancia=MenuInstancia.objects.get(menu__id=menu.id)
+            try:
+                permiso=Permiso.objects.get(instancia=instancia,perfil=perfil,menuinstancia=menu_instancia)
+            except:
+                permiso=Permiso(leer=False)
+            if perfil.tipo=='S':
+                return User.objects.all()
+            elif perfil.tipo=='A':
+                return User.objects.filter(perfil__instancia=instancia)
+            elif perfil.tipo=='U' or perfil.tipo=='V':
+                return User.objects.filter(perfil__instancia=instancia).exclude(perfil__tipo__in=['A','S']) if permiso.leer else User.objects.filter(id=self.request.user.id)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
-        partial=True
-        instance=self.get_object()
-        serializer=self.get_serializer(instance,data=request.data,partial=partial)
-        serializer.is_valid(raise_exception=True)
-        if perfil.tipo=='S':
-            self.perform_update(serializer)
-            return Response(serializer.data,status=status.HTTP_200_OK)
-        if perfil.tipo=='A' or perfil.tipo=='U':
-            perfil_cambiar=Perfil.objects.get(usuario_id=serializer.id)
-            if perfil_cambiar.tipo != 'A' and perfil_cambiar != 'S':
+        if verificar_permiso(perfil,'Usuarios_y_permisos','actualizar'):
+            partial=True
+            instance=self.get_object()
+            serializer=self.get_serializer(instance,data=request.data,partial=partial)
+            serializer.is_valid(raise_exception=True)
+            if perfil.tipo=='S':
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
+            if perfil.tipo=='A' or perfil.tipo=='U':
+                perfil_cambiar=Perfil.objects.get(usuario_id=serializer.id)
+                if perfil_cambiar.tipo != 'A' and perfil_cambiar != 'S':
+                    self.perform_update(serializer)
+                    return Response(serializer.data,status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
     # Metodo de eliminar
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
-        objeto=self.get_object()
-        # Super
-        if (perfil.tipo=='S'):
-            Perfil.objects.get(usuario=self.request.data.id).delete()
-            objeto.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        # Admin/Usuario
-        elif perfil.tipo=='A' or perfil.tipo=='U':
-            # Verificar que el usuario a borrar no sea Staff,y este en la misma instancia desde donde se hace la peticion
-            if objeto.perfil.tipo!='S' and objeto.perfil.tipo!='A' and str(objeto.perfil.instancia.id)==str(perfil.instancia.id) and perfil.usuario.id!=self.request.user.id:
+        if verificar_permiso(perfil,'Usuarios_y_permisos','borrar'):
+            objeto=self.get_object()
+            # Super
+            if (perfil.tipo=='S'):
                 Perfil.objects.get(usuario=self.request.data.id).delete()
                 objeto.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
+            # Admin/Usuario
+            elif perfil.tipo=='A' or perfil.tipo=='U':
+                # Verificar que el usuario a borrar no sea Staff,y este en la misma instancia desde donde se hace la peticion
+                if objeto.perfil.tipo!='S' and objeto.perfil.tipo!='A' and str(objeto.perfil.instancia.id)==str(perfil.instancia.id) and perfil.usuario.id!=self.request.user.id:
+                    Perfil.objects.get(usuario=self.request.data.id).delete()
+                    objeto.delete()
+                    return Response(status=status.HTTP_204_NO_CONTENT)
+                else:
+                    return Response('No tienes permitido borrar este usuario',status=status.HTTP_401_UNAUTHORIZED)
+            # Vendedor
             else:
-                return Response('No tienes permitido borrar este usuario',status=status.HTTP_401_UNAUTHORIZED)
-        # Vendedor
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
 # Vista del modelo Modulo
@@ -166,16 +178,19 @@ class ModuloVS(viewsets.ModelViewSet):
     # Metodo de leer
     def get_queryset(self):
         perfil=obt_per(self.request.user)
-        # Super
-        if (perfil.tipo=='S'):
-            return Modulo.objects.all().order_by('nombre')
-        # Admin
-        if (perfil.tipo=='A'):
-            modulos=[]
-            for m in perfil.instancia.modulo:
-                modulos.append(m)
-            return modulos
-        # Usuario/Vendedor
+        if verificar_permiso(perfil,'Usuarios_y_permisos','leer'):
+            # Super
+            if (perfil.tipo=='S'):
+                return Modulo.objects.all().order_by('nombre')
+            # Admin
+            if (perfil.tipo=='A'):
+                modulos=[]
+                for m in perfil.instancia.modulo:
+                    modulos.append(m)
+                return modulos
+            # Usuario/Vendedor
+            else:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     # Metodo de actualizar no disponible
@@ -187,7 +202,7 @@ class ModuloVS(viewsets.ModelViewSet):
 # Vista para el modelo Menu
 class MenuVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=MenuSerializer
     # Metodo de crear no disponible
     def create(self,request,*args,**kwargs):
@@ -200,7 +215,7 @@ class MenuVS(viewsets.ModelViewSet):
             menus=Menu.objects.all()
             return menus
         else:
-            return None
+            return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
        perfil=obt_per(self.request.user)
        if (perfil.tipo=='S'):
@@ -222,22 +237,22 @@ class InstanciaVS(viewsets.ModelViewSet):
     serializer_class=InstanciaSerializer
     def create(self,request):
         perfil=obt_per(self.request.user)
-        if (perfil.tipo=='S' and self.request.user.is_superuser==True):
+        if perfil.tipo=='S' and self.request.user.is_superuser==True:
             serializer=self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             serializer.save()
             headers=self.get_success_headers(serializer.data)
             return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
-        elif(perfil.tipo=='S'):
-            return Response({"error": "Your profile or user has deactivated being superuser"},status=status.HTTP_403_FORBIDDEN)
+        elif perfil.tipo=='S':
+            return Response("Tu usuario o perfil no tienen permisos de superusuario",status=status.HTTP_406_NOT_ACCEPTABLE)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
         perfil=obt_per(self.request.user)
-        if (perfil.tipo=='S'):
+        if perfil.tipo=='S':
             return Instancia.objects.all().order_by('nombre')
         else:
-            return None
+            return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
@@ -248,27 +263,19 @@ class InstanciaVS(viewsets.ModelViewSet):
             self.perform_update(serializer)
             return Response(serializer.data,status=status.HTTP_200_OK)
         else:
-            return Response({'error': 'Forbidden,user no have permissions'},status=status.HTTP_403_FORBIDDEN)
+            return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        return Response(False,status=status.HTTP_403_FORBIDDEN)
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 # Menus por instancia
 class MenuInstanciaVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    # authentication_classes=[TokenAuthentication]
+    authentication_classes=[TokenAuthentication]
     serializer_class=MenuInstanciaSerializer
     def create(self,request):
         perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
-            serializer=self.get_serializer(data=datos)
-            serializer.is_valid(raise_exception=True)
-            self.perform_create(serializer)
-            headers=self.get_success_headers(serializer.data)
-            return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
-        elif (perfil.tipo=='A'):
-            datos=request.data
-            datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -307,131 +314,153 @@ class MenuInstanciaVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
-# Funcion para guardar permisos
-def guardar_permiso(data,perfil_n=None,perfil_c=None):
-    if perfil_c:
-        instancia=perfil_c.instancia
-        if not perfil_n:
-            perfil_n=perfil_c
-        perfil_n=Perfil.objects.get(id=perfil_n)
-        for per in data:
-            menu_i=MenuInstancia.objects.get(instancia=instancia,menu__router__contains=per['menu'])
-            permiso_c=Permiso.objects.filter(menuinstancia=menu_i,perfil=perfil_c).first()
-            if permiso_c and perfil_n!=perfil_c:
-                try:
-                    permiso_n=Permiso.objects.get(instancia=instancia,menuinstancia=menu_i,perfil=perfil_n)
-                except:
-                    permiso_n=Permiso(instancia=instancia,menuinstancia=menu_i,perfil=perfil_n)
-                permiso_n.leer=per['leer'] if permiso_c.leer else False
-                permiso_n.escribir=per['escribir'] if permiso_c.escribir else False
-                permiso_n.borrar=per['borrar'] if permiso_c.borrar else False
-                permiso_n.actualizar=per['actualizar'] if permiso_c.actualizar else False
-                permiso_n.save()
 # Perfiles de usuarios
 # if verificar_permiso(instancia,vista,accion):
-def verificar_permiso(instancia,vista,accion):
-    permiso=Permiso.objects.get(instancia=instancia,menuinstancia__menu__router__contains=vista)
+def verificar_permiso(perfil,vista,accion):
+    permiso=Permiso.objects.get(instancia=perfil.instancia,menuinstancia__menu__router__contains=vista,perfil=perfil)
     if permiso:
         if accion=='leer':
             return permiso.leer
         elif accion=='escribir':
-            return permiso.excribir
+            return permiso.escribir
         elif accion=='actualizar':
             return permiso.actualizar
-        elif accion=='eliminar':
-            return permiso.eliminar
-        else:
-            print('Accion no disponible')
-            return False
-    else:
-        print('Permiso no encontrado')
-        return False
+        elif accion=='borrar':
+            return permiso.borrar
+    return False
 class PerfilVS(viewsets.ModelViewSet):
     permission_classes=[AllowAny]
     authentication_classes=[TokenAuthentication]
     serializer_class=PerfilSerializer
     def create(self,request):
         perfil=obt_per(self.request.user)
-        datos=request.data
-        datos._mutable = True
-        datos['instancia']=request.data['instancia'] if perfil.tipo=='S' and request.data['instancia'] else perfil.instancia.id
-        permisos=datos['permisos']
-        datos._mutable = False
-        serializer=self.get_serializer(data=datos)
-        serializer.is_valid(raise_exception=True)
-        if (perfil.tipo=='S'):
+        if verificar_permiso(perfil,'Usuarios_y_permisos','escribir'):
+            datos=request.data
+            datos._mutable=True
+            datos['instancia']=request.data['instancia'] if perfil.tipo=='S' and request.data['instancia'] else perfil.instancia.id
+            permisos=datos['permisos']
+            datos._mutable=False
+            serializer=self.get_serializer(data=datos)
+            serializer.is_valid(raise_exception=True)
+            if (perfil.tipo=='S' or perfil.tipo=='A'):
+                self.perform_create(serializer)
+                guardar_permisos(permisos,serializer['id'].value,perfil)
+                headers=self.get_success_headers(serializer.data)
+                return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
+            else:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+    def get_queryset(self):
+        perfil=obt_per(self.request.user)
+        if verificar_permiso(perfil,'Usuarios_y_permisos','leer'):
+            if (perfil.tipo=='S'):
+                return Perfil.objects.all().order_by('usuario')
+            elif (perfil.tipo=='A'):
+                return Perfil.objects.filter(instancia=perfil.instancia).order_by('usuario')
+            else:
+                return Perfil.objects.filter(id=perfil.id).order_by('usuario')
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+    def update(self,request,*args,**kwargs):
+        perfil=obt_per(self.request.user)
+        if verificar_permiso(perfil,'Usuarios_y_permisos','actualizar'):
+            datos=request.data
+            datos['instancia']=request.data['instancia'] if perfil.tipo=='S' and request.data['instancia'] else perfil.instancia.id
+            if perfil.tipo=='S'or perfil.tipo=='A':
+                partial=True
+                instance=self.get_object()
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
+                self.perform_update(serializer)
+                return Response(serializer.data,status=status.HTTP_200_OK)
+            else:
+                try:
+                    objeto=Perfil.objects.get(usuario=self.request.user)
+                    objeto.avatar=request.data['avatar']
+                    self.perform_update(objeto)
+                    return Response(objeto,status=status.HTTP_200_OK)
+                except:
+                    return Response('Problema con el avatar a guardar',status=status.HTTP_202_ACCEPTED)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+    def destroy(self,request,*args,**kwargs):
+        perfil=obt_per(self.request.user)
+        if verificar_permiso(perfil,'Usuarios_y_permisos','borrar'):
+            instance=self.get_object()
+            if (perfil.tipo=='S'):
+                instance.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            else:
+                if (str(instance.instancia.id)==str(perfil.instancia.id)) and instance.perfil.tipo!='S':
+                    instance.delete()
+                    return Response(status=status.HTTP_204_NO_CONTENT)
+                else:
+                    return Response('No puedes eliminar este perfil',status=status.HTTP_401_UNAUTHORIZED)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+# Permisos de los usuarios
+class PermisoVS(viewsets.ModelViewSet):
+    permission_classes=[IsAuthenticated]
+    authentication_classes=[TokenAuthentication]
+    serializer_class=PermisoSerializer
+    def create(self,request):
+        perfil=obt_per(self.request.user)
+        if verificar_permiso(perfil,'Usuarios_y_permisos','escribir'):
+            datos=request.data
+            serializer=self.get_serializer(data=datos)
+            serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
-            guardar_permiso(permisos,serializer['id'].value,perfil)
-            headers=self.get_success_headers(serializer.data)
-            return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
-        elif (perfil.tipo=='A'):
-            self.perform_create(serializer)
-            guardar_permiso(datos,serializer.data,perfil)
             headers=self.get_success_headers(serializer.data)
             return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
         perfil=obt_per(self.request.user)
-        if (perfil.tipo=='S'):
-            return Perfil.objects.all().order_by('usuario')
-        elif (perfil.tipo=='A'):
-            return Perfil.objects.filter(instancia=perfil.instancia).order_by('usuario')
-        else:
-            return Perfil.objects.filter(id=perfil.id).order_by('usuario')
-    def update(self,request,*args,**kwargs):
-        perfil=obt_per(self.request.user)
-        if (perfil.tipo=='S'):
-            partial=True
-            instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            self.perform_update(serializer)
-            return Response(serializer.data,status=status.HTTP_200_OK)
-        elif (perfil.tipo=='A'):
-            datos=request.data
-            datos['instancia']=perfil.instancia.id
-            partial=True
-            instance=self.get_object()
-            serializer=self.get_serializer(instance,data=datos,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            self.perform_update(serializer)
-            return Response(serializer.data,status=status.HTTP_200_OK)
-        else:
-            try:
-                objeto=Perfil.objects.get(usuario=self.request.user)
-                objeto.avatar=request.data['avatar']
-                self.perform_update(objeto)
-                return Response(objeto,status=status.HTTP_200_OK)
-            except:
-                return Response({'error': 'Problem with user or selected avatar'},status=status.HTTP_401_UNAUTHORIZED)
-    def destroy(self,request,*args,**kwargs):
-        perfil=obt_per(self.request.user)
-        instance=self.get_object()
-        if (perfil.tipo=='S'):
-            instance.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        else:
-            if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                instance.delete()
-                return Response(status=status.HTTP_204_NO_CONTENT)
+        if verificar_permiso(perfil,'Usuarios_y_permisos','leer'):
+            if (perfil.tipo=='S'):
+                return Permiso.objects.all().order_by('id')
+            elif (perfil.tipo=='A'):
+                return Permiso.objects.filter(instancia=perfil.instancia).order_by('perfil')
             else:
-                return Response(status=status.HTTP_403_FORBIDDEN)
-# Permisos de los usuarios
-class PermisoVS(viewsets.ModelViewSet):
-    permission_classes=[IsAuthenticated]
-    authentication_classes=[TokenAuthentication]
-    serializer_class=PermisoSerializer
-    def get_queryset(self):
-        perfil=obt_per(self.request.user)
-        if (perfil.tipo=='S'):
-            return Permiso.objects.all().order_by('id')
-        elif (perfil.tipo=='A'):
-            return Permiso.objects.filter(instancia=perfil.instancia).order_by('perfil')
+                return Permiso.objects.filter(perfil=perfil.id)
         else:
-            return Permiso.objects.filter(perfil=perfil.id)
-    def update(self):
-        return Response(status=status.HTTP_403_FORBIDDEN)
+            return Response(status=status.HTTP_403_FORBIDDEN)
+    def update(self,request):
+        perfil=obt_per(self.request.user)
+        if verificar_permiso(perfil,'Usuarios_y_permisos','actualizar'):
+            permiso=self.get_object()
+            partial=True
+            if permiso.perfil.instancia==perfil.instancia:
+                if (permiso.perfil.tipo=='U' and perfil.tipo=='A') or (permiso.perfil.tipo=='V' and perfil.tipo=='U'):
+                    serializer=self.get_serializer(permiso,data=request.data,partial=partial)
+                    serializer.is_valid(raise_exception=True)
+                    self.perform_update(serializer)
+                    return Response(serializer.data,status=status.HTTP_200_OK)
+                if permiso.perfil.tipo=='U' and perfil.tipo=='U' and not permiso.perfil.activo:
+                    serializer=self.get_serializer(permiso,data=request.data,partial=partial)
+                    serializer.is_valid(raise_exception=True)
+                    self.perform_update(serializer)
+                    return Response(serializer.data,status=status.HTTP_200_OK)
+                else:
+                    return Response('El permiso pertenece a un usuario del mismo o mayor rango',status=status.HTTP_406_NOT_ACCEPTABLE)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+    def destroy(self):
+        perfil=obt_per(self.request.user)
+        if verificar_permiso(perfil,'Usuarios_y_permisos','borrar'):
+            permiso=self.get_object()
+            if permiso.perfil.instancia==perfil.instancia:
+                if (permiso.perfil.tipo=='U' and perfil.tipo=='A') or (permiso.perfil.tipo=='V' and perfil.tipo=='U'):
+                    permiso.delete()
+                    return Response(status=status.HTTP_204_NO_CONTENT)
+                if permiso.perfil.tipo=='U' and perfil.tipo=='U' and not permiso.perfil.activo:
+                    permiso.delete()
+                    return Response(status=status.HTTP_204_NO_CONTENT)
+                else:
+                    return Response('El permiso pertenece a un usuario del mismo o mayor rango',status=status.HTTP_406_NOT_ACCEPTABLE)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
 # Empresas registradas de la instancia
 class EmpresaVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
@@ -439,6 +468,7 @@ class EmpresaVS(viewsets.ModelViewSet):
     serializer_class=EmpresaSerializer
     def create(self,request):
         perfil=obt_per(self.request.user)
+        # if verificar_permiso(perfil,'Empresa','escribir'):
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -2286,6 +2316,26 @@ class NotaCompraVS(viewsets.ModelViewSet):
 # Funcion para obtener el perfil del usuario
 def obt_per(user):
     return Perfil.objects.get(usuario=user)
+# Funcion para guardar permisos
+def guardar_permisos(data,perfil_n=None,perfil_c=None):
+    if perfil_c:
+        instancia=perfil_c.instancia
+        if not perfil_n:
+            perfil_n=perfil_c
+        perfil_n=Perfil.objects.get(id=perfil_n)
+        for per in data:
+            menu_i=MenuInstancia.objects.get(instancia=instancia,menu__router__contains=per['menu'])
+            permiso_c=Permiso.objects.filter(menuinstancia=menu_i,perfil=perfil_c).first()
+            if permiso_c and perfil_n!=perfil_c:
+                try:
+                    permiso_n=Permiso.objects.get(instancia=instancia,menuinstancia=menu_i,perfil=perfil_n)
+                except:
+                    permiso_n=Permiso(instancia=instancia,menuinstancia=menu_i,perfil=perfil_n)
+                permiso_n.leer=per['leer'] if permiso_c.leer else False
+                permiso_n.escribir=per['escribir'] if permiso_c.escribir else False
+                permiso_n.borrar=per['borrar'] if permiso_c.borrar else False
+                permiso_n.actualizar=per['actualizar'] if permiso_c.actualizar else False
+                permiso_n.save()
 # Funcion tipo vista para obtener objetos del inventario
 @api_view(["GET"])
 @csrf_exempt
@@ -2334,6 +2384,17 @@ def crear_super_usuario(request):
         return "Super creado"
     else:
         return "Ya existe un superusuario"
+# Funcion para generar contraseñas
+import random
+import string
+def generar_clave():
+    lower=string.ascii_lowercase
+    upper=string.ascii_uppercase
+    num=string.digits
+    symbols='!$%&?*#@+='
+    all=lower+upper+num+symbols
+    temp=random.sample(all,16)
+    return "".join(temp)
 # Funcion tipo vista para crear un nuevo usuario
 @api_view(["GET"])
 @csrf_exempt
@@ -2342,65 +2403,62 @@ def crear_super_usuario(request):
 def crear_nuevo_usuario(request):
     data=json.load(request.body)
     try:
+        perfil_c=Perfil.objects.get(usuario=request.user)
         usuario=User.objects.filter(email=data['email'])
         if (usuario):
-            return JsonResponse({"error": "Email"},status=status.HTTP_400_BAD_REQUEST)
-        elif (data['tipo']=='A' & request.user.perfil.tipo=='S'):
-            return CrearAdmin(data)
-        else:
-            instan=data['instancia']
-            user=User(username=data['username'],email=data['email'],password=data['password'])
+            return Response("Ya hay un usuario con el mismo correo",status=status.HTTP_400_BAD_REQUEST)
+        elif data['tipo']=='A' and perfil_c.tipo=='S':
+            return crear_admin(data)
+        elif perfil_c.tipo=='A' and verificar_permiso(perfil,'Usuarios_y_permisos','escribir'):
+            data['instancia']=data['instancia'] if perfil.tipo=='S' and data['instancia'] else perfil.instancia.id
+            user=User(username=data['username'],email=data['email'],password=generar_clave())
             user.save()
-            if (request.user.perfil.tipo=='S'):
+            if (perfil_c.tipo=='S'):
                 # Instancia igual a la instancia dada por el superusuario (instancia=data['instancia'])
                 perfil=Perfil(usuario=user,instancia=data['instancia'],tipo=data['tipo'])
                 perfil.save()
-                for p in data['permisos']:
-                    for mi in MenuInstancia.objects.filter(instancia=data['instancia']):
-                        if (mi.id==p['menu']):
-                            permiso=None
-                            permiso=Permiso(instancia=instan['id'],perfil=perfil,menuinstancia=p['menu'],
-                                            leer=p['leer'],escribir=p['escribir'],borrar=p['borrar'],actualizar=p['actualizar'])
-                            permiso.save()
-                return JsonResponse({"error": "N/A"},status=status.HTTP_201_CREATED)
-            elif (request.user.perfil.tipo=='A'):
-                if (data['tipo']=="U" or data['tipo']=="V"):
-                    # Instancia igual a la instancia del perfil del usuario que hace la peticion (instancia=request.user.perfil.instancia)     
-                    perfil=Perfil(usuario=user,instancia=request.user.perfil.instancia,tipo=data['tipo'])
-                    perfil.save()
-                    for p in data['permisos']:
-                        for mi in MenuInstancia.objects.filter(instancia=data['instancia']):
-                            if (mi.id==p['menu']):
-                                permiso=None
-                                permiso=Permiso(instancia=request.user.perfil.instancia,perfil=perfil,menuinstancia=p['menu'],
-                                                leer=p['leer'],escribir=p['escribir'],borrar=p['borrar'],actualizar=p['actualizar'])
-                                permiso.save()
-                    return JsonResponse({"error": "N/A"},status=status.HTTP_201_CREATED)
+                permisos=data['permisos']
+                guardar_permisos(permisos,perfil.id,perfil)
+                if perfil.id:
+                    return Response(status=status.HTTP_201_CREATED)
                 else:
-                    return JsonResponse({"error": "Forbidden,user type not allowed",},status=status.HTTP_403_FORBIDDEN)
+                    return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            elif (perfil_c.tipo=='A'):
+                if (data['tipo']=="U" or data['tipo']=="V"):
+                    # Instancia igual a la instancia del perfil del usuario que hace la peticion (instancia=perfil_c.instancia)     
+                    perfil=Perfil(usuario=user,instancia=perfil_c.instancia,tipo=data['tipo'])
+                    perfil.save()
+                    permisos=data['permisos']
+                    guardar_permisos(permisos,perfil.id,perfil)
+                    if perfil.id:
+                        return Response(status=status.HTTP_201_CREATED)
+                    else:
+                        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                else:
+                    return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
             else:
-                return JsonResponse({'error': 'Forbidden'},status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
     except Exception as e:
-        return JsonResponse({'error': _(e.args[0])},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # Funcion para crear los admins por la nueva instancia
-def CrearAdmin(data):
+def crear_admin(data):
     try:
         instan=data['instancia']
         nombreInstancia=instan['nombre']+" ("+data['username']+")"
-        user=User(username=data['username'],email=data['email'],password=data['password'])
+        user=User(username=data['username'],email=data['email'],password=generar_clave())
         user.save()
         instancia=Instancia(nombre=nombreInstancia,activo=instan['activo'],multiempresa=instan['multiempresa'],vencimiento=instan['vencimiento'])
         instancia.save()
         perfil=Perfil(usuario=user,instancia=instancia,tipo='A')
         perfil.save()
-        for p in data['permisos']:
-            menuInstancia=MenuInstancia(instancia=instancia,menu=p['menu'])
-            menuInstancia.save()
-            permiso=Permiso(instancia=instancia,perfil=perfil,menuinstancia=menuInstancia,leer=p['leer'],escribir=p['escribir'],borrar=p['borrar'],actualizar=p['actualizar'])
-            permiso.save()
-        return JsonResponse({"error": "N/A"},status=status.HTTP_201_CREATED)
+        permisos=data['permisos']
+        guardar_permisos(permisos,perfil.id,perfil)
+        if perfil.id:
+            return Response(status=status.HTTP_201_CREATED)
+        else:
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     except Exception as e:
-        return JsonResponse({'error': _(e.args[0])},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'error': _(e.args[0])},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # Funcion tipo vista para obtener el menu de la pagina segun el perfil, los permisos y la intancia del usuario
 @api_view(["GET"])
 @csrf_exempt
@@ -2462,7 +2520,7 @@ def obtener_menu(request):
                 menus['children'].append(primero)
         return Response([menus])
     else:
-        return JsonResponse({'error': 'Forbidden,unknown user'},status=status.HTTP_403_FORBIDDEN)
+        return Response(status=status.HTTP_403_FORBIDDEN)
 # Funcion para obtener las columnas 
 @api_view(["POST"])
 @csrf_exempt
@@ -2482,7 +2540,7 @@ def obtener_columnas(request):
             columnas.append(JsonCol)
         return Response(columnas)
     except ObjectDoesNotExist as e:
-        return JsonResponse({'error': str(e)},safe=False,status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': str(e)},safe=False,status=status.HTTP_404_NOT_FOUND)
 # Funcion para obtener el historico de la aplicacion según la instancia
 @api_view(["GET"])
 @csrf_exempt
@@ -2513,11 +2571,11 @@ def obtener_columnas(request):
 #                         else:
 #                             tipo='Editado'
 #                         data.append({'date':row['history_date'],'type':tipo,'model':str(row['modelo']).replace("<class '",'').replace("'>",'')})
-#         return JsonResponse({'mensaje': data},safe=False,status=status.HTTP_200_OK)
+#         return Response({'mensaje': data},safe=False,status=status.HTTP_200_OK)
 #     except ObjectDoesNotExist as e:
-#         return JsonResponse({'error': str(e)},safe=False,status=status.HTTP_404_NOT_FOUND)
+#         return Response({'error': str(e)},safe=False,status=status.HTTP_404_NOT_FOUND)
 #     except Exception as e:
-#         return JsonResponse({'error': str(e)},safe=False,status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#         return Response({'error': str(e)},safe=False,status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # Funcion tipo vista para eliminar las notas de pago
 @api_view(["POST"])
 @csrf_exempt
@@ -2533,11 +2591,11 @@ def borrar_nota(request):
             proforma.save()
             obj.delete()
         nota.delete()
-        return JsonResponse({'exitoso': 'exitoso'},safe=False,status=status.HTTP_200_OK)
+        return Response(safe=False,status=status.HTTP_200_OK)
     except ObjectDoesNotExist as e:
-        return JsonResponse({'error': str(e)},safe=False,status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': str(e)},safe=False,status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        return JsonResponse({'error': e},safe=False,status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'error': e},safe=False,status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # Funcion tipo vista para actualizar las notas de pago
 @api_view(["POST"])
 @csrf_exempt
@@ -2560,11 +2618,11 @@ def actualizar_nota(request):
                     proforma.save()
             except Exception as e:  
                 pass
-        return JsonResponse({'exitoso': 'exitoso'},safe=False,status=status.HTTP_200_OK)
+        return Response(safe=False,status=status.HTTP_200_OK)
     except ObjectDoesNotExist as e:
-        return JsonResponse({'error': str(e)},safe=False,status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': str(e)},safe=False,status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        return JsonResponse({'error': e},safe=False,status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'error': e},safe=False,status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # Funcion tipo vista para actualizar los pedidos de la instancia
 @api_view(["POST"])
 @csrf_exempt
@@ -2609,11 +2667,11 @@ def actualizar_pedido(request):
         pedido_id.total=total_proforma
         pedido_id.save()
         DetallePedido.objects.filter(id__in=id_dpedidos).delete()
-        return JsonResponse({'exitoso': 'exitoso'},safe=False,status=status.HTTP_200_OK)
+        return Response({'exitoso': 'exitoso'},safe=False,status=status.HTTP_200_OK)
     except ObjectDoesNotExist as e:
-        return JsonResponse({'error': str(e)},safe=False,status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': str(e)},safe=False,status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        return JsonResponse({'error': e},safe=False,
+        return Response({'error': e},safe=False,
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # Funcion para obtener valores del historico
 # def Value(request):
@@ -2655,7 +2713,7 @@ def validar_pedido(request):
                 inventario.bloqueado=inventario.bloqueado - deta.cantidada
                 inventario.disponible=inventario.disponible+deta.cantidada
                 inventario.save()
-            return JsonResponse({'exitoso': 'exitoso'},safe=False,status=status.HTTP_200_OK)
+            return Response({'exitoso': 'exitoso'},safe=False,status=status.HTTP_200_OK)
         else:
             pedido.estatus='A'
             pedido.save()
@@ -2689,11 +2747,11 @@ def validar_pedido(request):
                 inventario=Inventario.objects.get(id=deta.inventario.id)
                 inventario.bloqueado=inventario.bloqueado - deta.cantidada
                 inventario.save()
-            return JsonResponse({'exitoso': 'exitoso'},safe=False,status=status.HTTP_200_OK)
+            return Response(safe=False,status=status.HTTP_200_OK)
     except ObjectDoesNotExist as e:
-        return JsonResponse({'error': str(e)},safe=False,status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': str(e)},safe=False,status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        return JsonResponse({'error': e},safe=False,status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'error': e},safe=False,status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # Generar pagina tipo PDF para pedidos
 class pedido_pdf(PDFView):
     template_name='pedido.html'
@@ -2907,11 +2965,11 @@ def generar_factura(request):
                 nueva_factura.subtotal += float( deta.total_producto)
                 nueva_factura.total += float( deta.total_producto)+(float( deta.total_producto) * (float(nueva_factura.impuesto) / 100))
                 nueva_factura.save()
-        return JsonResponse({'exitoso': 'exitoso'},safe=False,status=status.HTTP_200_OK)
+        return Response(safe=False,status=status.HTTP_200_OK)
     except ObjectDoesNotExist as e:
-        return JsonResponse({'error': str(e)},safe=False,status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': str(e)},safe=False,status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        return JsonResponse({'error': e},safe=False,
+        return Response({'error': e},safe=False,
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # Funcion tipo vista para actualizar proformas 
 @api_view(["POST"])
@@ -2955,11 +3013,11 @@ def actualizar_proforma(request):
         proforma_id.total=total_proforma
         proforma_id.save()
         DetalleProforma.objects.filter(id__in=id_proformas).delete()
-        return JsonResponse({'exitoso': 'exitoso'},safe=False,status=status.HTTP_200_OK)
+        return Response(safe=False,status=status.HTTP_200_OK)
     except ObjectDoesNotExist as e:
-        return JsonResponse({'error': str(e)},safe=False,status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': str(e)},safe=False,status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        return JsonResponse({'error': e},safe=False,status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'error': e},safe=False,status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # Funcion para generar Excel de precios de productos
 def vista_xls(request):
     response=HttpResponse(content_type='application/ms-excel')
@@ -3006,3 +3064,20 @@ def guardar_pdf(request):
         return Response(True,status=status.HTTP_200_OK)
     except Exception as e:
         return Response(False,status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+@api_view(["GET"])
+@csrf_exempt
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def ventas_totales(request):
+    try:
+        ahora=timezone.now()
+        antes=timezone.datetime(month=ahora.month,year=ahora.year,day=1)
+        total_actual=Proforma.objects.filter(fecha_proforma__range=(antes,ahora)).aggregate(cantidad=Sum('total'))
+        mucho_antes=antes-timezone.timedelta(weeks=4)
+        mucho_antes=mucho_antes.replace(day=1)
+        total_anterior=Proforma.objects.filter(fecha_proforma__range=(mucho_antes,antes)).aggregate(cantidad=Sum('total'))
+        total={'actual':{'fecha':antes,'total':total_actual,},'anterior':{'fecha':mucho_antes,'total':total_anterior,},}
+        return Response(total,status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)

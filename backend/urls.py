@@ -63,6 +63,7 @@ urlpatterns = [
     path('crear-usuario/', views.crear_nuevo_usuario),
     path('obtener-menu/', views.obtener_menu),
     path('obtener-columnas/', views.obtener_columnas),
+    path('ventas-totales/', views.ventas_totales),
     # Guardado de registros
     path('borrar-nota/', views.borrar_nota),
     path('actualizar-nota/', views.actualizar_nota),
