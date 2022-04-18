@@ -17,6 +17,7 @@ from django.core import serializers as sr
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import JsonResponse,HttpResponse,request
 from django.shortcuts import render
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 # Raiz
@@ -85,40 +86,74 @@ class PermissionVS(viewsets.ModelViewSet):
     serializer_class=PermissionMSerializer
 # Vista modificada para el modelo mixim de User
 class UserVS(viewsets.ModelViewSet):
-    permission_classes=[AllowAny]
+    permission_classes=[IsAuthenticated]
+    # authentication_classes=[TokenAuthentication]
     serializer_class=UsuarioMSerializer
     # Motodo de crear no permitido
     def create(self,request):
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-    # Metodo de leer
-    def get_queryset(self):
-        if (self.request.user.perfil.tipo=='S'):
-            return User.objects.all()
-        elif (self.request.user.perfil.tipo=='A'):
-            instancia=Perfil.objects.get(usuario=self.request.user).instancia
-            return User.objects.filter(perfil__instancia=instancia).exclude(perfil__tipo='A')
+        perfil=obt_per(self.request.user)
+        datos=request.data
+        serializer=self.get_serializer(data=datos)
+        serializer.is_valid(raise_exception=True)
+        if perfil.tipo == 'S':
+            self.perform_create(serializer)
+            headers=self.get_success_headers(serializer.data)
+            return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
+        elif (perfil.tipo == 'A' or perfil.tipo == 'U') and (datos['tipo'] == 'U' or datos['tipo'] == 'V'):
+            self.perform_create(serializer)
+            headers=self.get_success_headers(serializer.data)
+            return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-    """ Metodo de actualizar no creado """
+    # Metodo de leer
+    def get_queryset(self):
+        perfil=obt_per(self.request.user)
+        instancia=Perfil.objects.get(usuario=self.request.user).instancia
+        menu=Menu.objects.get(router__contains='Usuario')
+        menu_instancia=MenuInstancia.objects.get(menu__id=menu.id)
+        try:
+            permiso=Permiso.objects.get(instancia=instancia,perfil=perfil,menuinstancia=menu_instancia)
+        except:
+            permiso=Permiso(leer=False)
+        if perfil.tipo=='S':
+            return User.objects.all()
+        elif perfil.tipo=='A':
+            return User.objects.filter(perfil__instancia=instancia)
+        elif perfil.tipo=='U' or perfil.tipo=='V':
+            return User.objects.filter(perfil__instancia=instancia).exclude(perfil__tipo__in=['A','S']) if permiso.leer else User.objects.filter(id=self.request.user.id)
+    def update(self,request,*args,**kwargs):
+        perfil=obt_per(self.request.user)
+        partial=True
+        instance=self.get_object()
+        serializer=self.get_serializer(instance,data=request.data,partial=partial)
+        serializer.is_valid(raise_exception=True)
+        if perfil.tipo=='S':
+            self.perform_update(serializer)
+            return Response(serializer.data,status=status.HTTP_200_OK)
+        if perfil.tipo=='A' or perfil.tipo=='U':
+            perfil_cambiar=Perfil.objects.get(usuario_id=serializer.id)
+            if perfil_cambiar.tipo != 'A' and perfil_cambiar != 'S':
+                self.perform_update(serializer)
+                return Response(serializer.data,status=status.HTTP_200_OK)
     # Metodo de eliminar
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         objeto=self.get_object()
         # Super
         if (perfil.tipo=='S'):
             Perfil.objects.get(usuario=self.request.data.id).delete()
             objeto.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        # Admin
-        elif (perfil.tipo=='A'):
+        # Admin/Usuario
+        elif perfil.tipo=='A' or perfil.tipo=='U':
             # Verificar que el usuario a borrar no sea Staff,y este en la misma instancia desde donde se hace la peticion
-            if (objeto.perfil.tipo!='S' and objeto.perfil.tipo!='A' and str(objeto.perfil.instancia.id)==str(perfil.instancia.id)):
+            if objeto.perfil.tipo!='S' and objeto.perfil.tipo!='A' and str(objeto.perfil.instancia.id)==str(perfil.instancia.id) and perfil.usuario.id!=self.request.user.id:
                 Perfil.objects.get(usuario=self.request.data.id).delete()
                 objeto.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                return Response(status=status.HTTP_401_UNAUTHORIZED)
-        # Usuario/Vendedor
+                return Response('No tienes permitido borrar este usuario',status=status.HTTP_401_UNAUTHORIZED)
+        # Vendedor
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
 # Vista del modelo Modulo
@@ -131,7 +166,7 @@ class ModuloVS(viewsets.ModelViewSet):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
     # Metodo de leer
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         # Super
         if (perfil.tipo=='S'):
             return Modulo.objects.all().order_by('nombre')
@@ -161,14 +196,14 @@ class MenuVS(viewsets.ModelViewSet):
     # Metodo de leer
     def get_queryset(self):
         # Verificar si existen los menus
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             menus=Menu.objects.all()
             return menus
         else:
             return None
     def update(self,request,*args,**kwargs):
-       perfil=Perfil.objects.get(usuario=self.request.user)
+       perfil=obt_per(self.request.user)
        if (perfil.tipo=='S'):
            partial=True
            instance=self.get_object()
@@ -187,7 +222,7 @@ class InstanciaVS(viewsets.ModelViewSet):
     permission_classes=[IsAdminUser,IsAuthenticated]
     serializer_class=InstanciaSerializer
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S' and self.request.user.is_superuser==True):
             serializer=self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
@@ -199,13 +234,13 @@ class InstanciaVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return Instancia.objects.all().order_by('nombre')
         else:
             return None
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -220,10 +255,10 @@ class InstanciaVS(viewsets.ModelViewSet):
 # Menus por instancia
 class MenuInstanciaVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
-    authentication_classes=[TokenAuthentication]
+    # authentication_classes=[TokenAuthentication]
     serializer_class=MenuInstanciaSerializer
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -243,7 +278,7 @@ class MenuInstanciaVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return MenuInstancia.objects.all().order_by('id')
         elif (perfil.tipo=='A'):
@@ -251,7 +286,7 @@ class MenuInstanciaVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -262,7 +297,7 @@ class MenuInstanciaVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -273,33 +308,72 @@ class MenuInstanciaVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
+# Funcion para guardar permisos
+def guardar_permiso(data,perfil_n=None,perfil_c=None):
+    if perfil_c:
+        instancia=perfil_c.instancia
+        if not perfil_n:
+            perfil_n=perfil_c
+        perfil_n=Perfil.objects.get(id=perfil_n)
+        for per in data:
+            menu_i=MenuInstancia.objects.get(instancia=instancia,menu__router__contains=per['menu'])
+            permiso_c=Permiso.objects.filter(menuinstancia=menu_i,perfil=perfil_c).first()
+            if permiso_c and perfil_n!=perfil_c:
+                try:
+                    permiso_n=Permiso.objects.get(instancia=instancia,menuinstancia=menu_i,perfil=perfil_n)
+                except:
+                    permiso_n=Permiso(instancia=instancia,menuinstancia=menu_i,perfil=perfil_n)
+                permiso_n.leer=per['leer'] if permiso_c.leer else False
+                permiso_n.escribir=per['escribir'] if permiso_c.escribir else False
+                permiso_n.borrar=per['borrar'] if permiso_c.borrar else False
+                permiso_n.actualizar=per['actualizar'] if permiso_c.actualizar else False
+                permiso_n.save()
 # Perfiles de usuarios
+# if verificar_permiso(instancia,vista,accion):
+def verificar_permiso(instancia,vista,accion):
+    permiso=Permiso.objects.get(instancia=instancia,menuinstancia__menu__router__contains=vista)
+    if permiso:
+        if accion=='leer':
+            return permiso.leer
+        elif accion=='escribir':
+            return permiso.excribir
+        elif accion=='actualizar':
+            return permiso.actualizar
+        elif accion=='eliminar':
+            return permiso.eliminar
+        else:
+            print('Accion no disponible')
+            return False
+    else:
+        print('Permiso no encontrado')
+        return False
 class PerfilVS(viewsets.ModelViewSet):
-    permission_classes=[IsAuthenticated]
+    permission_classes=[AllowAny]
     authentication_classes=[TokenAuthentication]
     serializer_class=PerfilSerializer
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
-        datos['instancia']=perfil.instancia.id
+        datos._mutable = True
+        datos['instancia']=request.data['instancia'] if perfil.tipo=='S' and request.data['instancia'] else perfil.instancia.id
+        permisos=datos['permisos']
+        datos._mutable = False
+        serializer=self.get_serializer(data=datos)
+        serializer.is_valid(raise_exception=True)
         if (perfil.tipo=='S'):
-            serializer=self.get_serializer(data=datos)
-            serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
+            guardar_permiso(permisos,serializer['id'].value,perfil)
             headers=self.get_success_headers(serializer.data)
             return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
         elif (perfil.tipo=='A'):
-            datos=request.data
-            datos['instancia']=perfil.instancia.id
-            serializer=self.get_serializer(data=datos)
-            serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
+            guardar_permiso(datos,serializer.data,perfil)
             headers=self.get_success_headers(serializer.data)
             return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return Perfil.objects.all().order_by('usuario')
         elif (perfil.tipo=='A'):
@@ -307,7 +381,7 @@ class PerfilVS(viewsets.ModelViewSet):
         else:
             return Perfil.objects.filter(id=perfil.id).order_by('usuario')
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -333,7 +407,7 @@ class PerfilVS(viewsets.ModelViewSet):
             except:
                 return Response({'error': 'Problem with user or selected avatar'},status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -350,7 +424,7 @@ class PermisoVS(viewsets.ModelViewSet):
     authentication_classes=[TokenAuthentication]
     serializer_class=PermisoSerializer
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return Permiso.objects.all().order_by('id')
         elif (perfil.tipo=='A'):
@@ -365,7 +439,7 @@ class EmpresaVS(viewsets.ModelViewSet):
     authentication_classes=[TokenAuthentication]
     serializer_class=EmpresaSerializer
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -385,7 +459,7 @@ class EmpresaVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -404,7 +478,7 @@ class EmpresaVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -416,7 +490,7 @@ class EmpresaVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return Empresa.objects.all().order_by('nombre')
         else:
@@ -427,7 +501,7 @@ class ContactoEmpresaVS(viewsets.ModelViewSet):
     authentication_classes=[TokenAuthentication]
     serializer_class=ContactoEmpresaSerializer
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -447,7 +521,7 @@ class ContactoEmpresaVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -466,7 +540,7 @@ class ContactoEmpresaVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -478,7 +552,7 @@ class ContactoEmpresaVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return ContactoEmpresa.objects.all().order_by('nombre')
         else:
@@ -489,7 +563,7 @@ class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
     authentication_classes=[TokenAuthentication]
     serializer_class=ConfiguracionPapeleriaSerializer
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -509,7 +583,7 @@ class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -528,7 +602,7 @@ class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -540,7 +614,7 @@ class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return ConfiguracionPapeleria.objects.all().order_by('valor','empresa')
         else:
@@ -551,7 +625,7 @@ class TasaConversionVS(viewsets.ModelViewSet):
     authentication_classes=[TokenAuthentication]
     serializer_class=TasaConversionSerializer
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -571,7 +645,7 @@ class TasaConversionVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -590,7 +664,7 @@ class TasaConversionVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -602,7 +676,7 @@ class TasaConversionVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return TasaConversion.objects.all().order_by('-id')
         else:
@@ -613,7 +687,7 @@ class ImpuestosVS(viewsets.ModelViewSet):
     authentication_classes=[TokenAuthentication]
     serializer_class=ImpuestosSerializer
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -633,7 +707,7 @@ class ImpuestosVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -652,7 +726,7 @@ class ImpuestosVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -664,7 +738,7 @@ class ImpuestosVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return Impuestos.objects.all().order_by('nombre')
         else:
@@ -675,7 +749,7 @@ class MarcaVS(viewsets.ModelViewSet):
     authentication_classes=[TokenAuthentication]
     serializer_class=MarcaSerializer
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -695,7 +769,7 @@ class MarcaVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -714,7 +788,7 @@ class MarcaVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -726,7 +800,7 @@ class MarcaVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return Marca.objects.all().order_by('nombre')
         else:
@@ -739,7 +813,7 @@ class ProductoVS(viewsets.ModelViewSet):
     filter_backends=[DjangoFilterBackend]
     filterset_fields=['servicio','menejo_inventario','activo']
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         if (perfil.tipo=='S'):
             datos['instancia']=str(perfil.instancia.id)
@@ -758,7 +832,7 @@ class ProductoVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -777,7 +851,7 @@ class ProductoVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -789,7 +863,7 @@ class ProductoVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return Producto.objects.all().order_by('id')
         else:
@@ -800,7 +874,7 @@ class ProductoImagenVS(viewsets.ModelViewSet):
     authentication_classes=[TokenAuthentication]
     serializer_class=ProductoImagenSerializer
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -820,7 +894,7 @@ class ProductoImagenVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -839,7 +913,7 @@ class ProductoImagenVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -851,7 +925,7 @@ class ProductoImagenVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return ProductoImagen.objects.all().order_by('producto','principal')
         else:
@@ -862,7 +936,7 @@ class AlmacenVS(viewsets.ModelViewSet):
     authentication_classes=[TokenAuthentication]
     serializer_class=AlmacenSerializer
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -882,7 +956,7 @@ class AlmacenVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -901,7 +975,7 @@ class AlmacenVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -913,7 +987,7 @@ class AlmacenVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return Almacen.objects.all().order_by('nombre')
         else:
@@ -926,7 +1000,7 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
     filter_backends=[DjangoFilterBackend]
     filterset_fields=['producto','almacen']
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -970,7 +1044,7 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -989,7 +1063,7 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -1001,7 +1075,7 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return MovimientoInventario.objects.all()
         else:
@@ -1014,7 +1088,7 @@ class DetalleInventarioVS(viewsets.ModelViewSet):
     filter_backends=[DjangoFilterBackend]
     filterset_fields=['producto','almacen','disponible','bloqueado']
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -1034,7 +1108,7 @@ class DetalleInventarioVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -1053,7 +1127,7 @@ class DetalleInventarioVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -1065,7 +1139,7 @@ class DetalleInventarioVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return Inventario.objects.all().exclude(disponible=0)
         else:
@@ -1078,7 +1152,7 @@ class VendedorVS(viewsets.ModelViewSet):
     filter_backends=[DjangoFilterBackend]
     filterset_fields=['activo']
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -1098,7 +1172,7 @@ class VendedorVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -1117,7 +1191,7 @@ class VendedorVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -1129,7 +1203,7 @@ class VendedorVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return Vendedor.objects.all().order_by('nombre')
         else:
@@ -1142,7 +1216,7 @@ class ClienteVS(viewsets.ModelViewSet):
     filter_backends=[DjangoFilterBackend]
     filterset_fields=['activo']
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -1162,7 +1236,7 @@ class ClienteVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -1181,7 +1255,7 @@ class ClienteVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -1193,7 +1267,7 @@ class ClienteVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return Cliente.objects.all().order_by('nombre')
         else:
@@ -1204,7 +1278,7 @@ class ContactoClienteVS(viewsets.ModelViewSet):
     authentication_classes=[TokenAuthentication]
     serializer_class=ContactoClienteSerializer
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -1224,7 +1298,7 @@ class ContactoClienteVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -1243,7 +1317,7 @@ class ContactoClienteVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -1255,7 +1329,7 @@ class ContactoClienteVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return ContactoCliente.objects.all().order_by('nombre')
         else:
@@ -1266,7 +1340,7 @@ class PedidoVS(viewsets.ModelViewSet):
     authentication_classes=[TokenAuthentication]
     serializer_class=PedidoSerializer
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -1286,7 +1360,7 @@ class PedidoVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -1305,7 +1379,7 @@ class PedidoVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -1317,7 +1391,7 @@ class PedidoVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return Pedido.objects.all().order_by('-id')
         else:
@@ -1330,7 +1404,7 @@ class DetallePedidoVS(viewsets.ModelViewSet):
     filter_backends=[DjangoFilterBackend]
     filterset_fields=['pedido']
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -1350,7 +1424,7 @@ class DetallePedidoVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -1369,7 +1443,7 @@ class DetallePedidoVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -1385,7 +1459,7 @@ class DetallePedidoVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return DetallePedido.objects.all()
         else:
@@ -1398,7 +1472,7 @@ class ProformaVS(viewsets.ModelViewSet):
     filter_backends=[DjangoFilterBackend]
     filterset_fields=['cliente']
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -1418,7 +1492,7 @@ class ProformaVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -1437,7 +1511,7 @@ class ProformaVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             DetalleProforma.objects.filter(proforma=instance.id).delete()
@@ -1451,7 +1525,7 @@ class ProformaVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return Proforma.objects.all().order_by('-id')
         else:
@@ -1464,7 +1538,7 @@ class DetalleProformaVS(viewsets.ModelViewSet):
     filter_backends=[DjangoFilterBackend]
     filterset_fields=['proforma']
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -1484,7 +1558,7 @@ class DetalleProformaVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -1503,7 +1577,7 @@ class DetalleProformaVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -1518,7 +1592,7 @@ class DetalleProformaVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return DetalleProforma.objects.all()
         else:
@@ -1529,7 +1603,7 @@ class NotaPagoVS(viewsets.ModelViewSet):
     authentication_classes=[TokenAuthentication]
     serializer_class=NotaPagoMSerializer
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -1549,7 +1623,7 @@ class NotaPagoVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -1568,7 +1642,7 @@ class NotaPagoVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -1580,7 +1654,7 @@ class NotaPagoVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return NotasPago.objects.all()
         else:
@@ -1593,7 +1667,7 @@ class DetalleNotaPagoVS(viewsets.ModelViewSet):
     filter_backends=[DjangoFilterBackend]
     filterset_fields=['notapago']
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -1613,7 +1687,7 @@ class DetalleNotaPagoVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -1632,7 +1706,7 @@ class DetalleNotaPagoVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -1644,7 +1718,7 @@ class DetalleNotaPagoVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return DetalleNotasPago.objects.all()
         else:
@@ -1655,7 +1729,7 @@ class FacturaVS(viewsets.ModelViewSet):
     authentication_classes=[TokenAuthentication]
     serializer_class=FacturaSerializer
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -1675,7 +1749,7 @@ class FacturaVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -1694,7 +1768,7 @@ class FacturaVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -1706,7 +1780,7 @@ class FacturaVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return Factura.objects.all()
         else:
@@ -1719,7 +1793,7 @@ class DetalleFacturaVS(viewsets.ModelViewSet):
     filter_backends=[DjangoFilterBackend]
     filterset_fields=['factura']
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -1739,7 +1813,7 @@ class DetalleFacturaVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -1758,7 +1832,7 @@ class DetalleFacturaVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -1770,7 +1844,7 @@ class DetalleFacturaVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return DetalleFactura.objects.all()
         else:
@@ -1781,7 +1855,7 @@ class ImpuestosFacturaVS(viewsets.ModelViewSet):
     authentication_classes=[TokenAuthentication]
     serializer_class=ImpuestosFacturaSerializer
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -1801,7 +1875,7 @@ class ImpuestosFacturaVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -1820,7 +1894,7 @@ class ImpuestosFacturaVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -1832,7 +1906,7 @@ class ImpuestosFacturaVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return ImpuestosFactura.objects.all().order_by('nombre')
         else:
@@ -1843,7 +1917,7 @@ class NumerologiaFacturaVS(viewsets.ModelViewSet):
     authentication_classes=[TokenAuthentication]
     serializer_class=NumerologiaFacturaSerializer
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -1863,7 +1937,7 @@ class NumerologiaFacturaVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -1882,7 +1956,7 @@ class NumerologiaFacturaVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -1894,7 +1968,7 @@ class NumerologiaFacturaVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return NumerologiaFactura.objects.all().order_by('tipo','valor')
         else:
@@ -1905,7 +1979,7 @@ class NotaFacturaVS(viewsets.ModelViewSet):
     authentication_classes=[TokenAuthentication]
     serializer_class=NotaFacturaSerializer
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -1925,7 +1999,7 @@ class NotaFacturaVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -1944,7 +2018,7 @@ class NotaFacturaVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -1956,7 +2030,7 @@ class NotaFacturaVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return NotaFactura.objects.all()
         else:
@@ -1967,7 +2041,7 @@ class ProveedorVS(viewsets.ModelViewSet):
     authentication_classes=[TokenAuthentication]
     serializer_class=ProveedorSerializer
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -1987,7 +2061,7 @@ class ProveedorVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -2006,7 +2080,7 @@ class ProveedorVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -2018,7 +2092,7 @@ class ProveedorVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return Proveedor.objects.all().order_by('nombre')
         else:
@@ -2029,7 +2103,7 @@ class CompraVS(viewsets.ModelViewSet):
     authentication_classes=[TokenAuthentication]
     serializer_class=CompraSerializer
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -2049,7 +2123,7 @@ class CompraVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -2068,7 +2142,7 @@ class CompraVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -2080,7 +2154,7 @@ class CompraVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return Compra.objects.all().order_by('empresa','Proveedor','total')
         else:
@@ -2091,7 +2165,7 @@ class DetalleCompraVS(viewsets.ModelViewSet):
     authentication_classes=[TokenAuthentication]
     serializer_class=DetalleCompraSerializer
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -2111,7 +2185,7 @@ class DetalleCompraVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -2130,7 +2204,7 @@ class DetalleCompraVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -2142,7 +2216,7 @@ class DetalleCompraVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return DetalleCompra.objects.all().order_by('compra','producto','cantidad','precio')
         else:
@@ -2153,7 +2227,7 @@ class NotaCompraVS(viewsets.ModelViewSet):
     authentication_classes=[TokenAuthentication]
     serializer_class=NotaCompraSerializer
     def create(self,request):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         datos=request.data
         datos['instancia']=perfil.instancia.id
         if (perfil.tipo=='S'):
@@ -2173,7 +2247,7 @@ class NotaCompraVS(viewsets.ModelViewSet):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
     def update(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             partial=True
             instance=self.get_object()
@@ -2192,7 +2266,7 @@ class NotaCompraVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         instance=self.get_object()
         if (perfil.tipo=='S'):
             instance.delete()
@@ -2204,12 +2278,15 @@ class NotaCompraVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
+        perfil=obt_per(self.request.user)
         if (perfil.tipo=='S'):
             return NotaCompra.objects.all().order_by('compra')
         else:
             return NotaCompra.objects.filter(instancia=perfil.instancia).order_by('compra')
 """ Funciones y funciones tipo vistas """
+# Funcion para obtener el perfil del usuario
+def obt_per(user):
+    return Perfil.objects.get(usuario=user)
 # Funcion tipo vista para obtener objetos del inventario
 @api_view(["GET"])
 @csrf_exempt

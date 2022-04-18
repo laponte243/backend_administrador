@@ -53,14 +53,14 @@ class Permiso(models.Model):
     menuinstancia=models.ForeignKey(MenuInstancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Opcion de menu asociada")
     perfil=models.ForeignKey(Perfil,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Usuario asociado")
     # Metodos
-    leer=models.BooleanField(default=True,help_text="Tiene opcion de leer?")
-    escribir=models.BooleanField(default=True,help_text="Tiene opcion de escribir?")
-    borrar=models.BooleanField(default=True,help_text="Tiene opcion de borrar?")
-    actualizar=models.BooleanField(default=True,help_text="Tiene opcion de actualizar?")
+    leer=models.BooleanField(default=False,help_text="Tiene opcion de leer?")
+    escribir=models.BooleanField(default=False,help_text="Tiene opcion de escribir?")
+    borrar=models.BooleanField(default=False,help_text="Tiene opcion de borrar?")
+    actualizar=models.BooleanField(default=False,help_text="Tiene opcion de actualizar?")
     # Utiles
     history=HistoricalRecords()
     def __str__(self):
-        return '%s - %s - %s'%(self.instancia.nombre,self.menuinstancia.menu.router,self.perfil.usuario.username)
+        return 'Permiso: %s - Leer:%s Borrar:%s Actualizar:%s Escribir:%s'%(self.menuinstancia.menu.router,self.leer,self.borrar,self.actualizar,self.escribir)
 class Nota(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
     TIPO=(('C','Credito'),('D','Debito'))
@@ -212,7 +212,7 @@ class Cliente(models.Model):
     identificador=models.TextField(max_length=150,blank=True,help_text="Numero de indentificacion fiscal")
     ubicacion=models.TextField(max_length=150,blank=True,help_text="Ubicacion o direccion del cliente")
     credito=models.BooleanField(default=False,help_text="Se le puede vender a credito?")
-    codigo=models.TextField(max_length=150,null=False,blank=False,help_text="codigo del vendedor")
+    codigo=models.TextField(max_length=150,null=False,blank=False,help_text="Codigo del cliente")
     imagen=models.ImageField(upload_to='clientes',null=True,help_text="Imagen o logo asociado al cliente")
     activo=models.BooleanField(default=False,help_text="Esta activo?")
     history=HistoricalRecords()
