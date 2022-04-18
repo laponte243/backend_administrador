@@ -365,6 +365,7 @@ class NotasPago(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
     cliente=models.ForeignKey(Cliente,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="cliente asociado")
     total=models.FloatField(null=False,default=0,blank=False,help_text="total de la nota")
+    comprobante=models.TextField(null=False,default=0,blank=False,help_text="comprobante del pago")
     descripcion=models.TextField(max_length=150,blank=True,null=True,help_text="pequeña descripcion")
 class DetalleNotasPago(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
