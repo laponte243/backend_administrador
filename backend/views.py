@@ -18,6 +18,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import JsonResponse,HttpResponse,request
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
 # Raiz
 from .serializers import *
 from .models import *
@@ -2591,6 +2592,7 @@ def validar_pedido(request):
             nueva_proforma.identificador_fiscal=pedido.cliente.identificador
             nueva_proforma.direccion_cliente=pedido.cliente.ubicacion
             nueva_proforma.telefono_cliente=pedido.cliente.telefono
+            nueva_proforma.precio_seleccionadoo=pedido.precio_seleccionadoo
             nueva_proforma.save()
             # Se crea el detalle de la proforma con la información asociada en el detalle pedido
             for deta in detashepedido:
@@ -2929,3 +2931,21 @@ def guardar_pdf(request):
         return Response(True,status=status.HTTP_200_OK)
     except Exception as e:
         return Response(False,status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(["GET"])
+@csrf_exempt
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def ventas_totales(request):
+    try:
+        ahora=timezone.now()
+        antes=timezone.datetime(month=ahora.month,year=ahora.year,day=1)
+        total_actual=Proforma.objects.filter(fecha_proforma__range=(antes,ahora)).aggregate(cantidad=Sum('total'))
+        mucho_antes=antes-timezone.timedelta(weeks=4)
+        mucho_antes=mucho_antes.replace(day=1)
+        total_anterior=Proforma.objects.filter(fecha_proforma__range=(mucho_antes,antes)).aggregate(cantidad=Sum('total'))
+        total={'actual':{'fecha':antes,'total':total_actual,},'anterior':{'fecha':mucho_antes,'total':total_anterior,},}
+        return Response(total,status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
