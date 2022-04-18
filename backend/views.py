@@ -2793,7 +2793,7 @@ class factura_pdf(PDFView):
         try:
             conversion=TasaConversion.objects.filter(fecha_tasa__date=datetime.datetime.today().date()).latest('fecha_tasa__date')
         except:
-            conversion=TasaConversion.objects.latest('-fecha_tasa')
+            conversion=TasaConversion.objects.latest('fecha_tasa')
         context=super().get_context_data(*args,**kwargs)
         factura=Factura.objects.get(id=kwargs['id_factura'])
         subtotal=float(factura.subtotal)
@@ -2892,6 +2892,11 @@ def generar_factura(request):
         nueva_factura.telefono_vendedor=proforma.vendedor.telefono
         nueva_factura.impuesto=16
         nueva_factura.save()
+        try:
+            conversion=TasaConversion.objects.filter(fecha_tasa__date=datetime.datetime.today().date()).latest('fecha_tasa__date')
+        except:
+            conversion=TasaConversion.objects.latest('fecha_tasa')
+        print(conversion.valor)
         for deta in detasheproforma:
                 nuevo_detalle=DetalleFactura(
                     factura=nueva_factura,
@@ -2903,12 +2908,13 @@ def generar_factura(request):
                     producto=deta.producto,
                     producto_fijo=deta.producto.nombre,
                     precio=deta.precio_seleccionado,
-                    total_producto=deta.total_producto,
+                    total_producto=deta.total_producto * conversion.valor,
                     instancia=instancia)
                 nuevo_detalle.save()
-                nueva_factura.subtotal += float( deta.total_producto)
-                nueva_factura.total += float( deta.total_producto)+(float( deta.total_producto) * (float(nueva_factura.impuesto) / 100))
-                nueva_factura.save()
+                total_convertido=deta.total_producto * conversion.valor
+                nueva_factura.subtotal+=float(total_convertido)
+                nueva_factura.total+=float(total_convertido)+(float(total_convertido)*(float(nueva_factura.impuesto) / 100))
+        nueva_factura.save()
         return JsonResponse({'exitoso': 'exitoso'},safe=False,status=status.HTTP_200_OK)
     except ObjectDoesNotExist as e:
         return JsonResponse({'error': str(e)},safe=False,status=status.HTTP_404_NOT_FOUND)
