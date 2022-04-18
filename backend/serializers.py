@@ -93,12 +93,9 @@ class PerfilSerializer(serializers.ModelSerializer):
     class Meta:
         model = Perfil
         fields = '__all__'
-    nombreInstancia = serializers.SerializerMethodField('LoadNombreInstancia')
-    def LoadNombreInstancia(self, obj):
-        return obj.instancia.nombre
-    nombreInstancia = serializers.SerializerMethodField('LoadNombreInstancia')
-    def LoadNombreInstancia(self, obj):
-        return obj.instancia.nombre
+    # nombreInstancia = serializers.SerializerMethodField('LoadNombreInstancia')
+    # def LoadNombreInstancia(self, obj):
+    #     return obj.instancia.nombre
 class PermisoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Permiso
