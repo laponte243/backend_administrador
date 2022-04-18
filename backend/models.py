@@ -236,6 +236,7 @@ class Pedido(models.Model):
     vendedor=models.ForeignKey(Vendedor,null=True,blank=False,on_delete=models.DO_NOTHING,help_text="vendedor asociado")
     fecha_pedido=models.DateTimeField(auto_now_add=True,help_text="fecha de generacion del pedido")
     total=models.FloatField(null=False,default=0,blank=False,help_text="total de la pedido")
+    precio_seleccionadoo=models.TextField(null= False,blank=False)
     history=HistoricalRecords()
     def __str__(self):
         return "ID: #%s,$%s (%s/%s)"%(self.id,self.total,self.cliente.nombre,self.empresa.nombre)
@@ -259,6 +260,7 @@ class Proforma(models.Model):
     cliente=models.ForeignKey(Cliente,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="cliente asociado")
     vendedor=models.ForeignKey(Vendedor,null=True,blank=False,on_delete=models.DO_NOTHING,help_text="vendedor asociado")
     # Datos
+    precio_seleccionadoo=models.TextField(null= False,blank=False)
     nombre_cliente=models.TextField(max_length=150,blank=False,null=False,help_text="Nombre del cliente en la proforma")
     identificador_fiscal=models.TextField(max_length=150,blank=False,null=False,help_text="Identificador fiscal del cliente en la venta")
     direccion_cliente=models.TextField(max_length=150,blank=False,null=False,help_text="telefono del cliente en la proforma")
@@ -363,6 +365,7 @@ class NotasPago(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
     cliente=models.ForeignKey(Cliente,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="cliente asociado")
     total=models.FloatField(null=False,default=0,blank=False,help_text="total de la nota")
+    comprobante=models.TextField(null=False,default=0,blank=False,help_text="comprobante del pago")
     descripcion=models.TextField(max_length=150,blank=True,null=True,help_text="pequeña descripcion")
 class DetalleNotasPago(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")

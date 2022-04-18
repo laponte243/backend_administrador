@@ -19,6 +19,7 @@ from django.http import JsonResponse,HttpResponse,request
 from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
 # Raiz
 from .serializers import *
 from .models import *
@@ -2726,6 +2727,7 @@ def validar_pedido(request):
             nueva_proforma.identificador_fiscal=pedido.cliente.identificador
             nueva_proforma.direccion_cliente=pedido.cliente.ubicacion
             nueva_proforma.telefono_cliente=pedido.cliente.telefono
+            nueva_proforma.precio_seleccionadoo=pedido.precio_seleccionadoo
             nueva_proforma.save()
             # Se crea el detalle de la proforma con la información asociada en el detalle pedido
             for deta in detashepedido:
