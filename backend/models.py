@@ -59,6 +59,9 @@ class Permiso(models.Model):
     actualizar=models.BooleanField(default=False,help_text="Tiene opcion de actualizar?")
     # Utiles
     history=HistoricalRecords()
+    # def save(self):
+    #     if Permiso.objects.filter(instancia=s)
+    #     super().save()
     def __str__(self):
         return 'Permiso: %s - Leer:%s Borrar:%s Actualizar:%s Escribir:%s'%(self.menuinstancia.menu.router,self.leer,self.borrar,self.actualizar,self.escribir)
 class Nota(models.Model):

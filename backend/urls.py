@@ -31,7 +31,7 @@ router.register(r'marca', views.MarcaVS, basename='marca')
 router.register(r'producto', views.ProductoVS, basename='producto')
 router.register(r'producto-imagen', views.ProductoImagenVS, basename='producto-imagen')
 router.register(r'movimiento-inventario', views.MovimientoInventarioVS, basename='Movimiento-inventario')
-router.register(r'almecen', views.AlmacenVS, basename='almecen')
+router.register(r'almacen', views.AlmacenVS, basename='almacen')
 router.register(r'inventario-detalle', views.DetalleInventarioVS, basename='inventario-detalle')
 # Ventas
 router.register(r'vendedor', views.VendedorVS, basename='vendedor')
@@ -64,6 +64,8 @@ urlpatterns = [
     path('obtener-menu/', views.obtener_menu),
     path('obtener-columnas/', views.obtener_columnas),
     path('ventas-totales/', views.ventas_totales),
+    path('permisos-disponibles/', views.permisos_disponibles),
+    path('ubop/', views.ubop),
     # Guardado de registros
     path('borrar-nota/', views.borrar_nota),
     path('actualizar-nota/', views.actualizar_nota),
@@ -72,10 +74,10 @@ urlpatterns = [
     path('validar-pedido/', views.validar_pedido),
     path('generar-factura/', views.generar_factura),
     # Mostrar PDFs 
-    path('pdf-pedido/<int:id_pedido>', views.pedido_pdf.as_view()),
-    path('pdf-proforma/<int:id_proforma>', views.proforma_pdf.as_view()),
-    path('pdf-factura/<int:id_factura>', views.factura_pdf.as_view()),
-    path('pdf-nota-pago/<int:id_notapago>', views.notapago_pdf.as_view()),
+    path('pdf-pedido/<int:id_pedido>', views.PedidoPDF.as_view()),
+    path('pdf-proforma/<int:id_proforma>', views.ProformaPDF.as_view()),
+    path('pdf-factura/<int:id_factura>', views.FacturaPDF.as_view()),
+    path('pdf-nota-pago/<int:id_notapago>', views.NotaPagoPDF.as_view()),
     path('pdf-proforma-guardar/', views.guardar_pdf),
     # Excel
     path('xls-generador/', views.vista_xls),

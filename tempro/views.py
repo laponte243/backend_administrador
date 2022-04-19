@@ -30,7 +30,6 @@ class RegistroTemperaturaVS(viewsets.ModelViewSet):
     # Metodo get en base a multiples instancias
     def update(self):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
     def get_queryset(self):
         perfil=Perfil.objects.get(usuario=self.request.user)
         instancia=perfil.instancia
