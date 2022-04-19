@@ -2410,7 +2410,7 @@ class FacturaPDF(PDFView):
         try:
             conversion=TasaConversion.objects.filter(fecha_tasa__date=datetime.datetime.today().date()).latest('fecha_tasa__date')
         except:
-            conversion=TasaConversion.objects.latest('-fecha_tasa')
+            conversion=TasaConversion.objects.latest('fecha_tasa')
         context=super().get_context_data(*args,**kwargs)
         factura=Factura.objects.get(id=kwargs['id_factura'])
         subtotal=float(factura.subtotal)
