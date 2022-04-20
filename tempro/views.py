@@ -63,43 +63,6 @@ class SuscripcionVS(viewsets.ModelViewSet):
             return Suscripcion.objects.all().order_by('-id')
         else:
             return Suscripcion.objects.filter(instancia=instancia).order_by('-id')
-# Funcion para enviar mensaje por el bot de alerta
-def func_alertar(info):
-    try:
-        # Llave del bot de telegram asociado
-        API_KEY_BOT='5260903251:AAFuenEYma01kNHnm6AO9BFioGDn-cNrXEY'
-        bot=telebot.TeleBot(API_KEY_BOT)
-        for suscripcion in Suscripcion.objects.filter(alertar=True).values():
-            bot.send_message(suscripcion['chat'],info)
-    except Exception as e:
-        print(e)
-# Funciones para enviar correos de alerta
-def correo_temperatura_alta(nodo,promedio):
-    subject='Alerta de temperatura alta (Tempro)'
-    html_message=render_to_string('alerta_temperatura_alta.html',{'promedio': promedio,'nodo':nodo,'fecha': datetime.now()})
-    recievers=[]
-    for correo in Correo.objects.all():
-        recievers.append(correo.email)
-    email_from=settings.EMAIL_HOST_USER
-    plain_message=strip_tags(html_message)
-    mail.send_mail(subject,plain_message,email_from,recievers,html_message=html_message)
-    correo=CorreoAlerta(nodo=nodo,tipo_alerta='A')
-    correo.save()
-def correo_temperatura_baja(nodo,promedio):
-    subject='Alerta de temperatura baja (Tempro)'
-    html_message=render_to_string('alerta_temperatura_baja.html',{'promedio': promedio,'nodo':nodo,'fecha': datetime.now()})
-    recievers=[]
-    for correos in Correo.objects.all():
-        recievers.append(correos.email)
-    email_from=settings.EMAIL_HOST_USER
-    plain_message=strip_tags(html_message)
-    mail.send_mail(subject,plain_message,email_from,recievers,html_message=html_message)
-    correo=CorreoAlerta(nodo=nodo,tipo_alerta='B')
-    correo.save()
-# Rounder
-class Round(Func):
-    function='ROUND'
-    arity=2
 # Funcion tipo vista para registrar las temperaturas
 @api_view(["POST","GET"])
 @csrf_exempt
@@ -361,3 +324,40 @@ def promedio_tres_dias(request):
             return Response('Error',status=status.HTTP_400_BAD_REQUEST)
     else:
         return Response('Error al intentar encontrar el nodo',status=status.HTTP_400_BAD_REQUEST)
+# Funcion para enviar mensaje por el bot de alerta
+def func_alertar(info):
+    try:
+        # Llave del bot de telegram asociado
+        API_KEY_BOT='5260903251:AAFuenEYma01kNHnm6AO9BFioGDn-cNrXEY'
+        bot=telebot.TeleBot(API_KEY_BOT)
+        for suscripcion in Suscripcion.objects.filter(alertar=True).values():
+            bot.send_message(suscripcion['chat'],info)
+    except Exception as e:
+        print(e)
+# Funciones para enviar correos de alerta
+def correo_temperatura_alta(nodo,promedio):
+    subject='Alerta de temperatura alta (Tempro)'
+    html_message=render_to_string('alerta_temperatura_alta.html',{'promedio': promedio,'nodo':nodo,'fecha': datetime.now()})
+    recievers=[]
+    for correo in Correo.objects.all():
+        recievers.append(correo.email)
+    email_from=settings.EMAIL_HOST_USER
+    plain_message=strip_tags(html_message)
+    mail.send_mail(subject,plain_message,email_from,recievers,html_message=html_message)
+    correo=CorreoAlerta(nodo=nodo,tipo_alerta='A')
+    correo.save()
+def correo_temperatura_baja(nodo,promedio):
+    subject='Alerta de temperatura baja (Tempro)'
+    html_message=render_to_string('alerta_temperatura_baja.html',{'promedio': promedio,'nodo':nodo,'fecha': datetime.now()})
+    recievers=[]
+    for correos in Correo.objects.all():
+        recievers.append(correos.email)
+    email_from=settings.EMAIL_HOST_USER
+    plain_message=strip_tags(html_message)
+    mail.send_mail(subject,plain_message,email_from,recievers,html_message=html_message)
+    correo=CorreoAlerta(nodo=nodo,tipo_alerta='B')
+    correo.save()
+# Rounder
+class Round(Func):
+    function='ROUND'
+    arity=2

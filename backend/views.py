@@ -2517,40 +2517,39 @@ def inventario(request):
     else:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
 # Funcion tipo vista para crear un nuevo usuario
-@api_view(["GET"])
+@api_view(["POST"])
 @csrf_exempt
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def crear_nuevo_usuario(request):
     datos=json.load(request.body)
     try:
-        perfil_c=Perfil.objects.get(usuario=request.user)
+        perfil_creador=Perfil.objects.get(usuario=request.user)
         usuario=User.objects.filter(email=datos['email'])
         if (usuario):
             return Response("Ya hay un usuario con el mismo correo",status=status.HTTP_400_BAD_REQUEST)
-        elif datos['tipo']=='A' and perfil_c.tipo=='S':
+        elif datos['tipo']=='A' and perfil_creador.tipo=='S':
             return crear_admin(datos)
-        elif perfil_c.tipo=='A' or verificar_permiso(perfil,'Usuarios_y_permisos','escribir'):
-            datos['instancia']=obtener_instancia(perfil,request.datos['instancia'])
+        elif perfil_creador.tipo=='A' or perfil_creador.tipo=='S' or verificar_permiso(perfil_creador,'Usuarios_y_permisos','escribir'):
+            datos['instancia']=obtener_instancia(perfil_creador,request.datos['instancia'])
             user=User(username=datos['username'],email=datos['email'],password=generar_clave())
             user.save()
-            perfil=Perfil(usuario=user,instancia=datos['instancia'],tipo=datos['tipo'])
-            if (perfil_c.tipo=='S'):
-                # Instancia igual a la instancia dada por el superusuario (instancia=datos['instancia'])
-                perfil.save()
+            perfil_nuevo=Perfil(usuario=user,instancia=datos['instancia'],tipo=datos['tipo'])
+            if perfil_creador.tipo=='S':
+                perfil_nuevo.save()
                 permisos=datos['permisos']
-                guardar_permisos(permisos,perfil.id,perfil)
-                if perfil.id:
+                guardar_permisos(permisos,perfil_nuevo.id,perfil_creador)
+                if perfil_nuevo.id:
                     return Response(status=status.HTTP_201_CREATED)
                 else:
                     return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            elif (perfil_c.tipo=='A'):
-                if (datos['tipo']=="U" or datos['tipo']=="V"):
+            elif perfil_creador.tipo=='A':
+                if datos['tipo']=="U" or datos['tipo']=="V":
                     # Instancia igual a la instancia del perfil del usuario que hace la peticion (instancia=perfil_c.instancia)     
-                    perfil.save()
+                    perfil_nuevo.save()
                     permisos=datos['permisos']
-                    guardar_permisos(permisos,perfil.id,perfil)
-                    if perfil.id:
+                    guardar_permisos(permisos,perfil_nuevo.id,perfil_creador)
+                    if perfil_nuevo.id:
                         return Response(status=status.HTTP_201_CREATED)
                     else:
                         return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -2998,7 +2997,7 @@ def ventas_totales(request):
 # Funcion tipo para obtener los permisos disponibles para la instancia
 @api_view(["GET"])
 @csrf_exempt
-@authentication_classes([TokenAuthentication])
+# @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def permisos_disponibles(request):
     perfil=Perfil.objects.get(usuario=request.user)
@@ -3013,6 +3012,7 @@ def permisos_disponibles(request):
             seria=MenuInstanciaSerializer(MenuInstancia.objects.filter(id__in=lista), many=True)
             return Response(data=seria.data,status=status.HTTP_200_OK)
         except Exception as e:
+            print(e)
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         Response(status=status.HTTP_401_UNAUTHORIZED)
@@ -3082,7 +3082,7 @@ def crear_super_usuario(request):
         for m in Menu.objects.all().order_by('id'):
             menuinstancia=MenuInstancia(instancia_id=instancia,menu=m,orden=m.orden)
             menuinstancia.save()
-            if (m.parent!=None):
+            if m.parent!=None:
                 menuinstancia.parent=MenuInstancia.objects.get(menu__id=m.parent.id)
                 menuinstancia.save()
         return "Super creado"
@@ -3123,16 +3123,29 @@ def guardar_permisos(data,perfil_n=None,perfil_c=None):
 # Funcion para crear los admins por la nueva instancia
 def crear_admin(data):
     try:
-        instan=data['instancia']
-        nombreInstancia=instan['nombre']+" ("+data['username']+")"
         user=User(username=data['username'],email=data['email'],password=generar_clave())
         user.save()
-        instancia=Instancia(nombre=nombreInstancia,activo=instan['activo'],multiempresa=instan['multiempresa'],vencimiento=instan['vencimiento'])
+        instancia=Instancia(nombre=data['instancia'],activo=True,multiempresa=data['multiempresa'],vencimiento=data['vencimiento'])
         instancia.save()
         perfil=Perfil(usuario=user,instancia=instancia,tipo='A')
         perfil.save()
         permisos=data['permisos']
         guardar_permisos(permisos,perfil.id,perfil)
+        # lista=[]
+        # for p in permisos:
+        #     lista.append(p.menu)
+        # menus=Menu.objects.filter(router__in=lista)
+        # while True:
+        #     i=0
+        #     if menus[i].parent:
+        #         menus.append(menus[i].parent)
+        #     break
+        # for m in Menu.objects.all().order_by('id'):
+        #     menuinstancia=MenuInstancia(instancia_id=instancia,menu=m,orden=m.orden)
+        #     menuinstancia.save()
+        #     if m.parent!=None:
+        #         menuinstancia.parent=MenuInstancia.objects.get(menu__id=m.parent.id)
+        #         menuinstancia.save()
         if perfil.id:
             return Response(status=status.HTTP_201_CREATED)
         else:
