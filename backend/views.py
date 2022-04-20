@@ -2522,7 +2522,7 @@ def inventario(request):
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def crear_nuevo_usuario(request):
-    datos=json.load(request.body)
+    datos=request.data
     try:
         perfil_creador=Perfil.objects.get(usuario=request.user)
         usuario=User.objects.filter(email=datos['email'])
