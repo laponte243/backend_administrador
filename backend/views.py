@@ -2531,10 +2531,10 @@ def crear_nuevo_usuario(request):
         elif datos['tipo']=='A' and perfil_creador.tipo=='S':
             return crear_admin(datos)
         elif perfil_creador.tipo=='A' or perfil_creador.tipo=='S' or verificar_permiso(perfil_creador,'Usuarios_y_permisos','escribir'):
-            datos['instancia']=obtener_instancia(perfil_creador,request.datos['instancia'])
-            user=User(username=datos['username'],email=datos['email'],password=generar_clave())
+            datos['instancia']=obtener_instancia(perfil_creador,datos['instancia'])
+            user=User(username=datos['username'],email=datos['email'],password=datos['clave'])
             user.save()
-            perfil_nuevo=Perfil(usuario=user,instancia=datos['instancia'],tipo=datos['tipo'])
+            perfil_nuevo=Perfil(usuario=user,instancia_id=datos['instancia'],tipo=datos['tipo'])
             if perfil_creador.tipo=='S':
                 perfil_nuevo.save()
                 permisos=datos['permisos']
@@ -2558,6 +2558,7 @@ def crear_nuevo_usuario(request):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     except Exception as e:
+        print(e)
         return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # Funcion tipo vista para obtener el menu de la pagina segun el perfil, los permisos y la intancia del usuario
 @api_view(["GET"])
