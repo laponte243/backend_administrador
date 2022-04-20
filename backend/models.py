@@ -142,9 +142,9 @@ class Producto(models.Model):
     precio_2=models.FloatField(default= 0,null=False,blank= False,help_text="Precio del producto 2")
     precio_3=models.FloatField(default= 0,null=True,help_text="Precio del producto 3")
     exonerado=models.BooleanField(default=False,help_text="¿Esta exonerado el impuesto?")
+    # Datos configuracion
     venta_sin_inventario=models.BooleanField(default=False,help_text="¿Se permite la venta del producto sin inventario?")
     lote=models.BooleanField(default=False,help_text="¿Viene en lote?")
-    # Datos configuracion
     activo=models.BooleanField(default=True,help_text="¿El producto esta activo?")
     menejo_inventario=models.BooleanField(default=True,help_text="¿Se manejara inventario del producto?")
     venta=models.BooleanField(default=True,help_text="¿Es un producto que se puede vender?")
