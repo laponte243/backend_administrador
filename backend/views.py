@@ -2532,7 +2532,7 @@ def crear_nuevo_usuario(request):
             return crear_admin(datos)
         elif perfil_creador.tipo=='A' or perfil_creador.tipo=='S' or verificar_permiso(perfil_creador,'Usuarios_y_permisos','escribir'):
             datos['instancia']=obtener_instancia(perfil_creador,request.datos['instancia'])
-            user=User(username=datos['username'],email=datos['email'],password=datos['clave'])
+            user=User(username=datos['username'],email=datos['email'],password=generar_clave())
             user.save()
             perfil_nuevo=Perfil(usuario=user,instancia=datos['instancia'],tipo=datos['tipo'])
             if perfil_creador.tipo=='S':
@@ -3131,7 +3131,7 @@ def guardar_permisos(data,perfil_n=None,perfil_c=None):
 # Funcion para crear los admins por la nueva instancia
 def crear_admin(data):
     try:
-        user=User(username=data['username'],email=data['email'],password=data['clave'])
+        user=User(username=data['username'],email=data['email'],password=generar_clave())
         user.save()
         instancia=Instancia(nombre=data['instancia'],activo=True,multiempresa=data['multiempresa'],vencimiento=data['vencimiento'])
         instancia.save()
