@@ -66,6 +66,7 @@ urlpatterns = [
     path('ventas-totales/', views.ventas_totales),
     path('permisos-disponibles/', views.permisos_disponibles),
     path('ubop/', views.ubop),
+    path('informacion/', views.informacion),
     # Guardado de registros
     path('borrar-nota/', views.borrar_nota),
     path('actualizar-nota/', views.actualizar_nota),

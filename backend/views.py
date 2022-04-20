@@ -2562,7 +2562,7 @@ def crear_nuevo_usuario(request):
 # Funcion tipo vista para obtener el menu de la pagina segun el perfil, los permisos y la intancia del usuario
 @api_view(["GET"])
 @csrf_exempt
-# @authentication_classes([TokenAuthentication])
+@authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def obtener_menu(request):
     menus={ 'router': 'root','children': []}
@@ -2998,7 +2998,7 @@ def ventas_totales(request):
 # Funcion tipo para obtener los permisos disponibles para la instancia
 @api_view(["GET"])
 @csrf_exempt
-# @authentication_classes([TokenAuthentication])
+@authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def permisos_disponibles(request):
     perfil=Perfil.objects.get(usuario=request.user)
@@ -3036,6 +3036,13 @@ def ubop(request):
     except Exception as e:
         print(e)
         return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+# Funcion tipo vista para obtener los datos del usuario
+@api_view(["GET"])
+@csrf_exempt
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def informacion(request):
+    return Perfil.objects.get(usuario=request.user)
 # Funcion para obtener las instancias en las acciones
 def obtener_instancia(perfil,instancia=None):
     return instancia if perfil.tipo=='S' and instancia else perfil.instancia.id
@@ -3153,6 +3160,7 @@ def crear_admin(data):
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     except Exception as e:
         return Response({'error': _(e.args[0])},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+# Funcion para obtener los menus superiores
 def obtener_padres(perfil):
     menus=MenuInstancia.objects.filter(instancia=perfil.instancia)
     lista=[0]
