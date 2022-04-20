@@ -2598,19 +2598,20 @@ def obtener_menu(request):
     elif usuario.perfil.tipo=="A" or usuario.perfil.tipo=="U" or usuario.perfil.tipo=="V":
         instancia=usuario.perfil.instancia
         perfil=Perfil.objects.get(usuario=usuario)
-        menu_instancia=MenuInstancia.objects.filter(menu__modulos__in=instancia.modulos.values_list('id'))
-        primeros=menu_instancia.filter(parent=None).order_by('orden')
+        lista=obtener_padres(perfil)
+        disponibles=MenuInstancia.objects.filter(instancia=instancia,id__in=lista)
+        primeros=disponibles.filter(parent=None).order_by('orden')
         for primer in primeros:
             if VerificarHijos(primer):
                 primero={ 'router': '','children': []}
                 nombrePrimero=primer.menu.router
                 primero['router']=nombrePrimero.replace('-','')
-                for s in MenuInstancia.objects.filter(parent=primer.id).order_by('orden'):
+                for s in disponibles.filter(parent=primer.id).order_by('orden'):
                     if VerificarHijos(s):
                         segundo={ 'router': '','children': []}
                         nombreSegundo=s.menu.router
                         segundo['router']=nombreSegundo
-                        for t in MenuInstancia.objects.filter(parent=s.id).order_by('orden'):
+                        for t in disponibles.filter(parent=s.id).order_by('orden'):
                             tercero=t.menu.router
                             segundo['children'].append(tercero)
                         primero['children'].append(segundo)
@@ -2998,7 +2999,7 @@ def ventas_totales(request):
 # Funcion tipo para obtener los permisos disponibles para la instancia
 @api_view(["GET"])
 @csrf_exempt
-# @authentication_classes([TokenAuthentication])
+@authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def permisos_disponibles(request):
     perfil=Perfil.objects.get(usuario=request.user)
@@ -3036,6 +3037,13 @@ def ubop(request):
     except Exception as e:
         print(e)
         return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+# Funcion tipo vista para obtener los datos del usuario
+@api_view(["GET"])
+@csrf_exempt
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def informacion(request):
+    return Perfil.objects.get(usuario=request.user)
 # Funcion para obtener las instancias en las acciones
 def obtener_instancia(perfil,instancia=None):
     return instancia if perfil.tipo=='S' and instancia else perfil.instancia.id
@@ -3153,3 +3161,20 @@ def crear_admin(data):
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     except Exception as e:
         return Response({'error': _(e.args[0])},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+# Funcion para obtener los menus superiores
+def obtener_padres(perfil):
+    menus=MenuInstancia.objects.filter(instancia=perfil.instancia)
+    lista=[0]
+    for p in Permiso.objects.filter(perfil=perfil):
+        menu=menus.get(id=p.menuinstancia_id)
+        encontrado=False
+        if menu.parent:
+            for l in lista:
+                if l==menu.parent.id:
+                    encontrado=True
+                    break
+        if not encontrado:
+            lista.append(menu.parent.id)
+        lista.append(menu.id)
+    del lista[0]
+    return lista
