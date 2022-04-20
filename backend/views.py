@@ -3001,6 +3001,7 @@ def ventas_totales(request):
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def permisos_disponibles(request):
+    perfil=Perfil.objects.get(usuario=request.user)
     if verificar_permiso(perfil,'Usuarios_y_permisos','leer'):
         try:
             perfil=Perfil.objects.get(usuario=request.user)
