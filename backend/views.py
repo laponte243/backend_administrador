@@ -3021,17 +3021,16 @@ def permisos_disponibles(request):
 @permission_classes([IsAdminUser])
 def ubop(request):
     try:
-        if Permiso.objects.filter(usuario=request.user):
-            perfil=Perfil.objects.get(usuario=request.user)
-            menus=MenuInstancia.objects.filter(instancia=perfil.instancia)
-            lista=[]
-            for m in menus:
-                if not menus.filter(parent=m):
-                    lista.append(m.id)
-            permisos=MenuInstancia.objects.filter(id__in=lista)
-            for p in permisos:
-                Permiso.objects.create(instancia=perfil.instancia,menuinstancia=p,perfil=perfil,leer=True,escribir=True,borrar=True,actualizar=True)
-            return Response('Hecho')
+        perfil=Perfil.objects.get(usuario=request.user)
+        menus=MenuInstancia.objects.filter(instancia=perfil.instancia)
+        lista=[]
+        for m in menus:
+            if not menus.filter(parent=m):
+                lista.append(m.id)
+        permisos=MenuInstancia.objects.filter(id__in=lista)
+        for p in permisos:
+            Permiso.objects.create(instancia=perfil.instancia,menuinstancia=p,perfil=perfil,leer=True,escribir=True,borrar=True,actualizar=True)
+        return Response('Hecho')
     except Exception as e:
         print(e)
         return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
