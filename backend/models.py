@@ -59,9 +59,9 @@ class Permiso(models.Model):
     actualizar=models.BooleanField(default=False,help_text="Tiene opcion de actualizar?")
     # Utiles
     history=HistoricalRecords()
-    # def save(self):
-    #     if Permiso.objects.filter(instancia=s)
-    #     super().save()
+    def save(self):
+        if not Permiso.objects.filter(instancia=self.instancia_id,perfil=self.perfil_id,menuinstancia=self.menuinstancia_id):
+            super().save()
     def __str__(self):
         return 'Permiso: %s - Leer:%s Borrar:%s Actualizar:%s Escribir:%s'%(self.menuinstancia.menu.router,self.leer,self.borrar,self.actualizar,self.escribir)
 class Nota(models.Model):
@@ -99,8 +99,8 @@ class ConfiguracionPapeleria(models.Model):
     valor=models.IntegerField(blank=False,null=False,help_text="valor actual del numero")
     tipo=models.CharField(max_length=1,choices=TIPO,default='F',help_text="tipo de numero")
     history=HistoricalRecords()
-    # def __str__(self):
-    #     return '%s'%(self.nombre)
+    def __str__(self):
+        return '%s'%(self.nombre)
 class TasaConversion(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
     fecha_tasa=models.DateTimeField(auto_now_add=True,help_text="tasa de conversion del dia")
@@ -142,9 +142,9 @@ class Producto(models.Model):
     precio_2=models.FloatField(default= 0,null=False,blank= False,help_text="Precio del producto 2")
     precio_3=models.FloatField(default= 0,null=True,help_text="Precio del producto 3")
     exonerado=models.BooleanField(default=False,help_text="¿Esta exonerado el impuesto?")
+    # Datos configuracion
     venta_sin_inventario=models.BooleanField(default=False,help_text="¿Se permite la venta del producto sin inventario?")
     lote=models.BooleanField(default=False,help_text="¿Viene en lote?")
-    # Datos configuracion
     activo=models.BooleanField(default=True,help_text="¿El producto esta activo?")
     menejo_inventario=models.BooleanField(default=True,help_text="¿Se manejara inventario del producto?")
     venta=models.BooleanField(default=True,help_text="¿Es un producto que se puede vender?")

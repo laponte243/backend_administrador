@@ -1,4 +1,5 @@
 # Importes de Rest framework
+from os import stat_result
 import re
 from rest_framework import permissions
 from rest_framework import viewsets,status
@@ -84,16 +85,12 @@ class UserVS(viewsets.ModelViewSet):
             datos=request.data
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
-            if perfil.tipo == 'S':
-                self.perform_create(serializer)
-                headers=self.get_success_headers(serializer.data)
-                return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
-            elif (perfil.tipo == 'A' or perfil.tipo == 'U') and (datos['tipo'] == 'U' or datos['tipo'] == 'V'):
+            if perfil.tipo == 'S' or ((perfil.tipo == 'A' or perfil.tipo == 'U') and (datos['tipo'] == 'U' or datos['tipo'] == 'V')):
                 self.perform_create(serializer)
                 headers=self.get_success_headers(serializer.data)
                 return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
             else:
-                return Response(status=status.HTTP_401_UNAUTHORIZED)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     # Metodo de leer
@@ -339,10 +336,9 @@ class PerfilVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Usuarios_y_permisos','actualizar'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             if perfil.tipo=='S' or perfil.tipo=='A':
                 partial=True
                 instance=self.get_object()
@@ -441,10 +437,9 @@ class EmpresaVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Empresa','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -457,32 +452,24 @@ class EmpresaVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Empresa','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Empresa','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -504,10 +491,9 @@ class ContactoEmpresaVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Empresa','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -520,32 +506,24 @@ class ContactoEmpresaVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Empresa','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Empresa','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -567,10 +545,9 @@ class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Empresa','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -583,32 +560,24 @@ class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Empresa','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Empresa','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -630,10 +599,9 @@ class TasaConversionVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'TasaConversion','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -646,32 +614,24 @@ class TasaConversionVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'TasaConversion','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'TasaConversion','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -690,10 +650,9 @@ class ImpuestosVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Impuesto','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -706,32 +665,24 @@ class ImpuestosVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Impuesto','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Impuesto','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -753,10 +704,9 @@ class MarcaVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Producto','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -769,32 +719,24 @@ class MarcaVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Producto','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Producto','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -818,10 +760,9 @@ class ProductoVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Producto','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -834,32 +775,24 @@ class ProductoVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Producto','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Producto','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -881,10 +814,9 @@ class ProductoImagenVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Producto','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -897,32 +829,24 @@ class ProductoImagenVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Producto','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Producto','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -944,10 +868,9 @@ class AlmacenVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Almacenes','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -960,32 +883,24 @@ class AlmacenVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Almacenes','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Almacenes','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -1009,10 +924,9 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Inventario','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             try:
                 inventario=Inventario.objects.get(instancia_id=datos['instancia'],producto_id=datos['producto'],almacen_id=datos['almacen'],lote=datos['lote'])
             except:
@@ -1049,32 +963,24 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Producto','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Inventario','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -1098,10 +1004,9 @@ class DetalleInventarioVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Inventario','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -1114,32 +1019,24 @@ class DetalleInventarioVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Inventario','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Inventario','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -1163,10 +1060,9 @@ class VendedorVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Vendedor','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -1179,32 +1075,24 @@ class VendedorVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Vendedor','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Vendedor','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -1225,14 +1113,12 @@ class ClienteVS(viewsets.ModelViewSet):
     filterset_fields=['activo']
     def create(self,request):
         perfil=obt_per(self.request.user)
-        print(verificar_permiso(perfil,'Cliente','escribir'))
         if verificar_permiso(perfil,'Cliente','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -1258,15 +1144,11 @@ class ClienteVS(viewsets.ModelViewSet):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Cliente','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -1288,10 +1170,9 @@ class ContactoClienteVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Cliente','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -1304,32 +1185,24 @@ class ContactoClienteVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Cliente','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Cliente','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -1351,10 +1224,9 @@ class PedidoVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Pedido','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -1367,32 +1239,24 @@ class PedidoVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Pedido','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Pedido','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -1416,10 +1280,9 @@ class DetallePedidoVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Pedido','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -1432,17 +1295,13 @@ class DetallePedidoVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Pedido','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Pedido','borrar'):
@@ -1450,17 +1309,12 @@ class DetallePedidoVS(viewsets.ModelViewSet):
             inventario=Inventario.objects.get(id=instance.inventario.id)
             inventario.bloqueado=inventario.bloqueado-instance.cantidada
             inventario.disponible=inventario.disponible+instance.cantidada
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 inventario.save()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    inventario.save()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -1484,10 +1338,9 @@ class ProformaVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Proforma','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -1500,34 +1353,25 @@ class ProformaVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Proforma','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Proforma','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 DetalleProforma.objects.filter(proforma=instance.id).delete()
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    DetalleProforma.objects.filter(proforma=instance.id).delete()
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -1551,10 +1395,9 @@ class DetalleProformaVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Proforma','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -1567,17 +1410,13 @@ class DetalleProformaVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Proforma','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
@@ -1586,17 +1425,12 @@ class DetalleProformaVS(viewsets.ModelViewSet):
             instance=self.get_object()
             inventario=Inventario.objects.get(id=instance.inventario.id)
             inventario.disponible=inventario.disponible+instance.cantidada
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 inventario.save()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    inventario.save()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -1618,10 +1452,9 @@ class NotaPagoVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Notasdepago','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -1634,32 +1467,24 @@ class NotaPagoVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Notasdepago','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Notasdepago','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -1683,10 +1508,9 @@ class DetalleNotaPagoVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Notasdepago','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -1699,32 +1523,24 @@ class DetalleNotaPagoVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Notasdepago','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Notasdepago','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -1746,10 +1562,9 @@ class FacturaVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Factura','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -1762,30 +1577,22 @@ class FacturaVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Factura','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Factura','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -1809,10 +1616,9 @@ class DetalleFacturaVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Factura','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -1825,32 +1631,24 @@ class DetalleFacturaVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Factura','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Factura','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -1872,10 +1670,9 @@ class ImpuestosFacturaVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Factura','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -1888,32 +1685,24 @@ class ImpuestosFacturaVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Factura','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Factura','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -1935,10 +1724,9 @@ class NumerologiaFacturaVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Factura','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -1951,32 +1739,24 @@ class NumerologiaFacturaVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Factura','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Factura','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -1998,10 +1778,9 @@ class NotaFacturaVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Factura','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -2014,32 +1793,24 @@ class NotaFacturaVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Factura','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Factura','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -2061,10 +1832,9 @@ class ProveedorVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Proveedor','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -2077,32 +1847,24 @@ class ProveedorVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Proveedor','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Proveedor','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -2124,10 +1886,9 @@ class CompraVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Compra','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -2140,32 +1901,24 @@ class CompraVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Compra','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Compra','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -2187,10 +1940,9 @@ class DetalleCompraVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Compra','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -2203,32 +1955,24 @@ class DetalleCompraVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Compra','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Compra','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
     def get_queryset(self):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Compra','leer'):
@@ -2248,10 +1992,9 @@ class NotaCompraVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Compra','escribir'):
             datos=request.data
             try:
-                datos['instancia']=request.data['instancia']
+                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
-                request.data['instancia']=None
-            datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+                datos['instancia']=perfil.instancia.id
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -2264,32 +2007,24 @@ class NotaCompraVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Compra','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Compra','borrar'):
             instance=self.get_object()
-            if perfil.tipo=='S':
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                if (str(instance.instancia.id)==str(perfil.instancia.id)):
-                    instance.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
@@ -2519,15 +2254,15 @@ def crear_nuevo_usuario(request):
     try:
         perfil_creador=Perfil.objects.get(usuario=request.user)
         usuario=User.objects.filter(email=datos['email'])
-        if (usuario):
+        if usuario:
             return Response("Ya hay un usuario con el mismo correo",status=status.HTTP_400_BAD_REQUEST)
         elif datos['tipo']=='A' and perfil_creador.tipo=='S':
             return crear_admin(datos)
         elif perfil_creador.tipo=='A' or perfil_creador.tipo=='S' or verificar_permiso(perfil_creador,'Usuarios_y_permisos','escribir'):
-            datos['instancia']=obtener_instancia(perfil_creador,datos['instancia'])
-            user=User(username=datos['username'],email=datos['email'],password=datos['clave'])
+            datos['instancia']=obtener_instancia(perfil_creador,request.datos['instancia'])
+            user=User(username=datos['username'],email=datos['email'],password=generar_clave())
             user.save()
-            perfil_nuevo=Perfil(usuario=user,instancia_id=datos['instancia'],tipo=datos['tipo'])
+            perfil_nuevo=Perfil(usuario=user,instancia=datos['instancia'],tipo=datos['tipo'])
             if perfil_creador.tipo=='S':
                 perfil_nuevo.save()
                 permisos=datos['permisos']
@@ -2551,7 +2286,6 @@ def crear_nuevo_usuario(request):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     except Exception as e:
-        print(e)
         return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # Funcion tipo vista para obtener el menu de la pagina segun el perfil, los permisos y la intancia del usuario
 @api_view(["GET"])
@@ -3122,6 +2856,16 @@ def guardar_permisos(data,perfil_n=None,perfil_c=None):
                 permiso_n.borrar=per['borrar'] if permiso_c.borrar else False
                 permiso_n.actualizar=per['actualizar'] if permiso_c.actualizar else False
                 permiso_n.save()
+                if per['parent']:
+                    try:
+                        permiso_pn=Permiso.objects.get(instancia=instancia,menuinstancia=menu_i,perfil=perfil_n)
+                    except:
+                        permiso_pn=Permiso(instancia=instancia,menuinstancia=menu_i,perfil=perfil_n)
+                    permiso_pn.leer=per['leer'] if permiso_c.leer else False
+                    permiso_pn.escribir=per['escribir'] if permiso_c.escribir else False
+                    permiso_pn.borrar=per['borrar'] if permiso_c.borrar else False
+                    permiso_pn.actualizar=per['actualizar'] if permiso_c.actualizar else False
+                    permiso_pn.save()
 # Funcion para crear los admins por la nueva instancia
 def crear_admin(data):
     try:
@@ -3133,21 +2877,6 @@ def crear_admin(data):
         perfil.save()
         permisos=data['permisos']
         guardar_permisos(permisos,perfil.id,perfil)
-        # lista=[]
-        # for p in permisos:
-        #     lista.append(p.menu)
-        # menus=Menu.objects.filter(router__in=lista)
-        # while True:
-        #     i=0
-        #     if menus[i].parent:
-        #         menus.append(menus[i].parent)
-        #     break
-        # for m in Menu.objects.all().order_by('id'):
-        #     menuinstancia=MenuInstancia(instancia_id=instancia,menu=m,orden=m.orden)
-        #     menuinstancia.save()
-        #     if m.parent!=None:
-        #         menuinstancia.parent=MenuInstancia.objects.get(menu__id=m.parent.id)
-        #         menuinstancia.save()
         if perfil.id:
             return Response(status=status.HTTP_201_CREATED)
         else:
@@ -3166,7 +2895,7 @@ def obtener_padres(perfil):
                 if l==menu.parent.id:
                     encontrado=True
                     break
-        if not encontrado:
+        if not encontrado and menu.parent:
             lista.append(menu.parent.id)
         lista.append(menu.id)
     del lista[0]
