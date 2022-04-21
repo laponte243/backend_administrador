@@ -710,7 +710,7 @@ class TasaConversionVS(viewsets.ModelViewSet):
         if (perfil.tipo=='S'):
             return TasaConversion.objects.all().order_by('-id')
         else:
-            return TasaConversion.objects.filter(instancia=perfil.instancia)
+            return TasaConversion.objects.filter(instancia=perfil.instancia).order_by('-id')
 # Impuestos registrados
 class ImpuestosVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]

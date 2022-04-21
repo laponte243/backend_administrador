@@ -676,13 +676,10 @@ class TasaConversionVS(viewsets.ModelViewSet):
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def get_queryset(self):
         perfil=obt_per(self.request.user)
-        if verificar_permiso(perfil,'TasaConversion','leer'):
-            if perfil.tipo=='S':
-                return TasaConversion.objects.all().order_by('-id')
-            else:
-                return TasaConversion.objects.filter(instancia=perfil.instancia)
+        if perfil.tipo=='S':
+            return TasaConversion.objects.all().order_by('-id')
         else:
-            return TasaConversion.objects.none()
+            return TasaConversion.objects.filter(instancia=perfil.instancia).order_by('-id')
 # Impuestos registrados
 class ImpuestosVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
@@ -1248,17 +1245,13 @@ class ClienteVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Cliente','actualizar'):
             partial=True
             instance=self.get_object()
-            serializer=self.get_serializer(instance,data=request.data,partial=partial)
-            serializer.is_valid(raise_exception=True)
-            if perfil.tipo=='S':
+            if instance.instancia.id!=perfil.instancia.id:
+                serializer=self.get_serializer(instance,data=request.data,partial=partial)
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
                 return Response(serializer.data,status=status.HTTP_200_OK)
             else:
-                if (str(request.data['instancia'])==str(perfil.instancia.id)):
-                    self.perform_update(serializer)
-                    return Response(serializer.data,status=status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def destroy(self,request,*args,**kwargs):
@@ -3043,7 +3036,7 @@ def ubop(request):
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def informacion(request):
-    return Perfil.objects.get(usuario=request.user)
+    return Response(PerfilSerializer(Perfil.objects.get(usuario=request.user)).data,status=status.HTTP_200_OK)
 # Funcion para obtener las instancias en las acciones
 def obtener_instancia(perfil,instancia=None):
     return instancia if perfil.tipo=='S' and instancia else perfil.instancia.id
