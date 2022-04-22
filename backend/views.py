@@ -2259,10 +2259,10 @@ def crear_nuevo_usuario(request):
         elif datos['tipo']=='A' and perfil_creador.tipo=='S':
             return crear_admin(datos)
         elif perfil_creador.tipo=='A' or perfil_creador.tipo=='S' or verificar_permiso(perfil_creador,'Usuarios_y_permisos','escribir'):
-            datos['instancia']=obtener_instancia(perfil_creador,request.datos['instancia'])
+            datos['instancia']=obtener_instancia(perfil_creador,datos['instancia'])
             user=User(username=datos['username'],email=datos['email'],password=generar_clave())
             user.save()
-            perfil_nuevo=Perfil(usuario=user,instancia=datos['instancia'],tipo=datos['tipo'])
+            perfil_nuevo=Perfil(usuario=user,instancia_id=datos['instancia'],tipo=datos['tipo'])
             if perfil_creador.tipo=='S':
                 perfil_nuevo.save()
                 permisos=datos['permisos']
@@ -2845,7 +2845,7 @@ def guardar_permisos(data,perfil_n=None,perfil_c=None):
             perfil_n=perfil_c
         perfil_n=Perfil.objects.get(id=perfil_n)
         for per in data:
-            menu_i=MenuInstancia.objects.get(instancia=instancia,menu__router__contains=per['menu'])
+            menu_i=MenuInstancia.objects.get(instancia=instancia,menu__router__exact=per['menu'])
             permiso_c=Permiso.objects.filter(menuinstancia=menu_i,perfil=perfil_c).first()
             if permiso_c and perfil_n!=perfil_c:
                 try:
