@@ -2286,6 +2286,7 @@ def crear_nuevo_usuario(request):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     except Exception as e:
+        print(e)
         return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # Funcion tipo vista para obtener el menu de la pagina segun el perfil, los permisos y la intancia del usuario
 @api_view(["GET"])
