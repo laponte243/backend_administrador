@@ -95,6 +95,9 @@ class MenuInstanciaSerializer(serializers.ModelSerializer):
     nombreMenu = serializers.SerializerMethodField('LoadNombreMenu')
     def LoadNombreMenu(self, obj):
         return obj.menu.router
+    nombreParent = serializers.SerializerMethodField('LoadNombreParent')
+    def LoadNombreParent(self, obj):
+        return obj.parent.menu.router
 class PerfilSerializer(serializers.ModelSerializer):
     class Meta:
         model = Perfil
