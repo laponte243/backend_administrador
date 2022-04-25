@@ -218,7 +218,8 @@ class MenuVS(viewsets.ModelViewSet):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 # Instancia
 class InstanciaVS(viewsets.ModelViewSet):
-    permission_classes=[IsAdminUser,IsAuthenticated]
+    permission_classes=[IsAdminUser]
+    authentication_classes=[TokenAuthentication]
     serializer_class=InstanciaSerializer
     def create(self,request):
         perfil=obt_per(self.request.user)
