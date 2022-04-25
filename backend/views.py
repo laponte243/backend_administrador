@@ -314,7 +314,7 @@ class PerfilVS(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             if (perfil.tipo=='S' or perfil.tipo=='A'):
                 self.perform_create(serializer)
-                guardar_permisos(permisos,serializer['id'].value,perfil)
+                permisos=guardar_permisos(permisos,serializer['id'].value,perfil)
                 headers=self.get_success_headers(serializer.data)
                 return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
             else:
@@ -955,8 +955,7 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
                 headers=self.get_success_headers(serializer.data)
                 return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
             except Exception as e:
-                print(e)
-                return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response('%s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     def update(self,request,*args,**kwargs):
@@ -2256,21 +2255,31 @@ def crear_nuevo_usuario(request):
     perfil_nuevo=None
     try:
         perfil_creador=Perfil.objects.get(usuario=request.user)
-        usuario=User.objects.filter(email=datos['email'])
-        if usuario:
+        # En caso de encontrar un usuario con el mismo email
+        user=User.objects.filter(email=datos['email'])
+        if user:
             return Response("Ya hay un usuario con el mismo correo",status=status.HTTP_400_BAD_REQUEST)
+        # En caso de crear un nuevo Admin
         elif perfil_creador.tipo=='S' and datos['tipo']=='A':
             return crear_admin(datos,perfil_creador)
+        # En caso de que se quiera crear un usuario normal
         elif perfil_creador.tipo=='A' or perfil_creador.tipo=='S' or verificar_permiso(perfil_creador,'Usuarios_y_permisos','escribir'):
+            # Obtencion rapida de la instancia
             datos['instancia']=obtener_instancia(perfil_creador,datos['instancia'])
+            # Crear usuario con 'create_user'
             user=User.objects.create_user(username=datos['username'],email=datos['email'],password=datos['clave'])
+            # Crear perfil del usuario
             perfil_nuevo=Perfil.objects.create(usuario=user,instancia_id=datos['instancia'],tipo=datos['tipo'])
-            guardar_permisos(datos['permisos'],perfil_nuevo.id,perfil_creador)
+            # Crear permisos
+            permisos=guardar_permisos(datos['permisos'],perfil_nuevo.id,perfil_creador)
+            # En caso de un error al crear los permisos saltar error
+            if permisos:
+                raise Exception('%s'%(permisos['error']))
             return Response(status=status.HTTP_201_CREATED)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     except Exception as e:
-        print(e)
+        # Borrar datos en caso de error
         try:
             user.delete()
         except:
@@ -2279,7 +2288,7 @@ def crear_nuevo_usuario(request):
             perfil_nuevo.delete()
         except:
             pass
-        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response('%s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # Funcion tipo vista para obtener el menu de la pagina segun el perfil, los permisos y la intancia del usuario
 @api_view(["GET"])
 @csrf_exempt
@@ -2714,8 +2723,7 @@ def ventas_totales(request):
         total={'actual':{'fecha':antes,'total':total_actual,},'anterior':{'fecha':mucho_antes,'total':total_anterior,},}
         return Response(total,status=status.HTTP_200_OK)
     except Exception as e:
-        print(e)
-        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response('%s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # Funcion tipo para obtener los permisos disponibles para la instancia
 @api_view(["GET"])
 @csrf_exempt
@@ -2727,15 +2735,32 @@ def permisos_disponibles(request):
         try:
             perfil=Perfil.objects.get(usuario=request.user)
             menus=MenuInstancia.objects.filter(instancia=perfil.instancia)
-            lista=[]
+            disponibles=[]
             for m in menus:
-                if not menus.filter(parent=m):
-                    lista.append(m.id)
-            seria=MenuInstanciaSerializer(MenuInstancia.objects.filter(id__in=lista), many=True)
-            return Response(data=seria.data,status=status.HTTP_200_OK)
+                if not menus.filter(parent=m) and m:
+                    obj={}
+                    obj['id']=m.id
+                    obj['orden']=m.orden
+                    try:
+                        obj['menu_id']=m.menu.id
+                    except:
+                        pass
+                    try:
+                        obj['parent_id']=m.parent.id
+                    except:
+                        pass
+                    try:
+                        obj['nombreMenu']=m.menu.router
+                    except:
+                        pass
+                    try:
+                        obj['nombreParent']=m.parent.menu.router
+                    except:
+                        pass
+                    disponibles.append(obj)
+            return Response(data=disponibles,status=status.HTTP_200_OK)
         except Exception as e:
-            print(e)
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response('%s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         Response(status=status.HTTP_401_UNAUTHORIZED)
 # Crear permisos
@@ -2755,15 +2780,57 @@ def ubop(request):
             Permiso.objects.create(instancia=perfil.instancia,menuinstancia=p,perfil=perfil,leer=True,escribir=True,borrar=True,actualizar=True)
         return Response('Hecho')
     except Exception as e:
-        print(e)
-        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response('%s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # Funcion tipo vista para obtener los datos del usuario
 @api_view(["GET"])
 @csrf_exempt
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def informacion(request):
-    return Response(PerfilSerializer(Perfil.objects.get(usuario=request.user)).data,status=status.HTTP_200_OK)
+    perfil=Perfil.objects.get(usuario=request.user)
+    instancia=perfil.instancia
+    usuarios=User.objects.all() if perfil.tipo=='S' else User.objects.filter(instancia=instancia)
+    disponibles=[]
+    for u in usuarios:
+        try:
+            perfil=Perfil.objects.get(usuario=u)
+        except:
+            perfil=None
+        usuario={'id':u.id,'email':u.email,'username':u.username,'permisos':[]}
+        # Seteando el tipo de usuario
+        usuario['tipo']=perfil.tipo if perfil else 'Sin perfil'
+        if perfil:
+            tipo=None
+            tipo='Super' if perfil.tipo=='S' and not tipo else tipo
+            tipo='Admin' if perfil.tipo=='A' and not tipo else tipo
+            tipo='Usuario' if perfil.tipo=='U' and not tipo else tipo
+            tipo='Vendedor' if perfil.tipo=='V' and not tipo else tipo
+            usuario['nombreTipo']=tipo
+        else:
+            usuario['nombreTipo']='Sin perfil'
+        # Escribiendo informacion del usuario
+        usuario['perfil']=perfil.id if perfil else 'Sin perfil'
+        usuario['instancia']=perfil.instancia.id if perfil else 'Sin perfil'
+        usuario['nombreInstancia']=perfil.instancia.nombre if perfil else 'Sin perfil'
+        usuario['activo']=perfil.activo if perfil else False
+        if perfil:
+            for p in Permiso.objects.filter(instancia=instancia,perfil=perfil):
+                permiso={
+                    'instancia_id':p.instancia.id,
+                    'orden':p.menuinstancia.orden,
+                    'menu_id':p.menuinstancia.menu.id,
+                    'nombreMenu':p.menuinstancia.menu.router,
+                    'perfil_id':p.perfil.id,
+                    'leer':p.leer,
+                    'escribir':p.escribir,
+                    'borrar':p.borrar,
+                    'actualizar':p.actualizar,
+                }
+                permiso['parent_id']=p.menuinstancia.parent.menu.id if p.menuinstancia.parent else None
+                permiso['nombreParent']=p.menuinstancia.parent.menu.router if p.menuinstancia.parent else None
+                usuario['permisos'].append(permiso)
+        disponibles.append(usuario)
+    return Response(disponibles,status=status.HTTP_200_OK)
 # Funcion para obtener las instancias en las acciones
 def obtener_instancia(perfil,instancia=None):
     return instancia if perfil.tipo=='S' and instancia else perfil.instancia.id
@@ -2831,29 +2898,38 @@ def obt_per(user):
     return Perfil.objects.get(usuario=user)
 # Funcion para obtener la data de los permisos
 def guardar_permisos(data,perfil_n=None,perfil_c=None,perfil=None):
-    if perfil_c:
-        if perfil:
-            instancia=perfil.instancia
-        else:
-            instancia=perfil_c.instancia
-        if perfil_n:
-            perfil_n=Perfil.objects.get(id=perfil_n)
-            menus_i=MenuInstancia.objects.filter(instancia=instancia)
-            permisos=Permiso.objects.filter(instancia=perfil_c.instancia,perfil=perfil_c)
-            for per in data:
-                # Si se debe crear un menu, crearlo
-                padre=crear_menu(instancia,per['parent']) if perfil else None
-                menu=crear_menu(instancia,per['menu'],padre) if perfil else None
-                # Obtener menu
-                menu_i=menus_i.get(menu__router__exact=per['menu']) if not perfil else menu
-                # Verificar permiso del creador
-                permiso_c=permisos.get(menuinstancia=menu_i)
-                if permiso_c:
-                    if per['parent']:
-                        # Obtener menu padre
-                        menu_ip=menus_i.get(instancia=instancia,menu__router__exact=per['parent']) if not perfil else padre
-                        crear_permiso(instancia,per,menu_ip,perfil_n,permiso_c)
-                    crear_permiso(instancia,per,menu_i,perfil_n,permiso_c)
+    try:
+        if perfil_c:
+            if perfil:
+                instancia=perfil.instancia
+            else:
+                instancia=perfil_c.instancia
+            if perfil_n:
+                perfil_n=Perfil.objects.get(id=perfil_n)
+                menus_i=MenuInstancia.objects.filter(instancia=instancia)
+                permisos=Permiso.objects.filter(instancia=perfil_c.instancia,perfil=perfil_c)
+                for per in data:
+                    # Si se debe crear un menu, crearlo
+                    padre=crear_menu(instancia,per['parent']) if perfil else None
+                    menu=crear_menu(instancia,per['menu'],padre) if perfil else None
+                    # Obtener menu
+                    menu_i=menus_i.get(menu__router__exact=per['menu']) if not perfil else menu
+                    # Verificar permiso del creador
+                    permiso_c=permisos.filter(menuinstancia=menu_i).first()
+                    if permiso_c:
+                        if per['parent']:
+                            # Obtener menu padre
+                            menu_ip=menus_i.get(instancia=instancia,menu__router__exact=per['parent']) if not perfil else padre
+                            crear_permiso(instancia,per,menu_ip,perfil_n,permiso_c)
+                        crear_permiso(instancia,per,menu_i,perfil_n,permiso_c)
+        return None
+    except Exception as e:
+        # Borrar datos creados
+        try:
+            Permiso.objects.filter(instancia=instancia,perfil=perfil).delete()
+        except:
+            pass
+        return {'error':e}
 # Funcion para crear/guardar los permisos
 def crear_permiso(instancia,data,menu,perfil,creador):
     try:
@@ -2871,7 +2947,9 @@ def crear_admin(data,super_p):
         user=User.objects.create(username=data['username'],email=data['email'],password=generar_clave())
         instancia=Instancia.objects.create(nombre=data['instancia'],activo=True,multiempresa=data['multiempresa'],vencimiento=data['vencimiento'])
         perfil=Perfil.objects.create(usuario=user,instancia=instancia,tipo='A')
-        guardar_permisos(data['permisos'],perfil.id,super_p,perfil)
+        permisos=guardar_permisos(data['permisos'],perfil.id,super_p,perfil)
+        if permisos:
+            raise Exception('%s'%(permisos['error']))
         return Response(status=status.HTTP_201_CREATED)
     except Exception as e:
         try:
@@ -2886,7 +2964,7 @@ def crear_admin(data,super_p):
             perfil.delete()
         except:
             pass
-        return Response(status=status.HTTP_417_EXPECTATION_FAILED)
+        return Response('%s'%(e),status=status.HTTP_417_EXPECTATION_FAILED)
 # Funcion para crear menu de la instancia
 def crear_menu(instancia,menu,parent=None):
     menu=Menu.objects.get(router__exact=menu)
