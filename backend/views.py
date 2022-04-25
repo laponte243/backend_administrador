@@ -2905,6 +2905,7 @@ def guardar_permisos(data,perfil_n=None,perfil_c=None,perfil=None):
             else:
                 instancia=perfil_c.instancia
             if perfil_n:
+                # Obtener datos para la creacion de permisos
                 perfil_n=Perfil.objects.get(id=perfil_n)
                 menus_i=MenuInstancia.objects.filter(instancia=instancia)
                 permisos=Permiso.objects.filter(instancia=perfil_c.instancia,perfil=perfil_c)
