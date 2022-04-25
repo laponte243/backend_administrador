@@ -2262,7 +2262,6 @@ def crear_nuevo_usuario(request):
             return crear_admin(datos,perfil_creador)
         elif perfil_creador.tipo=='A' or perfil_creador.tipo=='S' or verificar_permiso(perfil_creador,'Usuarios_y_permisos','escribir'):
             datos['instancia']=obtener_instancia(perfil_creador,datos['instancia'])
-            print(datos)
             user=User.objects.create_user(username=datos['username'],email=datos['email'],password=datos['clave'])
             perfil_nuevo=Perfil.objects.create(usuario=user,instancia_id=datos['instancia'],tipo=datos['tipo'])
             guardar_permisos(datos['permisos'],perfil_nuevo.id,perfil_creador)
