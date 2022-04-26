@@ -2781,12 +2781,12 @@ def ubop(request):
         return Response('Hecho')
     except Exception as e:
         return Response('%s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-# Funcion tipo vista para obtener los datos del usuario
+# Funcion tipo vista para obtener los usuarios y su informacion
 @api_view(["GET"])
 @csrf_exempt
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def informacion(request):
+def perfiles_usuarios(request):
     perfil=Perfil.objects.get(usuario=request.user)
     instancia=perfil.instancia
     usuarios=User.objects.all() if perfil.tipo=='S' else User.objects.filter(instancia=instancia)
@@ -2831,6 +2831,13 @@ def informacion(request):
                 usuario['permisos'].append(permiso)
         disponibles.append(usuario)
     return Response(disponibles,status=status.HTTP_200_OK)
+# Funcion tipo vista para obtener los datos del usuario
+@api_view(["GET"])
+@csrf_exempt
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def usuario_info(request):
+    Response(PerfilSerializer(Perfil.objects.get(usuario=request.user)).data,status=status.HTTP_200_OK)
 # Funcion para obtener las instancias en las acciones
 def obtener_instancia(perfil,instancia=None):
     return instancia if perfil.tipo=='S' and instancia else perfil.instancia.id
@@ -2901,9 +2908,7 @@ def guardar_permisos(data,perfil_n=None,perfil_c=None,perfil=None):
     try:
         if perfil_c:
             if perfil:
-                instancia=perfil.instancia
-            else:
-                instancia=perfil_c.instancia
+                instancia=perfil.instancia if perfil else perfil_c.instancia
             if perfil_n:
                 # Obtener datos para la creacion de permisos
                 perfil_n=Perfil.objects.get(id=perfil_n)
