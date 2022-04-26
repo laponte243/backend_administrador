@@ -2837,7 +2837,7 @@ def perfiles_usuarios(request):
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def usuario_info(request):
-    Response(PerfilSerializer(Perfil.objects.get(usuario=request.user)).data,status=status.HTTP_200_OK)
+    return Response(PerfilSerializer(Perfil.objects.get(usuario=request.user)).data,status=status.HTTP_200_OK)
 # Funcion para obtener las instancias en las acciones
 def obtener_instancia(perfil,instancia=None):
     return instancia if perfil.tipo=='S' and instancia else perfil.instancia.id
