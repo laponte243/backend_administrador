@@ -718,13 +718,6 @@ def comision(request):
             return Response('Error, %s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
-@api_view(["POST"])
-@csrf_exempt
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
-# Funcion para eliminar los usuarios
-def borrar_usuario(request):
-    return Response('Hola')
 # Funcion para obtener las instancias en las acciones
 def obtener_instancia(perfil,instancia=None):
     return instancia if perfil.tipo=='S' and instancia else perfil.instancia.id

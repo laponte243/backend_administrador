@@ -136,14 +136,12 @@ class UserVS(viewsets.ModelViewSet):
             objeto=self.get_object()
             # Super
             if perfil.tipo=='S':
-                Perfil.objects.get(usuario=self.request.data.id).delete()
                 objeto.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             # Admin/Usuario
             elif perfil.tipo=='A' or perfil.tipo=='U':
                 # Verificar que el usuario a borrar no sea Staff,y este en la misma instancia desde donde se hace la peticion
                 if objeto.perfil.tipo!='S' and objeto.perfil.tipo!='A' and str(objeto.perfil.instancia.id)==str(perfil.instancia.id) and perfil.usuario.id!=self.request.user.id:
-                    Perfil.objects.get(usuario=self.request.data.id).delete()
                     objeto.delete()
                     return Response(status=status.HTTP_204_NO_CONTENT)
                 else:

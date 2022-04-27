@@ -26,6 +26,9 @@ class Instancia(models.Model):
     history=HistoricalRecords()
     def __str__(self):
         return '%s'%(self.nombre)
+    def delete(self):
+        self.activo=False
+        self.save()
 class MenuInstancia(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
     menu=models.ForeignKey(Menu,null=True,blank=False,on_delete=models.DO_NOTHING,help_text="SuperMenu asociado")   
@@ -49,8 +52,8 @@ class Perfil(models.Model):
         return '%s - %s - %s'%(self.instancia.nombre,self.usuario.username,self.tipo)
 class Permiso(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
-    menuinstancia=models.ForeignKey(MenuInstancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Opcion de menu asociada")
-    perfil=models.ForeignKey(Perfil,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Usuario asociado")
+    menuinstancia=models.ForeignKey(MenuInstancia,null=False,blank=False,on_delete=models.CASCADE,help_text="Opcion de menu asociada")
+    perfil=models.ForeignKey(Perfil,null=False,blank=False,on_delete=models.CASCADE,help_text="Usuario asociado")
     # Metodos
     leer=models.BooleanField(default=False,help_text="Tiene opcion de leer?")
     escribir=models.BooleanField(default=False,help_text="Tiene opcion de escribir?")
