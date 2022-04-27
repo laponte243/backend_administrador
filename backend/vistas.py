@@ -673,6 +673,51 @@ def perfiles_usuarios(request):
 @permission_classes([IsAuthenticated])
 def usuario_info(request):
     return Response(PerfilSerializer(Perfil.objects.get(usuario=request.user)).data,status=status.HTTP_200_OK)
+@api_view(["POST", "GET"])
+@csrf_exempt
+@authentication_classes([BasicAuthentication])
+@permission_classes([AllowAny])
+def comision(request):
+    data=request.data
+    perfil=Perfil.objects.get(usuario=1)
+    if verificar_permiso(perfil,'Comisiones','leer'):
+        try:
+            if not data:
+                return Response("Error 'Faltan los datos'"%(e),status=status.HTTP_406_NOT_ACCEPTABLE)
+            comision={'total_comision':0,'notas':[]}
+            notas=NotasPago.objects.filter(instancia=perfil.instancia)
+            notas_e=notas.filter(cliente=data['cliente'],fecha__month=data['mes'],fecha__year=data['año'])
+            if len(notas_e)!=0:
+                for n in notas_e:
+                    nota={}
+                    nota['id']=n.id
+                    nota['cliente']=n.cliente.nombre
+                    nota['cliente_id']=n.cliente.id
+                    nota['comprobante']=n.comprobante
+                    nota['descripcion']=n.descripcion
+                    nota['fecha']=n.fecha
+                    nota['total']=n.total
+                    nota['detalles']=[]
+                    for d in DetalleNotasPago.objects.filter(notapago__id=n.id):
+                        detalle={}
+                        detalle['id']=d.id
+                        detalle['notapago_id']=d.notapago.id
+                        detalle['proforma_id']=d.proforma.id
+                        detalle['saldo_anterior']=d.saldo_anterior
+                        detalle['monto']=d.monto
+                        nota['detalles'].append(detalle)
+                    comision['total_comision']+=n.total
+                    comision['notas'].append(nota)
+                comision['cliente_id']=data['cliente']
+                comision['mes']=data['mes']
+                comision['año']=data['año']
+                return Response(comision,status=status.HTTP_200_OK)
+            else:
+                return Response("Error 'No se encontraron notas de pago'",status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response('Error %s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    else:
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
 # Funcion para obtener las instancias en las acciones
 def obtener_instancia(perfil,instancia=None):
     return instancia if perfil.tipo=='S' and instancia else perfil.instancia.id
@@ -828,50 +873,3 @@ def obtener_padres(perfil):
         lista.append(menu.id)
     del lista[0]
     return lista
-class NoEncontrado(Exception):
-    pass
-@api_view(["POST", "GET"])
-@csrf_exempt
-@authentication_classes([BasicAuthentication])
-@permission_classes([AllowAny])
-def comision(request):
-    data=request.data
-    perfil=Perfil.objects.get(usuario=1)
-    if verificar_permiso(perfil,'Comisiones','leer'):
-        try:
-            if not data:
-                return Response("Error 'Faltan los datos'"%(e),status=status.HTTP_406_NOT_ACCEPTABLE)
-            comision={'total_comision':0,'notas':[]}
-            notas=NotasPago.objects.filter(instancia=perfil.instancia)
-            notas_e=notas.filter(cliente=data['cliente'],fecha__month=data['mes'],fecha__year=data['año'])
-            if len(notas_e)!=0:
-                for n in notas_e:
-                    nota={}
-                    nota['id']=n.id
-                    nota['cliente']=n.cliente.nombre
-                    nota['cliente_id']=n.cliente.id
-                    nota['comprobante']=n.comprobante
-                    nota['descripcion']=n.descripcion
-                    nota['fecha']=n.fecha
-                    nota['total']=n.total
-                    nota['detalles']=[]
-                    for d in DetalleNotasPago.objects.filter(notapago__id=n.id):
-                        detalle={}
-                        detalle['id']=d.id
-                        detalle['notapago_id']=d.notapago.id
-                        detalle['proforma_id']=d.proforma.id
-                        detalle['saldo_anterior']=d.saldo_anterior
-                        detalle['monto']=d.monto
-                        nota['detalles'].append(detalle)
-                    comision['total_comision']+=n.total
-                    comision['notas'].append(nota)
-                comision['cliente_id']=data['cliente']
-                comision['mes']=data['mes']
-                comision['año']=data['año']
-                return Response(comision,status=status.HTTP_200_OK)
-            else:
-                return Response("Error 'No se encontraron notas de pago'",status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response('Error %s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    else:
-        return Response(status=status.HTTP_401_UNAUTHORIZED)
