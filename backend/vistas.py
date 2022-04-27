@@ -675,15 +675,15 @@ def usuario_info(request):
     return Response(PerfilSerializer(Perfil.objects.get(usuario=request.user)).data,status=status.HTTP_200_OK)
 @api_view(["POST", "GET"])
 @csrf_exempt
-@authentication_classes([BasicAuthentication])
-@permission_classes([AllowAny])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def comision(request):
     data=request.data
     perfil=Perfil.objects.get(usuario=1)
     if verificar_permiso(perfil,'Comisiones','leer'):
         try:
             if not data:
-                return Response("Error 'Faltan los datos'"%(e),status=status.HTTP_406_NOT_ACCEPTABLE)
+                return Response("Error, Faltan los datos",status=status.HTTP_406_NOT_ACCEPTABLE)
             comision={'total_comision':0,'notas':[]}
             notas=NotasPago.objects.filter(instancia=perfil.instancia)
             notas_e=notas.filter(cliente=data['cliente'],fecha__month=data['mes'],fecha__year=data['año'])
@@ -713,11 +713,18 @@ def comision(request):
                 comision['año']=data['año']
                 return Response(comision,status=status.HTTP_200_OK)
             else:
-                return Response("Error 'No se encontraron notas de pago'",status=status.HTTP_404_NOT_FOUND)
+                return Response("Error, No se encontraron notas de pago",status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return Response('Error %s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response('Error, %s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
+@api_view(["POST"])
+@csrf_exempt
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+# Funcion para eliminar los usuarios
+def borrar_usuario(request):
+    return Response('Hola')
 # Funcion para obtener las instancias en las acciones
 def obtener_instancia(perfil,instancia=None):
     return instancia if perfil.tipo=='S' and instancia else perfil.instancia.id
