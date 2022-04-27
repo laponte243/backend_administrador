@@ -1,5 +1,10 @@
+# Registros
 from django.contrib import admin
 from .models import *
+# Unregister
+from django_rest_passwordreset.admin import *
+from rest_framework.authtoken.admin import *
+from knox.admin import *
 # Origen
 admin.site.register(Modulo)
 admin.site.register(Menu)
@@ -40,3 +45,11 @@ admin.site.register(DetalleNotasPago)
 admin.site.register(Compra)
 admin.site.register(DetalleCompra)
 admin.site.register(NotaCompra)
+try:
+    admin.site.unregister(models.AuthToken)
+    admin.site.unregister(TokenProxy)
+    admin.site.unregister(Group)
+    admin.site.unregister(ResetPasswordToken)
+    # admin.site.unregister(User)
+except:
+    pass

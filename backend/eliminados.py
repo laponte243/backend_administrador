@@ -53,3 +53,19 @@
 #     except Exception as e:
 #         return Response({'error': str(e)},safe=False,status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # Funcion tipo vista para eliminar las notas de pago
+# class Comision(models.Model):
+#     instancia=models.ForeignKey(Instancia,null=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
+#     cliente=models.ForeignKey(Cliente,null=False,on_delete=models.DO_NOTHING)
+#     mes=models.IntegerField(null=False)
+#     año=models.IntegerField(null=False)
+#     total=models.FloatField(default=0,null=False)
+#     def __str__(self):
+#         return 'Comision #%s (%s)'%(self.id,self.total)
+# class DetalleComision(models.Model):
+#     instancia=models.ForeignKey(Instancia,null=False,on_delete=models.DO_NOTHING)
+#     comision=models.ForeignKey(Comision,null=False,on_delete=models.DO_NOTHING)
+#     nota_pago=models.ForeignKey(NotasPago,null=False,on_delete=models.DO_NOTHING)
+#     proforma=models.ForeignKey(Proforma,null=False,on_delete=models.DO_NOTHING)
+#     pago=models.FloatField(default=0,null=False)
+#     def __str__(self):
+#         return 'Comision #%s, NotaPago #%s '%(self.id,self.nota_pago.id)

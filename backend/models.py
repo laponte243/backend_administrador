@@ -1,8 +1,7 @@
 # Importes de Django
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import *
 # Utiles
-from typing_extensions import TypeGuard
 from simple_history.models import HistoricalRecords
 """ Modelos del backend (api)"""
 class Modulo(models.Model):
@@ -370,6 +369,7 @@ class NotasPago(models.Model):
     total=models.FloatField(null=False,default=0,blank=False,help_text="total de la nota")
     comprobante=models.TextField(null=False,default=0,blank=False,help_text="comprobante del pago")
     descripcion=models.TextField(max_length=150,blank=True,null=True,help_text="pequeña descripcion")
+    fecha=models.DateTimeField(auto_now_add=True)
 class DetalleNotasPago(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
     notapago=models.ForeignKey(NotasPago,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="nota de pago asociada")
