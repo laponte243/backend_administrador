@@ -95,10 +95,10 @@ def cambio_temp(request):
             instancia=Instancia.objects.get(instancia__id=nodo.instancia.id)
         registro=RegistroTemperatura.objects.create(instancia=instancia,nodo=nodo,sensor=sensor,temperatura=data['temperatura'])
         ahora=timezone.now()
-        antes=ahora-timezone.timedelta(hours=1)
+        antes=ahora-timezone.timedelta(minutes=10)
         rango=[antes,ahora]
-        prueba=RegistroTemperatura.objects.filter(nodo=nodo,created_at__range=rango)
-        recientes=prueba.aggregate(promedio=Avg('temperatura'))
+        ultimos=RegistroTemperatura.objects.filter(nodo=nodo,created_at__range=rango)
+        recientes=ultimos.aggregate(promedio=Avg('temperatura'))
     except:
         error=True
     try:
@@ -195,11 +195,15 @@ def errores(request):
     except:
         return Response(False,status=status.HTTP_400_BAD_REQUEST)
 # Funcion tipo vista para obtener los valores de las graficas
-@api_view(["POST"])
+@api_view(["POST","GET"])
 @csrf_exempt
 @permission_classes([AllowAny])
 def obtener_grafica(request):
     data=request.data
+    if not data:
+        data['todos'] = 'True'
+        data['nodo'] = 1
+        data['chat'] = 1607570261
     nodos=None
     try:
         # Para las graficas del bot
@@ -235,25 +239,29 @@ def obtener_grafica(request):
                 crear=True
                 # Ciclo for para crear el Json
                 while crear:
-                    antes_30m=ahora-timezone.timedelta(minutes=30)
+                    antes_30m=ahora-timezone.timedelta(minutes=10)
                     rango_menor=[antes_30m,ahora]
                     grupos=registros.filter(created_at__range=rango_menor)
                     if not grupos:
-                        ahora=ahora-timezone.timedelta(minutes=30)
+                        ahora=ahora-timezone.timedelta(minutes=10)
                         vuelta+=1
-                        if vuelta==49:
+                        if vuelta==147:
                             break
                         continue
                     promedio['grafica'].append({'fecha_hora': ahora.timestamp(),'promedio':round(grupos.aggregate(promedio=Avg('temperatura'))['promedio'],4)})
-                    ahora=ahora-timezone.timedelta(minutes=30)
+                    ahora=ahora-timezone.timedelta(minutes=10)
                     vuelta+=1
-                    if vuelta==49:
+                    if vuelta==147:
                         break
                 try:
                     if data['todos']=='True':
-                        ultima=registros_nodo.last()
-                        promedio['ultima_temp']=ultima.temperatura
-                        promedio['ultima_hora']=ultima.created_at
+                        ultima=registros_nodo.order_by('-id')[:2]
+                        avg = 0
+                        for u in ultima:
+                            avg += u.temperatura
+                        avg = avg / 2
+                        promedio['ultima_temp']=avg
+                        promedio['ultima_hora']=ultima[0].created_at
                         graficas.append(promedio)
                 except:
                     return Response(promedio)

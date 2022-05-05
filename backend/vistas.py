@@ -624,7 +624,7 @@ def ubop(request):
 def perfiles_usuarios(request):
     perfil=Perfil.objects.get(usuario=request.user)
     instancia=perfil.instancia
-    usuarios=User.objects.all() if perfil.tipo=='S' else User.objects.filter(instancia=instancia)
+    usuarios=User.objects.all() if perfil.tipo=='S' else User.objects.filter(perfil__instancia=instancia)
     disponibles=[]
     for u in usuarios:
         try:
@@ -686,7 +686,7 @@ def comision(request):
                 return Response("Error, Faltan los datos",status=status.HTTP_406_NOT_ACCEPTABLE)
             comision={'total_comision':0,'notas':[]}
             notas=NotasPago.objects.filter(instancia=perfil.instancia)
-            notas_e=notas.filter(cliente=data['cliente'],fecha__month=data['mes'],fecha__year=data['año'])
+            notas_e=notas.filter(cliente=data['cliente']) # ,fecha__month=data['mes'],fecha__year=data['año']
             if len(notas_e)!=0:
                 for n in notas_e:
                     nota={}
@@ -750,11 +750,11 @@ def crear_super_usuario(request):
                 menu.parent=Menu.objects.get(router=modelo['parent'])
                 menu.save()
     if Instancia.objects.all().count()==0:
-        instancia=Instancia.objects.create(nombre="Primera",activo=True,multiempresa=True,vencimiento=None)
+        instancia=Instancia.objects.create(nombre="Primera")
         for mod in Modulo.objects.all():
             instancia.modulos.add(mod)
         superuser=User.objects.create_user(username='super',password='super',is_staff=True, is_superuser=True)
-        perfilS=Perfil(instancia=instancia,usuario_id=superuser,activo=True,avatar=None,tipo="S")
+        perfilS=Perfil(instancia=instancia,usuario=superuser,activo=True,avatar=None,tipo="S")
         perfilS.save()
         admin=User.objects.create_user(username='admin',password='admin')
         perfilA=Perfil(instancia=instancia,usuario=admin,activo=True,avatar=None,tipo="A")
@@ -763,7 +763,7 @@ def crear_super_usuario(request):
         perfilU=Perfil(instancia=instancia,usuario=usuario,activo=True,avatar=None,tipo="U")
         perfilU.save()
         for m in Menu.objects.all().order_by('id'):
-            menuinstancia=MenuInstancia(instancia_id=instancia,menu=m,orden=m.orden)
+            menuinstancia=MenuInstancia(instancia=instancia,menu=m,orden=m.orden)
             menuinstancia.save()
             if m.parent!=None:
                 menuinstancia.parent=MenuInstancia.objects.get(menu__id=m.parent.id)
@@ -787,8 +787,7 @@ def obt_per(user):
 def guardar_permisos(data,perfil_n=None,perfil_c=None,perfil=None):
     try:
         if perfil_c:
-            if perfil:
-                instancia=perfil.instancia if perfil else perfil_c.instancia
+            instancia=perfil.instancia if perfil else perfil_c.instancia
             if perfil_n:
                 # Obtener datos para la creacion de permisos
                 perfil_n=Perfil.objects.get(id=perfil_n)

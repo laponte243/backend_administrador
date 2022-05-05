@@ -26,9 +26,9 @@ class Instancia(models.Model):
     history=HistoricalRecords()
     def __str__(self):
         return '%s'%(self.nombre)
-    def delete(self):
-        self.activo=False
-        self.save()
+    # def delete(self):
+    #     self.activo=False
+    #     self.save()
 class MenuInstancia(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
     menu=models.ForeignKey(Menu,null=True,blank=False,on_delete=models.DO_NOTHING,help_text="SuperMenu asociado")   
@@ -61,9 +61,9 @@ class Permiso(models.Model):
     actualizar=models.BooleanField(default=False,help_text="Tiene opcion de actualizar?")
     # Utiles
     history=HistoricalRecords()
-    def save(self):
-        if not Permiso.objects.filter(instancia=self.instancia_id,perfil=self.perfil_id,menuinstancia=self.menuinstancia_id):
-            super().save()
+    # def save(self):
+    #     if not Permiso.objects.filter(instancia=self.instancia_id,perfil=self.perfil_id,menuinstancia=self.menuinstancia_id):
+    #         super().save()
     def __str__(self):
         return 'Permiso: %s - Leer:%s Borrar:%s Actualizar:%s Escribir:%s'%(self.menuinstancia.menu.router,self.leer,self.borrar,self.actualizar,self.escribir)
 class Nota(models.Model):
@@ -79,7 +79,7 @@ class Empresa(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
     nombre=models.TextField(max_length=150,blank=False,null=False,help_text="Razon social de la empresa")
     direccion_fiscal=models.TextField(max_length=150,blank=False,null=False,help_text="direccion fiscal de la empresa")
-    logo=models.ImageField(upload_to='empresas',null=True,help_text="logo de la empresa")
+    # logo=models.ImageField(upload_to='empresas',null=True,help_text="logo de la empresa")
     history=HistoricalRecords()
     def __str__(self):
         return '%s'%(self.nombre)
@@ -94,15 +94,15 @@ class ContactoEmpresa(models.Model):
         return 'Contacto de la empresa %s'%(self.empresa)
 class ConfiguracionPapeleria(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
-    TIPO=(('F','Factura'),('N','Nota entrega'),('C','Nota credito'),('D','Nota debito'))
+    TIPO=(('F','Factura'),('N','Nota entrega'),('C','Nota credito'),('D','Nota debito'),('P','Proforma'),('E','Pedido'),)
     empresa=models.ForeignKey(Empresa,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="empresa asociada")
     prefijo=models.TextField(max_length=10,blank=True,null=True,help_text="prefijo para el numero")
     formato=models.TextField(max_length=20,blank=True,null=True,help_text="formato de numero con 0 adelante 0000000")
     valor=models.IntegerField(blank=False,null=False,help_text="valor actual del numero")
-    tipo=models.CharField(max_length=1,choices=TIPO,default='F',help_text="tipo de numero")
+    tipo=models.CharField(max_length=1,choices=TIPO,default='P',help_text="tipo de numero")
     history=HistoricalRecords()
     def __str__(self):
-        return '%s'%(self.nombre)
+        return '%s, Empresa: %s, Siguiente: %s'%(self.tipo,self.empresa,self.valor)
 class TasaConversion(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
     fecha_tasa=models.DateTimeField(auto_now_add=True,help_text="tasa de conversion del dia")
@@ -133,8 +133,8 @@ class Producto(models.Model):
     # Datos basicos
     instancia=models.ForeignKey(Instancia,null=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
     # unidad=models.ForeignKey(Unidad,null=True,default= None,on_delete=models.DO_NOTHING,help_text="Unidad de medida del producto")
-    marca=models.ForeignKey(Marca,null=True,on_delete=models.DO_NOTHING,help_text="Marca asociada al producto")
-    nombre=models.TextField(max_length=150,null=True,blank=True,help_text="Nombre del producto")
+    marca=models.ForeignKey(Marca,null=False,on_delete=models.DO_NOTHING,help_text="Marca asociada al producto")
+    nombre=models.TextField(max_length=150,null=False,blank=True,help_text="Nombre del producto")
     sku=models.TextField(max_length=150,null=False,blank=False,help_text="SKU del producto")
     servicio=models.BooleanField(default=False,help_text="¿Es un servicio?")
     MovimientoInventario_producto=models.BooleanField(default=False,help_text="¿Esta en un MovimientoInventario?")
@@ -242,6 +242,7 @@ class Pedido(models.Model):
     fecha_pedido=models.DateTimeField(auto_now_add=True,help_text="fecha de generacion del pedido")
     total=models.FloatField(null=False,default=0,blank=False,help_text="total de la pedido")
     precio_seleccionadoo=models.TextField(null= False,blank=False)
+    numerologia=models.TextField(null=False,blank=True)
     history=HistoricalRecords()
     def __str__(self):
         return "ID: #%s,$%s (%s/%s)"%(self.id,self.total,self.cliente.nombre,self.empresa.nombre)
@@ -273,6 +274,7 @@ class Proforma(models.Model):
     saldo_proforma=models.FloatField(null=False,default=0,blank=False,help_text="saldo pendiente de la proforma")
     total=models.FloatField(null=False,default=0,blank=False,help_text="total de la proforma")
     fecha_proforma=models.DateTimeField(auto_now_add=True,help_text="fecha de generacion del pedido")
+    numerologia=models.TextField(null=False,blank=True)
     # Utiles
     history=HistoricalRecords()
     def __str__(self):
@@ -324,6 +326,7 @@ class Factura(models.Model):
     nota_entrega=models.TextField(default=False,help_text="fecha de generacion una nota de entrega?")
     # Utiles
     fecha_factura=models.DateTimeField(auto_now_add=True,help_text="fecha de generacion del pedido")
+    numerologia=models.TextField(null=False,blank=True)
     history=HistoricalRecords()
     def __str__(self):
         return "Factura: #%s,$%s (%s/%s)"%(self.proforma.id,self.total,self.nombre_cliente,self.nombre_empresa)
@@ -357,8 +360,8 @@ class ImpuestosFactura(models.Model):
         return 'Impuesto dado a %s'%(self.factura)
 class NumerologiaFactura(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
-    factura=models.ForeignKey(Factura,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="venta asociada")
-    tipo=models.TextField(max_length=100,blank=False,null=True,help_text="tipo de numerologia")
+    factura=models.ForeignKey(Factura,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Venta asociada")
+    tipo=models.TextField(max_length=100,blank=False,null=True,help_text="Tipo de numerologia")
     valor=models.TextField(max_length=100,blank=False,null=True,help_text="valor que se utilizo en la venta")
     history=HistoricalRecords()
 class NotaFactura(Nota):
@@ -372,7 +375,8 @@ class NotasPago(models.Model):
     total=models.FloatField(null=False,default=0,blank=False,help_text="total de la nota")
     comprobante=models.TextField(null=False,default=0,blank=False,help_text="comprobante del pago")
     descripcion=models.TextField(max_length=150,blank=True,null=True,help_text="pequeña descripcion")
-    fecha=models.DateTimeField(auto_now_add=True)
+    numerologia=models.TextField(null=False,blank=True)
+    # fecha=models.DateTimeField(auto_now_add=True)
 class DetalleNotasPago(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
     notapago=models.ForeignKey(NotasPago,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="nota de pago asociada")

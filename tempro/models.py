@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from backend.models import *
 class Nodo(models.Model):
-    instancia=models.ForeignKey(Instancia,null=True,on_delete=models.DO_NOTHING)
+    instancia=models.ForeignKey(Instancia,null=True,on_delete=models.CASCADE)
     nombre=models.CharField(max_length=120,null=True,help_text="Nombre del nodo")
     direccion_MAC=models.CharField(max_length=20,null=False,blank=True,help_text="MAC del nodo")
     temperatura_min=models.FloatField(null=True,blank=True)
@@ -13,24 +13,24 @@ class Nodo(models.Model):
     def __str__(self):
         return"%s %s"%(self.direccion_MAC,self.nombre)
 class Sensor(models.Model):
-    instancia=models.ForeignKey(Instancia,null=True,on_delete=models.DO_NOTHING)
+    instancia=models.ForeignKey(Instancia,null=True,on_delete=models.CASCADE)
     serial=models.CharField(max_length=120,null=False,blank=False,help_text="Serial del sensor")
     nombre=models.CharField(max_length=120,null=True,blank=False,help_text="Nombre del sensor")
-    nodo=models.ForeignKey(Nodo,null=True,on_delete=models.SET_NULL)
+    nodo=models.ForeignKey(Nodo,null=True,on_delete=models.CASCADE)
     created_at=models.DateTimeField(auto_now_add=True)
     updated_at=models.DateTimeField(auto_now=True)
     def __str__(self):
         return"%s %s"%(self.serial,self.nombre)
 class Puerta(models.Model):
-    instancia=models.ForeignKey(Instancia,null=True,on_delete=models.DO_NOTHING)
+    instancia=models.ForeignKey(Instancia,null=True,on_delete=models.CASCADE)
     ESTADO=(('A','Abierta'),('C','Cerrada'))
     estado=models.CharField(max_length=1,null=False,blank=False,choices=ESTADO)
-    nodo=models.ForeignKey(Nodo,null=True,on_delete=models.SET_NULL)
+    nodo=models.ForeignKey(Nodo,null=True,on_delete=models.CASCADE)
     created_at=models.DateTimeField(auto_now_add=True)
 class RegistroTemperatura(models.Model):
-    instancia=models.ForeignKey(Instancia,null=True,on_delete=models.DO_NOTHING)
-    nodo=models.ForeignKey(Nodo,null=False,on_delete=models.DO_NOTHING)
-    sensor=models.ForeignKey(Sensor,null=False,on_delete=models.DO_NOTHING)
+    instancia=models.ForeignKey(Instancia,null=True,on_delete=models.CASCADE)
+    nodo=models.ForeignKey(Nodo,null=False,on_delete=models.CASCADE)
+    sensor=models.ForeignKey(Sensor,null=False,on_delete=models.CASCADE)
     temperatura=models.FloatField(null=False,blank=False,)
     created_at=models.DateTimeField(auto_now_add=True)
     def fecha_registro(self):
@@ -41,7 +41,7 @@ class RegistroTemperatura(models.Model):
             temperatura=self.temperatura,
             created_at=self.created_at.strftime('%d/%m/%Y %H'))
 class Correo(models.Model):
-    instancia=models.ForeignKey(Instancia,null=True,on_delete=models.DO_NOTHING)
+    instancia=models.ForeignKey(Instancia,null=True,on_delete=models.CASCADE)
     email=models.TextField(max_length=254,null=False,blank=False)
     nombre=models.CharField(max_length=120,null=True,blank=False,help_text="Nombre del receptor")
     created_at=models.DateTimeField(auto_now_add=True)
@@ -49,13 +49,13 @@ class Correo(models.Model):
     def __str__(self):
         return"%s %s"%(self.email,self.nombre)
 class CorreoAlerta(models.Model):
-    instancia=models.ForeignKey(Instancia,null=True,on_delete=models.DO_NOTHING)
+    instancia=models.ForeignKey(Instancia,null=True,on_delete=models.CASCADE)
     TIPO=(('A','Alta'),('B','Baja'))
     tipo_alerta=models.CharField(max_length=1,choices=TIPO,null=True)
-    nodo=models.ForeignKey(Nodo,null=True,on_delete=models.DO_NOTHING)
+    nodo=models.ForeignKey(Nodo,null=True,on_delete=models.CASCADE)
     created_at=models.DateTimeField(auto_now_add=True)
 class Error(models.Model):
-    instancia=models.ForeignKey(Instancia,null=True,on_delete=models.DO_NOTHING)
+    instancia=models.ForeignKey(Instancia,null=True,on_delete=models.CASCADE)
     razon=models.TextField(max_length=254,null=False)
     origen=models.TextField(max_length=254,null=False)
     msg_mqtt=models.TextField(max_length=254,null=False)
@@ -68,7 +68,7 @@ class Error(models.Model):
     def __str__(self):
         return"%s %s"%(self.razon,self.origen)
 class Suscripcion(models.Model):
-    instancia=models.ForeignKey(Instancia,null=True,on_delete=models.DO_NOTHING)
+    instancia=models.ForeignKey(Instancia,null=True,on_delete=models.CASCADE)
     usuario=models.ForeignKey(User,null=False,blank=False,on_delete=models.CASCADE)
     chat=models.IntegerField(null=False,blank=False,unique=True)
     alertar=models.BooleanField(default=True)
