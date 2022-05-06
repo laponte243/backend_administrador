@@ -53,13 +53,11 @@ class LoginView(KnoxLoginView):
         serializer.is_valid(raise_exception=True)
         user=serializer.validated_data['user']
         login(request,user)
-        # return super(LoginView,self).post(request,format=None)
         temp_list=super(LoginView,self).post(request,format=None)
         temp_list.data["user_id"]=user.id
         temp_list.data["first_name"]=user.first_name
         temp_list.data["last_name"]=user.last_name
         temp_list.data["last_login"]=user.last_login
-        print(temp_list.__dict__)
         return Response({"data": temp_list.data})
 # Vista creada para el modelo de Group
 class GroupVS(viewsets.ModelViewSet):
@@ -546,8 +544,12 @@ class ContactoEmpresaVS(viewsets.ModelViewSet):
             return ContactoEmpresa.objects.none()
 # Configuracion de papelerias
 class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
+    permiso='Empresa'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
+    # Datos
+    modelo=ConfiguracionPapeleria
+    queryset=modelo.objects.all()
     serializer_class=ConfiguracionPapeleriaSerializer
     def create(self,request):
         perfil=obt_per(self.request.user)
@@ -589,15 +591,29 @@ class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-    def get_queryset(self):
-        perfil=obt_per(self.request.user)
-        if verificar_permiso(perfil,'Empresa','leer'):
-            if perfil.tipo=='S':
-                return ConfiguracionPapeleria.objects.all().order_by('valor','empresa')
+    def list(self,request):
+        try:
+            perfil=obt_per(self.request.user)
+            if verificar_permiso(perfil,self.permiso,'leer'):
+                instancia=perfil.instancia
+                # Filtrar los objetos
+                objetos=self.queryset if perfil.tipo=='S' else self.queryset.filter(perfil__instancia=instancia)
+                objetos=objetos.exclude(perfil__tipo__in=['A','S']) if perfil.tipo=='U' or perfil.tipo=='V' else objetos
+                # Paginacion
+                paginado=paginar(objetos,self.request.query_params.copy(),self.modelo)
+                # Data e Info de la paginacion
+                data=self.serializer_class(paginado['objetos'],many=True).data
+                # Respuesta
+                return Response({'objetos':data,'info':paginado['info']},status=status.HTTP_200_OK)
             else:
-                return ConfiguracionPapeleria.objects.filter(instancia=perfil.instancia).order_by('valor','empresa')
-        else:
-            return ConfiguracionPapeleria.objects.none()
+                raise
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+    def retrieve(self, request, pk=None):
+        try:
+            return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
 # Tasas de conversiones de la instancia
 class TasaConversionVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
