@@ -3274,3 +3274,85 @@ def verificar_numerologia(datos,modelo):
     instancia=Instancia.objects.get(id=datos['instancia'])
     configuracion, creado = ConfiguracionPapeleria.objects.get_or_create(instancia=instancia,empresa=empresa,tipo=tipo,defaults={'valor':1})
     return configuracion
+
+@api_view(["GET"])
+@csrf_exempt
+def subir_xls(request):
+    df = pd.read_excel("clientes.xls", sheet_name="hoja1")
+    df = df.reset_index()
+    print("inicio carga de data")
+    for index, row in df.iterrows():
+        instancia = Instancia.objects.get(id=1)
+        empresa = Empresa.objects.get(id=row['EMPRESA'])
+        vendedor, created = Vendedor.objects.get_or_create(codigo=row['VENDEDOR'], defaults={'instancia':instancia,'nombre': row['NOMBRE_VENDEDOR']})
+        vendedor.save()
+        nuevo_cliente, created = Cliente.objects.get_or_create(
+            nombre=row['NOMBRE'],
+            defaults={
+                'instancia':instancia,
+                'codigo':row['CODIGO'],
+                'empresa': empresa,
+                'vendedor':vendedor,
+                'identificador':row['RIF'],
+                'ubicacion':row['DIRECCION'],
+                'telefono':row['TELEFONO'],
+                'mail':row['EMAIL'],
+                'credito':row['CREDITO'],
+                'activo':row['ACTIVO']
+            }
+        )
+        if(created):
+            nuevo_cliente.save()
+            print(nuevo_cliente)
+    print("fin carga de data")
+    data = {
+        "crear": "data"
+        }
+    return JsonResponse(data)
+
+@api_view(["GET"])
+@csrf_exempt
+def subir_xls2(request):
+    print("Inicio de proceso")
+    df = pd.read_excel("productos.xls", sheet_name="Hoja1")
+    df = df.reset_index()  # make sure indexes pair with number of rows
+    print("inico carga de data")
+    for index, row in df.iterrows():
+        instancia = Instancia.objects.get(id=2)
+        marca, created = Marca.objects.get_or_create(nombre=row['MARCA'], defaults={'instancia':instancia,'nombre': row['MARCA']})
+        marca.save()
+        exonerado = True
+        venta_sin_inventario= True
+        lote= False
+        if(row['IVA'] == 'SI'):
+            exonerado = False
+        if(row['VENTA_SIN_INVENTARIO'] == 'NO'):
+            venta_sin_inventario = False
+        if(row['LOTE'] == 'SI'):
+            lote: True
+        nuevo_producto, created = Producto.objects.get_or_create(
+                            marca=marca,
+                            nombre=row['DESCRIPCIÓN'],
+                            defaults={
+                            'instancia':instancia,
+                            'nombre':row['DESCRIPCIÓN'],
+                            'sku':row['CODIGO'],
+                            'costo':row['Costo'],
+                            'precio_1':row['Precio1'],
+                            'precio_2':row['Precio2'],
+                            'exonerado':exonerado,
+                            'servicio': False,
+                            'menejo_inventario': True,
+                            'venta_sin_inventario':True,
+                            'lote': lote,
+                            'activo': True
+                            }
+                            )
+        if(created):
+            nuevo_producto.save()
+            print(nuevo_producto)
+    print("fin carga de data")
+    data = {
+        "crear": "data"
+        }
+    return JsonResponse(data)
