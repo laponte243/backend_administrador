@@ -83,6 +83,24 @@ class Empresa(models.Model):
     history=HistoricalRecords()
     def __str__(self):
         return '%s'%(self.nombre)
+    def save(self):
+        super().save()
+        if self.id:
+            tipos=[
+                'A', # Nota Devolucion
+                'B', # Nota Control
+                'C', # Nota Credito
+                'D', # Nota Debito
+                'E', # Proforma
+                'F', # Factura
+                'N', # Nota Entrega
+                'P', # Pedido
+            ]
+            for p in tipos:
+                correlativo=ConfiguracionPapeleria.objects.create(instancia=self.instancia,empresa=self,prefijo=None,valor=1,tipo=p)
+                if p == 'E' or p == 'P' or p == 'F' or p == 'N':
+                    correlativo.prefijo=p
+                    correlativo.save()
 class ContactoEmpresa(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
     empresa=models.ForeignKey(Empresa,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="empresa asociada")
@@ -94,7 +112,7 @@ class ContactoEmpresa(models.Model):
         return 'Contacto de la empresa %s'%(self.empresa)
 class ConfiguracionPapeleria(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
-    TIPO=(('F','Factura'),('N','Nota entrega'),('C','Nota credito'),('D','Nota debito'),('P','Proforma'),('E','Pedido'),)
+    TIPO=(('A','Nota devolucion'),('B','Nota Control'),('C','Nota credito'),('D','Nota debito'),('E','Proforma'),('F','Factura'),('N','Nota entrega'),('P','Pedido'))
     empresa=models.ForeignKey(Empresa,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="empresa asociada")
     prefijo=models.TextField(max_length=10,blank=True,null=True,help_text="prefijo para el numero")
     formato=models.TextField(max_length=20,blank=True,null=True,help_text="formato de numero con 0 adelante 0000000")
@@ -143,6 +161,7 @@ class Producto(models.Model):
     precio_1=models.FloatField(default= 0,null=False,blank= False,help_text="Precio del producto 1")
     precio_2=models.FloatField(default= 0,null=False,blank= False,help_text="Precio del producto 2")
     precio_3=models.FloatField(default= 0,null=True,help_text="Precio del producto 3")
+    precio_4=models.FloatField(default= 0,null=True,help_text="Precio del producto 3")
     exonerado=models.BooleanField(default=False,help_text="¿Esta exonerado el impuesto?")
     # Datos configuracion
     venta_sin_inventario=models.BooleanField(default=False,help_text="¿Se permite la venta del producto sin inventario?")
@@ -275,6 +294,7 @@ class Proforma(models.Model):
     total=models.FloatField(null=False,default=0,blank=False,help_text="total de la proforma")
     fecha_proforma=models.DateTimeField(auto_now_add=True,help_text="fecha de generacion del pedido")
     numerologia=models.TextField(null=False,blank=True)
+    fecha_despacho=models.DateTimeField(null=True,blank=True)
     # Utiles
     history=HistoricalRecords()
     def __str__(self):

@@ -88,5 +88,4 @@ urlpatterns = [
     # Login
     path('auth/login/', LoginView.as_view(), name='knox_login'),
     path('auth/logout/', knox_views.LogoutView.as_view(), name='knox_logout'),
-    path('auth/password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),
-    path('subir-xls2/', views.subir_xls2),]
+    path('auth/password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),]

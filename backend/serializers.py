@@ -143,6 +143,19 @@ class ConfiguracionPapeleriaSerializer(serializers.ModelSerializer):
     nombreEmpresa = serializers.SerializerMethodField('LoadNombreEmpresa')
     def LoadNombreEmpresa(self, obj):
         return obj.empresa.nombre
+    nombreTipo = serializers.SerializerMethodField('LoadNombreTipo')
+    def LoadNombreTipo(self, obj):
+        n = ''
+        n = 'Nota Devolucion' if obj.tipo == 'A' else n
+        n = 'Nota Control' if obj.tipo == 'B' else n
+        n = 'Nota Credito' if obj.tipo == 'C' else n
+        n = 'Nota Debito' if obj.tipo == 'D' else n
+        n = 'Proforma' if obj.tipo == 'E' else n
+        n = 'Factura' if obj.tipo == 'F' else n
+        n = 'Nota Entrega' if obj.tipo == 'N' else n
+        n = 'Pedido' if obj.tipo == 'P' else n
+        return n
+
 class ImpuestosSerializer(serializers.ModelSerializer):
     class Meta:
         model = Impuestos
