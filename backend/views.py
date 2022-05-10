@@ -81,7 +81,7 @@ class UserVS(viewsets.ModelViewSet):
     modelo=User
     queryset=modelo.objects.all()
     serializer_class=UsuarioMSerializer
-    # Motodo de crear no permitido
+    # Motodo crear no permitido
     def create(self,request):
         try:
             perfil=obt_per(self.request.user)
@@ -99,7 +99,7 @@ class UserVS(viewsets.ModelViewSet):
                 raise
         except:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-    # Metodo de actualizar
+    # Metodo actualizar
     def update(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Usuarios_y_permisos','actualizar'):
@@ -117,7 +117,7 @@ class UserVS(viewsets.ModelViewSet):
                     return Response(serializer.data,status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-    # Metodo de eliminar
+    # Metodo borrar
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Usuarios_y_permisos','borrar'):
@@ -139,7 +139,7 @@ class UserVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-    # Metodos de leer
+    # Metodos leer
     def list(self,request):
         try:
             perfil=obt_per(self.request.user)
@@ -165,13 +165,24 @@ class UserVS(viewsets.ModelViewSet):
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
 # Vista del modelo Modulo
 class ModuloVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='Usuarios_y_permisos'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
+    # Datos
+    modelo=Modulo
+    # queryset=modelo.objects.all()
     serializer_class=ModuloSerializer
-    # Metodo de crear no disponible
+    # Metodo crear no disponible
     def create(self,request,*args,**kwargs):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-    # Metodo de leer
+    # Metodo actualizar no disponible
+    def update(self,request,*args,**kwargs):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    # Metodo borrar no disponible
+    def destroy(self,request,*args,**kwargs):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    # Metodo leer
     def get_queryset(self):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Usuarios_y_permisos','leer'):
@@ -189,28 +200,20 @@ class ModuloVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_401_UNAUTHORIZED)
         else:
             return Modulo.objects.none()
-    # Metodo de actualizar no disponible
-    def update(self,request,*args,**kwargs):
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-    # Metodo de eliminar no disponible
-    def destroy(self,request,*args,**kwargs):
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 # Vista para el modelo Menu
 class MenuVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='Usuarios_y_permisos'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
+    # Datos
+    modelo=Menu
+    # queryset=modelo.objects.all()
     serializer_class=MenuSerializer
-    # Metodo de crear no disponible
+    # Metodo crear no disponible
     def create(self,request,*args,**kwargs):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-    # Metodo de leer
-    def get_queryset(self):
-        # Verificar si existen los menus
-        perfil=obt_per(self.request.user)
-        if perfil.tipo=='S':
-            return Menu.objects.all()
-        else:
-            return Menu.objects.none()
+    # Metodo actualizar
     def update(self,request,*args,**kwargs):
        perfil=obt_per(self.request.user)
        if perfil.tipo=='S':
@@ -222,29 +225,31 @@ class MenuVS(viewsets.ModelViewSet):
            return Response(serializer.data,status=status.HTTP_200_OK)
        else:
            return Response(status=status.HTTP_403_FORBIDDEN)
-    # Metodo de eliminar no disponible
+    # Metodo borrar no disponible
     def destroy(self,request,*args,**kwargs):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    # Metodo leer
+    def get_queryset(self):
+        # Verificar si existen los menus
+        perfil=obt_per(self.request.user)
+        if perfil.tipo=='S':
+            return Menu.objects.all()
+        else:
+            return Menu.objects.none()
 # Instancia
 class InstanciaVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='Usuarios_y_permisos'
     permission_classes=[IsAdminUser]
     authentication_classes=[TokenAuthentication]
+    # Datos
+    modelo=Instancia
+    # queryset=modelo.objects.all()
     serializer_class=InstanciaSerializer
+    # Metodo crear no disponible
     def create(self,request):
-        perfil=obt_per(self.request.user)
-        if perfil.tipo=='S' and self.request.user.is_superuser==True:
-            serializer=self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            headers=self.get_success_headers(serializer.data)
-            return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
-        elif perfil.tipo=='S':
-            return Response("Tu usuario o perfil no tienen permisos de superusuario",status=status.HTTP_406_NOT_ACCEPTABLE)
-        else:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-    def get_queryset(self):
-        perfil=obt_per(self.request.user)
-        return Instancia.objects.all().order_by('nombre') if perfil.tipo=='S' else Instancia.objects.none()
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    # Metodo actualizar
     def update(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Dashboard','actualizar'):
@@ -257,12 +262,22 @@ class InstanciaVS(viewsets.ModelViewSet):
             return Response(serializer.data,status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
+    # Metodo borrar
     def destroy(self,request,*args,**kwargs):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    # Metodo actualizar
+    def get_queryset(self):
+        perfil=obt_per(self.request.user)
+        return Instancia.objects.all().order_by('nombre') if perfil.tipo=='S' else Instancia.objects.none()
 # Menus por instancia
 class MenuInstanciaVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='Usuarios_y_permisos'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
+    # Datos
+    modelo=MenuInstancia
+    # queryset=modelo.objects.all()
     serializer_class=MenuInstanciaSerializer
     def create(self,request):
         perfil=obt_per(self.request.user)
@@ -305,9 +320,15 @@ class MenuInstanciaVS(viewsets.ModelViewSet):
             return Response(status=status.HTTP_403_FORBIDDEN)
 # Perfiles de usuarios
 class PerfilVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='Usuarios_y_permisos'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
+    # Datos
+    modelo=Perfil
+    queryset=modelo.objects.all()
     serializer_class=PerfilSerializer
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Usuarios_y_permisos','escribir'):
@@ -327,17 +348,7 @@ class PerfilVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_401_UNAUTHORIZED)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-    def get_queryset(self):
-        perfil=obt_per(self.request.user)
-        if verificar_permiso(perfil,'Usuarios_y_permisos','leer'):
-            if perfil.tipo=='S':
-                return Perfil.objects.all().order_by('usuario')
-            elif perfil.tipo=='A':
-                return Perfil.objects.filter(instancia=perfil.instancia).order_by('usuario')
-            else:
-                return Perfil.objects.filter(perfil=perfil.id)
-        else:
-            return Perfil.objects.none()
+    # Metodo actualizar
     def update(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Usuarios_y_permisos','actualizar'):
@@ -363,6 +374,7 @@ class PerfilVS(viewsets.ModelViewSet):
                     return Response('Problema con el avatar a guardar',status=status.HTTP_202_ACCEPTED)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
+    # Metodo borrar
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Usuarios_y_permisos','borrar'):
@@ -375,14 +387,43 @@ class PerfilVS(viewsets.ModelViewSet):
                     instance.delete()
                     return Response(status=status.HTTP_204_NO_CONTENT)
                 else:
-                    return Response('No puedes eliminar este perfil',status=status.HTTP_401_UNAUTHORIZED)
+                    return Response('No puedes borrar este perfil',status=status.HTTP_401_UNAUTHORIZED)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-# Permisos de los usuarios
+    # Metodos de leer
+    def list(self,request):
+        try:
+            perfil=obt_per(self.request.user)
+            if verificar_permiso(perfil,self.permiso,'leer'):
+                instancia=perfil.instancia
+                # Filtrar los objetos
+                objetos=self.queryset if perfil.tipo=='S' else self.queryset.filter(perfil__instancia=instancia)
+                objetos=objetos.exclude(perfil__tipo__in=['A','S']) if perfil.tipo=='U' or perfil.tipo=='V' else objetos
+                # Paginacion
+                paginado=paginar(objetos,self.request.query_params.copy(),self.modelo)
+                # Data e Info de la paginacion
+                data=self.serializer_class(paginado['objetos'],many=True).data
+                # Respuesta
+                return Response({'objetos':data,'info':paginado['info']},status=status.HTTP_200_OK)
+            else:
+                raise
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+    def retrieve(self, request, pk=None):
+        try:
+            return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)# Permisos de los usuarios
 class PermisoVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='Usuarios_y_permisos'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
+    # Datos
+    modelo=Permiso
+    queryset=modelo.objects.all()
     serializer_class=PermisoSerializer
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Usuarios_y_permisos','escribir'):
@@ -394,15 +435,7 @@ class PermisoVS(viewsets.ModelViewSet):
             return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-    def get_queryset(self):
-        perfil=obt_per(self.request.user)
-        if verificar_permiso(perfil,'Usuarios_y_permisos','leer'):
-            if perfil.tipo=='S':
-                return Permiso.objects.all()
-            else:
-                return Permiso.objects.filter(instancia=perfil.instancia)
-        else:
-            return Permiso.objects.none()
+    # Metodo actualizar
     def update(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Usuarios_y_permisos','actualizar'):
@@ -420,6 +453,7 @@ class PermisoVS(viewsets.ModelViewSet):
                 return Response('No puedes cambiar los permisos de este usuario',status=status.HTTP_406_NOT_ACCEPTABLE)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
+    # Metodo borrar
     def destroy(self):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Usuarios_y_permisos','borrar'):
@@ -431,14 +465,44 @@ class PermisoVS(viewsets.ModelViewSet):
                 else:
                     return Response('El permiso pertenece a un usuario del mismo o mayor rango',status=status.HTTP_406_NOT_ACCEPTABLE)
             else:
-                return Response('No puedes eliminar los permisos de este usuario',status=status.HTTP_406_NOT_ACCEPTABLE)
+                return Response('No puedes borrar los permisos de este usuario',status=status.HTTP_406_NOT_ACCEPTABLE)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
+    # Metodos leer
+    def list(self,request):
+        try:
+            perfil=obt_per(self.request.user)
+            if verificar_permiso(perfil,self.permiso,'leer'):
+                instancia=perfil.instancia
+                # Filtrar los objetos
+                objetos=self.queryset if perfil.tipo=='S' else self.queryset.filter(perfil__instancia=instancia)
+                objetos=objetos.exclude(perfil__tipo__in=['A','S']) if perfil.tipo=='U' or perfil.tipo=='V' else objetos
+                # Paginacion
+                paginado=paginar(objetos,self.request.query_params.copy(),self.modelo)
+                # Data e Info de la paginacion
+                data=self.serializer_class(paginado['objetos'],many=True).data
+                # Respuesta
+                return Response({'objetos':data,'info':paginado['info']},status=status.HTTP_200_OK)
+            else:
+                raise
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+    def retrieve(self, request, pk=None):
+        try:
+            return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
 # Empresas registradas de la instancia
 class EmpresaVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='Empresa'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
+    # Datos
+    modelo=Empresa
+    queryset=modelo.objects.all()
     serializer_class=EmpresaSerializer
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Empresa','escribir'):
@@ -454,6 +518,7 @@ class EmpresaVS(viewsets.ModelViewSet):
             return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
+    # Metodo actualizar
     def update(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Empresa','actualizar'):
@@ -468,6 +533,7 @@ class EmpresaVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
+    # Metodo borrar
     def destroy(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Empresa','borrar'):
@@ -479,20 +545,41 @@ class EmpresaVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-    def get_queryset(self):
-        perfil=obt_per(self.request.user)
-        if verificar_permiso(perfil,'Empresa','leer'):
-            if perfil.tipo=='S':
-                return Empresa.objects.all().order_by('nombre')
+    # Metodos de leer
+    def list(self,request):
+        try:
+            perfil=obt_per(self.request.user)
+            if verificar_permiso(perfil,self.permiso,'leer'):
+                instancia=perfil.instancia
+                # Filtrar los objetos
+                objetos=self.queryset if perfil.tipo=='S' else self.queryset.filter(perfil__instancia=instancia)
+                objetos=objetos.exclude(perfil__tipo__in=['A','S']) if perfil.tipo=='U' or perfil.tipo=='V' else objetos
+                # Paginacion
+                paginado=paginar(objetos,self.request.query_params.copy(),self.modelo)
+                # Data e Info de la paginacion
+                data=self.serializer_class(paginado['objetos'],many=True).data
+                # Respuesta
+                return Response({'objetos':data,'info':paginado['info']},status=status.HTTP_200_OK)
             else:
-                return Empresa.objects.filter(instancia=perfil.instancia).order_by('nombre')
-        else:
-            return Empresa.objects.none()
+                raise
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+    def retrieve(self, request, pk=None):
+        try:
+            return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
 # Contactos de las empresas
 class ContactoEmpresaVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='Empresa'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
+    # Datos
+    modelo=ContactoEmpresa
+    queryset=modelo.objects.all()
     serializer_class=ContactoEmpresaSerializer
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Empresa','escribir'):
@@ -533,15 +620,30 @@ class ContactoEmpresaVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-    def get_queryset(self):
-        perfil=obt_per(self.request.user)
-        if verificar_permiso(perfil,'Empresa','leer'):
-            if perfil.tipo=='S':
-                return ContactoEmpresa.objects.all().order_by('nombre')
+    # Metodos de leer
+    def list(self,request):
+        try:
+            perfil=obt_per(self.request.user)
+            if verificar_permiso(perfil,self.permiso,'leer'):
+                instancia=perfil.instancia
+                # Filtrar los objetos
+                objetos=self.queryset if perfil.tipo=='S' else self.queryset.filter(perfil__instancia=instancia)
+                objetos=objetos.exclude(perfil__tipo__in=['A','S']) if perfil.tipo=='U' or perfil.tipo=='V' else objetos
+                # Paginacion
+                paginado=paginar(objetos,self.request.query_params.copy(),self.modelo)
+                # Data e Info de la paginacion
+                data=self.serializer_class(paginado['objetos'],many=True).data
+                # Respuesta
+                return Response({'objetos':data,'info':paginado['info']},status=status.HTTP_200_OK)
             else:
-                return ContactoEmpresa.objects.filter(instancia=perfil.instancia).order_by('nombre')
-        else:
-            return ContactoEmpresa.objects.none()
+                raise
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+    def retrieve(self, request, pk=None):
+        try:
+            return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
 # Configuracion de papelerias
 class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
     permiso='Empresa'
@@ -551,6 +653,7 @@ class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
     modelo=ConfiguracionPapeleria
     queryset=modelo.objects.all()
     serializer_class=ConfiguracionPapeleriaSerializer
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Empresa','escribir'):
@@ -591,6 +694,7 @@ class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
+    # Metodos de leer
     def list(self,request):
         try:
             perfil=obt_per(self.request.user)
@@ -616,9 +720,15 @@ class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
 # Tasas de conversiones de la instancia
 class TasaConversionVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='TasaConversion'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
+    # Datos
+    modelo=TasaConversion
+    queryset=modelo.objects.all()
     serializer_class=TasaConversionSerializer
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'TasaConversion','escribir'):
@@ -659,17 +769,41 @@ class TasaConversionVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-    def get_queryset(self):
-        perfil=obt_per(self.request.user)
-        if perfil.tipo=='S':
-            return TasaConversion.objects.all().order_by('-id')
-        else:
-            return TasaConversion.objects.filter(instancia=perfil.instancia).order_by('-id')
+    # Metodos de leer
+    def list(self,request):
+        try:
+            perfil=obt_per(self.request.user)
+            if verificar_permiso(perfil,self.permiso,'leer'):
+                instancia=perfil.instancia
+                # Filtrar los objetos
+                objetos=self.queryset if perfil.tipo=='S' else self.queryset.filter(perfil__instancia=instancia)
+                objetos=objetos.exclude(perfil__tipo__in=['A','S']) if perfil.tipo=='U' or perfil.tipo=='V' else objetos
+                # Paginacion
+                paginado=paginar(objetos,self.request.query_params.copy(),self.modelo)
+                # Data e Info de la paginacion
+                data=self.serializer_class(paginado['objetos'],many=True).data
+                # Respuesta
+                return Response({'objetos':data,'info':paginado['info']},status=status.HTTP_200_OK)
+            else:
+                raise
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+    def retrieve(self, request, pk=None):
+        try:
+            return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
 # Impuestos registrados
 class ImpuestosVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='Impuesto'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
+    # Datos
+    modelo=Impuestos
+    queryset=modelo.objects.all()
     serializer_class=ImpuestosSerializer
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Impuesto','escribir'):
@@ -710,20 +844,41 @@ class ImpuestosVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-    def get_queryset(self):
-        perfil=obt_per(self.request.user)
-        if verificar_permiso(perfil,'Impuesto','leer'):
-            if perfil.tipo=='S':
-                return Impuestos.objects.all().order_by('nombre')
+    # Metodos de leer
+    def list(self,request):
+        try:
+            perfil=obt_per(self.request.user)
+            if verificar_permiso(perfil,self.permiso,'leer'):
+                instancia=perfil.instancia
+                # Filtrar los objetos
+                objetos=self.queryset if perfil.tipo=='S' else self.queryset.filter(perfil__instancia=instancia)
+                objetos=objetos.exclude(perfil__tipo__in=['A','S']) if perfil.tipo=='U' or perfil.tipo=='V' else objetos
+                # Paginacion
+                paginado=paginar(objetos,self.request.query_params.copy(),self.modelo)
+                # Data e Info de la paginacion
+                data=self.serializer_class(paginado['objetos'],many=True).data
+                # Respuesta
+                return Response({'objetos':data,'info':paginado['info']},status=status.HTTP_200_OK)
             else:
-                return Impuestos.objects.filter(instancia=perfil.instancia).order_by('nombre')
-        else:
-            return Impuestos.objects.none()
+                raise
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+    def retrieve(self, request, pk=None):
+        try:
+            return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
 # Marcas registradas en la instancia
 class MarcaVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='Productos'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
+    # Datos
+    modelo=Marca
+    queryset=modelo.objects.all()
     serializer_class=MarcaSerializer
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Productos','escribir'):
@@ -764,15 +919,25 @@ class MarcaVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-    def get_queryset(self):
-        perfil=obt_per(self.request.user)
-        if verificar_permiso(perfil,'Productos','leer'):
-            if perfil.tipo=='S':
-                return Marca.objects.all().order_by('nombre')
+    # Metodos de leer
+    def list(self,request):
+        try:
+            perfil=obt_per(self.request.user)
+            if verificar_permiso(perfil,self.permiso,'leer'):
+                instancia=perfil.instancia
+                # Filtrar los objetos
+                objetos=self.queryset if perfil.tipo=='S' else self.queryset.filter(perfil__instancia=instancia)
+                objetos=objetos.exclude(perfil__tipo__in=['A','S']) if perfil.tipo=='U' or perfil.tipo=='V' else objetos
+                # Paginacion
+                paginado=paginar(objetos,self.request.query_params.copy(),self.modelo)
+                # Data e Info de la paginacion
+                data=self.serializer_class(paginado['objetos'],many=True).data
+                # Respuesta
+                return Response({'objetos':data,'info':paginado['info']},status=status.HTTP_200_OK)
             else:
-                return Marca.objects.filter(instancia=perfil.instancia)
-        else:
-            return Marca.objects.none()
+                raise
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
     def retrieve(self, request, pk=None):
         return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data)
 # Productos registrados en la instancia
@@ -785,8 +950,7 @@ class ProductoVS(viewsets.ModelViewSet):
     modelo=Producto
     queryset=modelo.objects.all()
     serializer_class=ProductoSerializer
-    # filter_backends=[DjangoFilterBackend]
-    # filterset_fields=['servicio','menejo_inventario','activo']
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Productos','escribir'):
@@ -827,6 +991,7 @@ class ProductoVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
+    # Metodos de leer
     def list(self,request):
         try:
             perfil=obt_per(self.request.user)
@@ -852,9 +1017,15 @@ class ProductoVS(viewsets.ModelViewSet):
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
 # ImagenesP registradas en la instancia
 class ProductoImagenVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='Productos'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
+    # Datos
+    modelo=ProductoImagen
+    queryset=modelo.objects.all()
     serializer_class=ProductoImagenSerializer
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Productos','escribir'):
@@ -895,20 +1066,20 @@ class ProductoImagenVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
+    # Metodo leer no disponible
     def get_queryset(self):
-        perfil=obt_per(self.request.user)
-        if verificar_permiso(perfil,'Productos','leer'):
-            if perfil.tipo=='S':
-                return ProductoImagen.objects.all()
-            else:
-                return ProductoImagen.objects.filter(instancia=perfil.instancia)
-        else:
-            return ProductoImagen.objects.none()
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 # Almacen registrado en la instancia
 class AlmacenVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='Almacenes'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
+    # Datos
+    modelo=Almacen
+    queryset=modelo.objects.all()
     serializer_class=AlmacenSerializer
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Almacenes','escribir'):
@@ -949,22 +1120,41 @@ class AlmacenVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-    def get_queryset(self):
-        perfil=obt_per(self.request.user)
-        if verificar_permiso(perfil,'Almacenes','leer'):
-            if perfil.tipo=='S':
-                return Almacen.objects.all()
+    # Metodos de leer
+    def list(self,request):
+        try:
+            perfil=obt_per(self.request.user)
+            if verificar_permiso(perfil,self.permiso,'leer'):
+                instancia=perfil.instancia
+                # Filtrar los objetos
+                objetos=self.queryset if perfil.tipo=='S' else self.queryset.filter(perfil__instancia=instancia)
+                objetos=objetos.exclude(perfil__tipo__in=['A','S']) if perfil.tipo=='U' or perfil.tipo=='V' else objetos
+                # Paginacion
+                paginado=paginar(objetos,self.request.query_params.copy(),self.modelo)
+                # Data e Info de la paginacion
+                data=self.serializer_class(paginado['objetos'],many=True).data
+                # Respuesta
+                return Response({'objetos':data,'info':paginado['info']},status=status.HTTP_200_OK)
             else:
-                return Almacen.objects.filter(instancia=perfil.instancia)
-        else:
-            return Almacen.objects.none()
+                raise
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+    def retrieve(self, request, pk=None):
+        try:
+            return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
 # Movimientos del inventario registrados en el sistema
 class MovimientoInventarioVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='Inventario'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
+    # Datos
+    modelo=MovimientoInventario
+    queryset=modelo.objects.all()
     serializer_class=MovimientoInventarioSerializer
-    filter_backends=[DjangoFilterBackend]
-    filterset_fields=['producto','almacen']
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Inventario','escribir'):
@@ -1028,22 +1218,40 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-    def get_queryset(self):
-        perfil=obt_per(self.request.user)
-        if verificar_permiso(perfil,'Inventario','leer'):
-            if perfil.tipo=='S':
-                return MovimientoInventario.objects.all()
+    # Metodos de leer
+    def list(self,request):
+        try:
+            perfil=obt_per(self.request.user)
+            if verificar_permiso(perfil,self.permiso,'leer'):
+                instancia=perfil.instancia
+                # Filtrar los objetos
+                objetos=self.queryset if perfil.tipo=='S' else self.queryset.filter(perfil__instancia=instancia)
+                objetos=objetos.exclude(perfil__tipo__in=['A','S']) if perfil.tipo=='U' or perfil.tipo=='V' else objetos
+                # Paginacion
+                paginado=paginar(objetos,self.request.query_params.copy(),self.modelo)
+                # Data e Info de la paginacion
+                data=self.serializer_class(paginado['objetos'],many=True).data
+                # Respuesta
+                return Response({'objetos':data,'info':paginado['info']},status=status.HTTP_200_OK)
             else:
-                return MovimientoInventario.objects.filter(instancia=perfil.instancia)
-        else:
-            return MovimientoInventario.objects.none()
+                raise
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+    def retrieve(self, request, pk=None):
+        try:
+            return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
 # Detalles del inventario registrados
 class DetalleInventarioVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='Inventario'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
+    # Datos
+    modelo=Inventario
+    queryset=modelo.objects.all()
     serializer_class=InventarioSerializer
-    filter_backends=[DjangoFilterBackend]
-    filterset_fields=['producto','almacen','disponible','bloqueado']
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Inventario','escribir'):
@@ -1084,22 +1292,41 @@ class DetalleInventarioVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-    def get_queryset(self):
-        perfil=obt_per(self.request.user)
-        if verificar_permiso(perfil,'Inventario','leer'):
-            if perfil.tipo=='S':
-                return Inventario.objects.all().exclude(disponible=0)
+    # Metodos de leer
+    def list(self,request):
+        try:
+            perfil=obt_per(self.request.user)
+            if verificar_permiso(perfil,self.permiso,'leer'):
+                instancia=perfil.instancia
+                # Filtrar los objetos
+                objetos=self.queryset if perfil.tipo=='S' else self.queryset.filter(perfil__instancia=instancia)
+                objetos=objetos.exclude(perfil__tipo__in=['A','S']) if perfil.tipo=='U' or perfil.tipo=='V' else objetos
+                # Paginacion
+                paginado=paginar(objetos,self.request.query_params.copy(),self.modelo)
+                # Data e Info de la paginacion
+                data=self.serializer_class(paginado['objetos'],many=True).data
+                # Respuesta
+                return Response({'objetos':data,'info':paginado['info']},status=status.HTTP_200_OK)
             else:
-                return Inventario.objects.filter(instancia=perfil.instancia).exclude(disponible=0)
-        else:
-            return Inventario.objects.none()
+                raise
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+    def retrieve(self, request, pk=None):
+        try:
+            return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
 # Vendedores registrados en la instancia
 class VendedorVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='Vendedor'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
+    # Datos
+    modelo=Vendedor
+    queryset=modelo.objects.all()
     serializer_class=VendedorSerializer
-    filter_backends=[DjangoFilterBackend]
-    filterset_fields=['activo']
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Vendedor','escribir'):
@@ -1140,25 +1367,41 @@ class VendedorVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-    def get_queryset(self):
-        perfil=obt_per(self.request.user)
-        if verificar_permiso(perfil,'Vendedor','leer'):
-            if perfil.tipo=='S':
-                return Vendedor.objects.all()
+    # Metodos de leer
+    def list(self,request):
+        try:
+            perfil=obt_per(self.request.user)
+            if verificar_permiso(perfil,self.permiso,'leer'):
+                instancia=perfil.instancia
+                # Filtrar los objetos
+                objetos=self.queryset if perfil.tipo=='S' else self.queryset.filter(perfil__instancia=instancia)
+                objetos=objetos.exclude(perfil__tipo__in=['A','S']) if perfil.tipo=='U' or perfil.tipo=='V' else objetos
+                # Paginacion
+                paginado=paginar(objetos,self.request.query_params.copy(),self.modelo)
+                # Data e Info de la paginacion
+                data=self.serializer_class(paginado['objetos'],many=True).data
+                # Respuesta
+                return Response({'objetos':data,'info':paginado['info']},status=status.HTTP_200_OK)
             else:
-                return Vendedor.objects.filter(instancia=perfil.instancia)
-        else:
-            return Vendedor.objects.none()
+                raise
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+    def retrieve(self, request, pk=None):
+        try:
+            return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
 # Clientes registrados en la instancia
 class ClienteVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='Cliente'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
-    serializer_class=ClienteSerializer
-    filter_backends=[DjangoFilterBackend]
-    filterset_fields=['activo']
+    # Datos
     modelo=Cliente
-    permiso='Cliente'
     queryset=modelo.objects.all()
+    serializer_class=ClienteSerializer
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Cliente','escribir'):
@@ -1225,9 +1468,15 @@ class ClienteVS(viewsets.ModelViewSet):
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
 # Contactos de los clientes de la instancias
 class ContactoClienteVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='Cliente'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
+    # Datos
+    modelo=ContactoCliente
+    queryset=modelo.objects.all()
     serializer_class=ContactoClienteSerializer
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Cliente','escribir'):
@@ -1268,21 +1517,41 @@ class ContactoClienteVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-    def get_queryset(self):
-        perfil=obt_per(self.request.user)
-        if verificar_permiso(perfil,'Cliente','leer'):
-            if perfil.tipo=='S':
-                return ContactoCliente.objects.all()
+    # Metodos de leer
+    def list(self,request):
+        try:
+            perfil=obt_per(self.request.user)
+            if verificar_permiso(perfil,self.permiso,'leer'):
+                instancia=perfil.instancia
+                # Filtrar los objetos
+                objetos=self.queryset if perfil.tipo=='S' else self.queryset.filter(perfil__instancia=instancia)
+                objetos=objetos.exclude(perfil__tipo__in=['A','S']) if perfil.tipo=='U' or perfil.tipo=='V' else objetos
+                # Paginacion
+                paginado=paginar(objetos,self.request.query_params.copy(),self.modelo)
+                # Data e Info de la paginacion
+                data=self.serializer_class(paginado['objetos'],many=True).data
+                # Respuesta
+                return Response({'objetos':data,'info':paginado['info']},status=status.HTTP_200_OK)
             else:
-                return ContactoCliente.objects.filter(instancia=perfil.instancia)
-        else:
-            return ContactoCliente.objects.none()
+                raise
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+    def retrieve(self, request, pk=None):
+        try:
+            return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
 # Pedidos registrados en la instancia
 class PedidoVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='Pedido'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
-    serializer_class=PedidoSerializer
+    # Datos
     modelo=Pedido
+    queryset=modelo.objects.all()
+    serializer_class=PedidoSerializer
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Pedido','escribir'):
@@ -1327,22 +1596,41 @@ class PedidoVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-    def get_queryset(self):
-        perfil=obt_per(self.request.user)
-        if verificar_permiso(perfil,'Pedido','leer'):
-            if perfil.tipo=='S':
-                return Pedido.objects.all().order_by('-id')
+    # Metodos de leer
+    def list(self,request):
+        try:
+            perfil=obt_per(self.request.user)
+            if verificar_permiso(perfil,self.permiso,'leer'):
+                instancia=perfil.instancia
+                # Filtrar los objetos
+                objetos=self.queryset if perfil.tipo=='S' else self.queryset.filter(perfil__instancia=instancia)
+                objetos=objetos.exclude(perfil__tipo__in=['A','S']) if perfil.tipo=='U' or perfil.tipo=='V' else objetos
+                # Paginacion
+                paginado=paginar(objetos,self.request.query_params.copy(),self.modelo)
+                # Data e Info de la paginacion
+                data=self.serializer_class(paginado['objetos'],many=True).data
+                # Respuesta
+                return Response({'objetos':data,'info':paginado['info']},status=status.HTTP_200_OK)
             else:
-                return Pedido.objects.filter(instancia=perfil.instancia).order_by('-id')
-        else:
-            return Pedido.objects.none()
+                raise
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+    def retrieve(self, request, pk=None):
+        try:
+            return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
 # Detalles de los pedidos
 class DetallePedidoVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='Pedido'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
+    # Datos
+    modelo=DetallePedido
+    queryset=modelo.objects.all()
     serializer_class=DetallePedidoSerializer
-    filter_backends=[DjangoFilterBackend]
-    filterset_fields=['pedido']
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Pedido','escribir'):
@@ -1385,23 +1673,41 @@ class DetallePedidoVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-    def get_queryset(self):
-        perfil=obt_per(self.request.user)
-        if verificar_permiso(perfil,'Pedido','leer'):
-            if perfil.tipo=='S':
-                return DetallePedido.objects.all()
+    # Metodos de leer
+    def list(self,request):
+        try:
+            perfil=obt_per(self.request.user)
+            if verificar_permiso(perfil,self.permiso,'leer'):
+                instancia=perfil.instancia
+                # Filtrar los objetos
+                objetos=self.queryset if perfil.tipo=='S' else self.queryset.filter(perfil__instancia=instancia)
+                objetos=objetos.exclude(perfil__tipo__in=['A','S']) if perfil.tipo=='U' or perfil.tipo=='V' else objetos
+                # Paginacion
+                paginado=paginar(objetos,self.request.query_params.copy(),self.modelo)
+                # Data e Info de la paginacion
+                data=self.serializer_class(paginado['objetos'],many=True).data
+                # Respuesta
+                return Response({'objetos':data,'info':paginado['info']},status=status.HTTP_200_OK)
             else:
-                return DetallePedido.objects.filter(instancia=perfil.instancia)
-        else:
-            return DetallePedido.objects.none()
+                raise
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+    def retrieve(self, request, pk=None):
+        try:
+            return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
 # Proformas registrados en la instancia
 class ProformaVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='Proforma'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
-    serializer_class=ProformaSerializer
-    filter_backends=[DjangoFilterBackend]
-    filterset_fields=['cliente']
+    # Datos
     modelo=Proforma
+    queryset=modelo.objects.all()
+    serializer_class=ProformaSerializer
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Proforma','escribir'):
@@ -1447,22 +1753,41 @@ class ProformaVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-    def get_queryset(self):
-        perfil=obt_per(self.request.user)
-        if verificar_permiso(perfil,'Proforma','leer'):
-            if perfil.tipo=='S':
-                return Proforma.objects.all().order_by('-id')
+    # Metodos de leer
+    def list(self,request):
+        try:
+            perfil=obt_per(self.request.user)
+            if verificar_permiso(perfil,self.permiso,'leer'):
+                instancia=perfil.instancia
+                # Filtrar los objetos
+                objetos=self.queryset if perfil.tipo=='S' else self.queryset.filter(perfil__instancia=instancia)
+                objetos=objetos.exclude(perfil__tipo__in=['A','S']) if perfil.tipo=='U' or perfil.tipo=='V' else objetos
+                # Paginacion
+                paginado=paginar(objetos,self.request.query_params.copy(),self.modelo)
+                # Data e Info de la paginacion
+                data=self.serializer_class(paginado['objetos'],many=True).data
+                # Respuesta
+                return Response({'objetos':data,'info':paginado['info']},status=status.HTTP_200_OK)
             else:
-                return Proforma.objects.filter(instancia=perfil.instancia).order_by('-id')
-        else:
-            return Proforma.objects.none()
+                raise
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+    def retrieve(self, request, pk=None):
+        try:
+            return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
 # Detalles de las proformas de la instancia
 class DetalleProformaVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='Proforma'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
+    # Datos
+    modelo=DetalleProforma
+    queryset=modelo.objects.all()
     serializer_class=DetalleProformaSerializer
-    filter_backends=[DjangoFilterBackend]
-    filterset_fields=['proforma']
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Proforma','escribir'):
@@ -1506,21 +1831,41 @@ class DetalleProformaVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-    def get_queryset(self):
-        perfil=obt_per(self.request.user)
-        if verificar_permiso(perfil,'Proforma','leer'):
-            if perfil.tipo=='S':
-                return DetalleProforma.objects.all()
+    # Metodos de leer
+    def list(self,request):
+        try:
+            perfil=obt_per(self.request.user)
+            if verificar_permiso(perfil,self.permiso,'leer'):
+                instancia=perfil.instancia
+                # Filtrar los objetos
+                objetos=self.queryset if perfil.tipo=='S' else self.queryset.filter(perfil__instancia=instancia)
+                objetos=objetos.exclude(perfil__tipo__in=['A','S']) if perfil.tipo=='U' or perfil.tipo=='V' else objetos
+                # Paginacion
+                paginado=paginar(objetos,self.request.query_params.copy(),self.modelo)
+                # Data e Info de la paginacion
+                data=self.serializer_class(paginado['objetos'],many=True).data
+                # Respuesta
+                return Response({'objetos':data,'info':paginado['info']},status=status.HTTP_200_OK)
             else:
-                return DetalleProforma.objects.filter(instancia=perfil.instancia)
-        else:
-            return DetalleProforma.objects.none()
+                raise
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+    def retrieve(self, request, pk=None):
+        try:
+            return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
 # Notas de pago
 class NotaPagoVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='Notasdepago'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
-    serializer_class=NotaPagoMSerializer
+    # Datos
     modelo=NotasPago
+    queryset=modelo.objects.all()
+    serializer_class=NotaPagoMSerializer
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Notasdepago','escribir'):
@@ -1565,22 +1910,41 @@ class NotaPagoVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-    def get_queryset(self):
-        perfil=obt_per(self.request.user)
-        if verificar_permiso(perfil,'Notasdepago','leer'):
-            if perfil.tipo=='S':
-                return NotasPago.objects.all()
+    # Metodos de leer
+    def list(self,request):
+        try:
+            perfil=obt_per(self.request.user)
+            if verificar_permiso(perfil,self.permiso,'leer'):
+                instancia=perfil.instancia
+                # Filtrar los objetos
+                objetos=self.queryset if perfil.tipo=='S' else self.queryset.filter(perfil__instancia=instancia)
+                objetos=objetos.exclude(perfil__tipo__in=['A','S']) if perfil.tipo=='U' or perfil.tipo=='V' else objetos
+                # Paginacion
+                paginado=paginar(objetos,self.request.query_params.copy(),self.modelo)
+                # Data e Info de la paginacion
+                data=self.serializer_class(paginado['objetos'],many=True).data
+                # Respuesta
+                return Response({'objetos':data,'info':paginado['info']},status=status.HTTP_200_OK)
             else:
-                return NotasPago.objects.filter(instancia=perfil.instancia)
-        else:
-            return NotasPago.objects.none()
+                raise
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+    def retrieve(self, request, pk=None):
+        try:
+            return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
 # Detalles de las notas de pago de la instancia
 class DetalleNotaPagoVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='Notasdepago'
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
+    # Datos
+    modelo=DetalleNotasPago
+    queryset=modelo.objects.all()
     serializer_class=DetalleNotaPagoMSerializer
-    filter_backends=[DjangoFilterBackend]
-    filterset_fields=['notapago']
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Notasdepago','escribir'):
@@ -1621,15 +1985,30 @@ class DetalleNotaPagoVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_403_FORBIDDEN)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-    def get_queryset(self):
-        perfil=obt_per(self.request.user)
-        if verificar_permiso(perfil,'Notasdepago','leer'):
-            if perfil.tipo=='S':
-                return DetalleNotasPago.objects.all()
+    # Metodos de leer
+    def list(self,request):
+        try:
+            perfil=obt_per(self.request.user)
+            if verificar_permiso(perfil,self.permiso,'leer'):
+                instancia=perfil.instancia
+                # Filtrar los objetos
+                objetos=self.queryset if perfil.tipo=='S' else self.queryset.filter(perfil__instancia=instancia)
+                objetos=objetos.exclude(perfil__tipo__in=['A','S']) if perfil.tipo=='U' or perfil.tipo=='V' else objetos
+                # Paginacion
+                paginado=paginar(objetos,self.request.query_params.copy(),self.modelo)
+                # Data e Info de la paginacion
+                data=self.serializer_class(paginado['objetos'],many=True).data
+                # Respuesta
+                return Response({'objetos':data,'info':paginado['info']},status=status.HTTP_200_OK)
             else:
-                return DetalleNotasPago.objects.filter(instancia=perfil.instancia)
-        else:
-            return DetalleNotasPago.objects.none()
+                raise
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+    def retrieve(self, request, pk=None):
+        try:
+            return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
 # Facturas registradas en la instancia
 class FacturaVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
@@ -1748,6 +2127,7 @@ class ImpuestosFacturaVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
     serializer_class=ImpuestosFacturaSerializer
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Factura','escribir'):
@@ -1802,6 +2182,7 @@ class NumerologiaFacturaVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
     serializer_class=NumerologiaFacturaSerializer
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Factura','escribir'):
@@ -1856,6 +2237,7 @@ class NotaFacturaVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
     serializer_class=NotaFacturaSerializer
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Factura','escribir'):
@@ -1910,6 +2292,7 @@ class ProveedorVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
     serializer_class=ProveedorSerializer
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Proveedor','escribir'):
@@ -1964,6 +2347,7 @@ class CompraVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
     serializer_class=CompraSerializer
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Compra','escribir'):
@@ -2018,6 +2402,7 @@ class DetalleCompraVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
     serializer_class=DetalleCompraSerializer
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Compra','escribir'):
@@ -2070,6 +2455,7 @@ class NotaCompraVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
     serializer_class=NotaCompraSerializer
+    # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Compra','escribir'):
@@ -2318,6 +2704,7 @@ def password_reset_token_created(sender,instance,reset_password_token,*args,**kw
 @permission_classes([IsAuthenticated])
 def inventario(request):
     perfil=Perfil.objects.get(usuario=request.user)
+    modelo=Inventario
     if verificar_permiso(perfil,'Inventario','leer'):
         if perfil:
             inventarios=Inventario.objects.filter(instancia=perfil.instancia)
@@ -2325,7 +2712,8 @@ def inventario(request):
                 if o.disponible==0 and o.bloqueado==0:
                     inventarios=inventarios.exclude(id=o.id)
             inventarios=inventarios.values('almacen','almacen__nombre','producto','producto__nombre').annotate(sum_disponible=Sum('disponible'),sum_bloqueado=Sum('bloqueado'))
-            return Response(inventarios,status=status.HTTP_200_OK)
+            inventarios_p=paginar(inventarios,request.query_params.copy(),modelo)
+            return Response(inventarios_p,status=status.HTTP_200_OK)
     else:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
 # Funcion tipo vista para crear un nuevo usuario
