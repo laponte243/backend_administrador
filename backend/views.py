@@ -1422,7 +1422,7 @@ class ClienteVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Cliente','actualizar'):
             partial=True
             instance=self.get_object()
-            if instance.instancia.id!=perfil.instancia.id:
+            if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 serializer=self.get_serializer(instance,data=request.data,partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
