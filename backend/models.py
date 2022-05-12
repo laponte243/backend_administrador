@@ -294,7 +294,7 @@ class Proforma(models.Model):
     total=models.FloatField(null=False,default=0,blank=False,help_text="total de la proforma")
     fecha_proforma=models.DateTimeField(auto_now_add=True,help_text="fecha de generacion del pedido")
     numerologia=models.TextField(null=False,blank=True)
-    fecha_despacho=models.DateTimeField(null=True,blank=True)
+    fecha_despacho=models.DateTimeField(null=True,blank=True,default=None)
     # Utiles
     history=HistoricalRecords()
     def __str__(self):
@@ -392,11 +392,12 @@ class NotaFactura(Nota):
 class NotasPago(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
     cliente=models.ForeignKey(Cliente,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="cliente asociado")
+    vendedor=models.ForeignKey(Vendedor,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Vendedor asociado")
     total=models.FloatField(null=False,default=0,blank=False,help_text="total de la nota")
     comprobante=models.TextField(null=False,default=0,blank=False,help_text="comprobante del pago")
     descripcion=models.TextField(max_length=150,blank=True,null=True,help_text="pequeña descripcion")
     numerologia=models.TextField(null=False,blank=True)
-    # fecha=models.DateTimeField(auto_now_add=True)
+    fecha=models.DateTimeField(auto_now_add=True)
 class DetalleNotasPago(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
     notapago=models.ForeignKey(NotasPago,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="nota de pago asociada")

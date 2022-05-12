@@ -69,6 +69,7 @@ urlpatterns = [
     path('usuario-info/', views.usuario_info),
     path('obtener-comision/', views.comision),
     path('paginas-totales/', views.paginas_totales),
+    path('calcular-comision/', views.calcular_comisiones),
     path('ubop/', views.ubop),
     # Guardado de registros
     path('borrar-nota/', views.borrar_nota),

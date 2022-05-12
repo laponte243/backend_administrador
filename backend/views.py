@@ -1,6 +1,7 @@
 # Importes de Rest framework
 from os import stat_result
 import re
+from idna import IDNABidiError
 from rest_framework import permissions,viewsets,status
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.authentication import SessionAuthentication,BasicAuthentication,TokenAuthentication
@@ -1732,6 +1733,11 @@ class ProformaVS(viewsets.ModelViewSet):
         if verificar_permiso(perfil,'Proforma','actualizar'):
             partial=True
             instance=self.get_object()
+            try:
+                if request.data['fecha_despacho'] == True and instance.fecha_despacho == None:
+                    request.data['fecha_despacho'] = timezone.now()
+            except Exception as e:
+                print(e)
             if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 serializer=self.get_serializer(instance,data=request.data,partial=partial)
                 serializer.is_valid(raise_exception=True)
@@ -3923,3 +3929,43 @@ def subir_xls2(request):
         "crear": "data"
         }
     return JsonResponse(data)
+from django.utils.timesince import timesince
+@api_view(["POST", "GET"])
+@csrf_exempt
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def calcular_comisiones(request):
+    perfil=Perfil.objects.get(usuario=request.user)
+    data=request.data
+    try:
+        if verificar_permiso(perfil,'Comisiones','leer'):
+            ini=data['fecha_inicio'].split('/')
+            fin=data['fecha_fin'].split('/')
+            fecha_inicio=ini[0]+'-'+ini[1]+'-'+ini[2]
+            fecha_fin=fin[0]+'-'+fin[1]+'-'+fin[2]
+            vendedor=Vendedor.objects.get(id=1)
+            rango=[fecha_inicio,fecha_fin]
+            tardio=timezone.now()-timezone.timedelta(weeks=4)
+            notas=NotasPago.objects.filter(vendedor=vendedor,fecha__date__range=rango).exclude(fecha__date__lt=tardio)
+            comision= {'total':0, 'objetos':[], 'info':{}}
+            for n in notas:
+                nota={'clienteNombre':n.cliente.nombre,'vendedorNombre':n.vendedor.nombre,'total':n.total,'detalles':[]}
+                detalle=DetalleNotasPago.objects.filter(notapago=n)
+                for d in detalle:
+                    detalle = {'proforma':d.proforma.id,'saldo_anterior':d.saldo_anterior,'monto':d.monto}
+                    proforma=Proforma.objects.get(id=d.proforma.id)
+                    try:
+                        if int(proforma.precio_seleccionadoo) in [1,2,4]:
+                            comision['total'] += ((5*d.monto)/100)
+                        else:
+                            raise
+                    except:
+                        comision['total'] += ((3*d.monto)/100)
+                    nota['detalles'].append(detalle)
+                comision['objetos'].append(nota)
+            return Response(comision,status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+    except Exception as e:
+        print(e)
+        return Response('%s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)

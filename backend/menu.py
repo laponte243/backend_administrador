@@ -83,7 +83,7 @@ modelosMENU = {'modelos':[
     {
         "router": "Facturacion",
         "parent":"-Venta",
-        "orden":5
+        "orden":3
     },
     {
         "router": "Pedido",
@@ -98,6 +98,11 @@ modelosMENU = {'modelos':[
     {
         "router": "Factura",
         "parent":"Facturacion",
+        "orden":4
+    },
+    {
+        "router": "Despacho",
+        "parent":"-Venta",
         "orden":4
     },
     {
