@@ -4,6 +4,7 @@ import re
 from idna import IDNABidiError
 from rest_framework import permissions,viewsets,status
 from rest_framework.authtoken.serializers import AuthTokenSerializer
+from rest_framework.authtoken.models import Token
 from rest_framework.authentication import SessionAuthentication,BasicAuthentication,TokenAuthentication
 from rest_framework.decorators import api_view,permission_classes,authentication_classes
 from rest_framework.permissions import IsAdminUser,IsAuthenticated,AllowAny
@@ -3317,39 +3318,41 @@ def actualizar_proforma(request):
 # Funcion para generar Excel de precios de productos
 @api_view(["GET"])
 @csrf_exempt
-@authentication_classes([TokenAuthentication])
-@permission_classes([AllowAny])
 def vista_xls(request):
-    usuario=User.objects.get(auth_token=request.headers['Authorization'].split(' ')[1])
-    perfil=Perfil.objects.get(usuario=usuario)
-    if verificar_permiso(perfil,'Productos','leer'):
-        response=HttpResponse(content_type='application/ms-excel')
-        response['Content-Disposition']='attachment; filename="productos.xls"'
-        excel_wb=xlwt.Workbook(encoding='utf-8')
-        excel_ws=excel_wb.add_sheet('Styling Data') # ws es Work Sheet
-        i=0
-        for m in Marca.objects.all().values():
-            estilo=xlwt.easyxf('font: bold 1')
-            excel_ws.write(i,0,'Marca:',estilo)
-            excel_ws.write(i,1,m['nombre'])
-            i=i+1
-            excel_ws.write(i,0,'Codigo')
-            excel_ws.write(i,1,'Producto')
-            excel_ws.write(i,2,'Precio A')
-            excel_ws.write(i,3,'Precio B')
-            excel_ws.write(i,4,'Precio c')
-            i=i+1
-            for p in Producto.objects.filter(marca=m['id']).values():
-                excel_ws.write(i,0,p['sku'])
-                excel_ws.write(i,1,p['nombre'])
-                excel_ws.write(i,2,p['precio_1'])
-                excel_ws.write(i,3,p['precio_2'])
-                excel_ws.write(i,4,p['precio_3'])
+    params=request.query_params
+    token=params.get('token').split(' ')[1]
+    if Token.objects.get(key=token):
+        perfil=Perfil.objects.get(usuario=1)
+        if verificar_permiso(perfil,'Productos','leer'):
+            response=HttpResponse(content_type='application/ms-excel')
+            response['Content-Disposition']='attachment;filename="productos.xls"'
+            excel_wb=xlwt.Workbook(encoding='utf-8')
+            excel_ws=excel_wb.add_sheet('Styling Data') # ws es Work Sheet
+            i=0
+            for m in Marca.objects.all().values():
+                estilo=xlwt.easyxf('font: bold 1')
+                excel_ws.write(i,0,'Marca:',estilo)
+                excel_ws.write(i,1,m['nombre'])
                 i=i+1
-        excel_wb.save(response)
-        return response
+                excel_ws.write(i,0,'Codigo')
+                excel_ws.write(i,1,'Producto')
+                excel_ws.write(i,2,'Precio A')
+                excel_ws.write(i,3,'Precio B')
+                excel_ws.write(i,4,'Precio c')
+                i=i+1
+                for p in Producto.objects.filter(marca=m['id']).values():
+                    excel_ws.write(i,0,p['sku'])
+                    excel_ws.write(i,1,p['nombre'])
+                    excel_ws.write(i,2,p['precio_1'])
+                    excel_ws.write(i,3,p['precio_2'])
+                    excel_ws.write(i,4,p['precio_3'])
+                    i=i+1
+            excel_wb.save(response)
+            return response
+        else:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
     else:
-        return Response(status=status.HTTP_401_UNAUTHORIZED)
+        return Response(status=status.HTTP_403_FORBIDDEN)
 # Funcion tipo vista para guardar los pdfs de pedidos en el sistema operativo
 @api_view(["GET"])
 @csrf_exempt
