@@ -309,7 +309,7 @@ class DetalleProforma(models.Model):
     descripcion=models.TextField(max_length=150,blank=False,null=True,help_text="En caso de no tener un producto asociado se puede colocar una descripcion del rublo acá")
     precio=models.FloatField(null=False,default=0,blank=False,help_text="precio del producto o servicio a vender")
     total_producto=models.FloatField(null=False,default=0,blank=False,help_text="Precio por la cantidad del producto")
-    inventario=models.ForeignKey(Inventario,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Inventario asociado")
+    inventario=models.ForeignKey(Inventario,null=True,blank=False,on_delete=models.DO_NOTHING,help_text="Inventario asociado")
     history=HistoricalRecords()
     def __str__(self):
         return "Pedido: #%s,$%s (%s/%s)"%(self.proforma.id,self.total_producto,self.producto,self.lote)
@@ -318,7 +318,7 @@ class Factura(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
     proforma=models.ForeignKey(Proforma,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="proforma asociada")
     # Cliente
-    id_cliente=models.IntegerField(blank=False,null=False,help_text="Nombre del cliente en la venta")
+    id_cliente=models.IntegerField(blank=False,null=False,help_text="ID del cliente en la venta")
     nombre_cliente=models.TextField(max_length=150,blank=False,null=False,help_text="Nombre del cliente en la venta")
     identificador_fiscal=models.TextField(max_length=150,blank=False,null=False,help_text="Identificador fiscal del cliente en la venta")
     direccion_cliente=models.TextField(max_length=150,blank=False,null=False,help_text="telefono del cliente en la venta")
@@ -329,7 +329,7 @@ class Factura(models.Model):
     telefonocontacto_empresa=models.TextField(max_length=150,null=False,blank=False,help_text="empresa asociada")
     direccion_empresa=models.TextField(max_length=150,null=False,blank=False,help_text="empresa asociada")
     # Vendedor
-    id_vendedor=models.IntegerField(blank=False,null=False,help_text="Nombre del cliente en la venta")
+    id_vendedor=models.IntegerField(blank=False,null=False,help_text="Nombre del vendedor en la venta")
     nombre_vendedor=models.TextField(max_length=150,null=True,blank=False,help_text="vendedor asociado")
     telefono_vendedor=models.TextField(max_length=150,null=False,blank=False,help_text="empresa asociada")
     # Total
@@ -356,7 +356,7 @@ class DetalleFactura(models.Model):
     factura=models.ForeignKey(Factura,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Factura asociada")
     # Producto
     producto=models.ForeignKey(Producto,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Producto asociada")
-    inventario=models.ForeignKey(Inventario,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Inventario asociado")
+    inventario=models.ForeignKey(Inventario,null=True,blank=False,on_delete=models.DO_NOTHING,help_text="Inventario asociado")
     producto_fijo=models.TextField(max_length=150,null=False,blank=False,help_text="Producto asociado fijado")
     inventario_fijo=models.TextField(max_length=150,null=True,blank=False,help_text="Inventario asociado fijado")
     lote=models.TextField(max_length=150,blank=False,null=True,help_text="Lote del producto fijado")

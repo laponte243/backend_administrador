@@ -1,6 +1,7 @@
 # Importes de Rest framework
 from os import stat_result
 import re
+from tkinter import E
 from idna import IDNABidiError
 from rest_framework import permissions,viewsets,status
 from rest_framework.authtoken.serializers import AuthTokenSerializer
@@ -2800,10 +2801,16 @@ class FacturaPDF(PDFView):
         subtotal=float(factura.subtotal)
         total_costo=round(float(factura.total) * conversion.valor,2)
         value={'data':[]}
+        total_exento=0
+        total_imponible=0
         total_calculado=0
         # Ciclo para generar Json y data para el template
         for dato in DetalleFactura.objects.filter(factura=factura).values('producto','precio').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada')):
             productox=Producto.objects.get(id=dato['producto'])
+            if productox.exonerado == False:
+                total_imponible += dato['total']
+            else:
+                total_exento += dato['total']
             valuex={'datax':[]}
             total_cantidad=0
             precio_unidad=0.0
@@ -2832,16 +2839,31 @@ class FacturaPDF(PDFView):
             total_calculado += costo_total
             value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'mostrar':mostrar,'cantidad':total_cantidad,'precio':precio_unidad,'total_producto':round(costo_total,2)})
         subtotal_conversion=subtotal * conversion.valor
+        total_imponible = total_imponible * conversion.valor
+        total_exento = total_exento * conversion.valor
+        total_real=(total_imponible + total_exento)
+        iva=round(total_imponible*(16/100),2)
+        if total_imponible:
+            total_real=total_real+iva
         # Setear los valores al template
         context['productos']=value['data']
         if (float(total_calculado)==float(subtotal_conversion)):
             context['subtotal']=subtotal_conversion
-            context['total']=total_costo
+            context['imponible']=total_imponible
+            context['monto_exento']=total_exento
+            context['impuesto']=iva
+            context['total']=round(total_real,2)
         else:
+            context['subtotal']='Error'
+            context['imponible']='Error'
+            context['monto_exento']='Error'
             context['subtotal']='Error'
             context['total']='Error'
         context['factura']=factura
         return context
+        # Sumatoria de los no exentos (Imponible)
+        # Sumatoria de los exentos (Exonerados)
+        # 16% (IVA)
 # Generar pagina tipo PDF para notas de pago
 class NotaPagoPDF(PDFView):
     template_name='notapago.html'
@@ -3096,8 +3118,8 @@ def actualizar_pedido(request):
     if verificar_permiso(perfil,'Pedido','actualizar'):
         payload=json.loads(request.body)
         try:
-            pedido_id=Pedido.objects.get(id=payload['idpedido'])
-            detashepedido=DetallePedido.objects.filter(pedido=pedido_id)
+            pedido=Pedido.objects.get(id=payload['idpedido'])
+            detashepedido=DetallePedido.objects.filter(pedido=pedido)
             id_dpedidos=[]
             total_proforma=0.0
             for dpedidos in detashepedido:
@@ -3125,7 +3147,6 @@ def actualizar_pedido(request):
                 precio_unidad=float(precio_seleccionado) # Calcular el precio de cada producto
                 totalp=cantidad * float(precio_unidad) # Calcular el precio final segun la cantidad
                 total_proforma+=float(totalp)
-                pedido=pedido_id
                 nuevo_componente=DetallePedido(lote=i["lote"],total_producto=totalp,precio_seleccionado=precio_seleccionado,instancia_id=instancia.id,pedido=pedido,cantidada=cantidad,producto=producto,inventario=inventario)
                 nuevo_componente.save()
                 if inventario:
@@ -3133,8 +3154,8 @@ def actualizar_pedido(request):
                         inventario.disponible=int(inventario.disponible) - cantidad
                         inventario.bloqueado=int(inventario.bloqueado)+cantidad
                     inventario.save()
-            pedido_id.total=total_proforma
-            pedido_id.save()
+            pedido.total=total_proforma
+            pedido.save()
             DetallePedido.objects.filter(id__in=id_dpedidos).delete()
             return Response(status=status.HTTP_200_OK)
         except ObjectDoesNotExist as e:
@@ -3149,9 +3170,9 @@ def actualizar_pedido(request):
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def validar_pedido(request):
+    payload=request.data
     perfil=Perfil.objects.get(usuario=request.user)
     if verificar_permiso(perfil,'Pedido','actualizar'):
-        payload=json.loads(request.body)
         try:
             pedido=Pedido.objects.get(id=payload['idpedido'])
             detashepedido=DetallePedido.objects.filter(pedido=pedido)
@@ -3161,10 +3182,13 @@ def validar_pedido(request):
                 pedido.estatus='C'
                 pedido.save()
                 for deta in detashepedido:
-                    inventario=Inventario.objects.get(id=deta.inventario.id)
-                    inventario.bloqueado=inventario.bloqueado - deta.cantidada
-                    inventario.disponible=inventario.disponible+deta.cantidada
-                    inventario.save()
+                    try:
+                        inventario=Inventario.objects.get(id=deta.inventario.id)
+                        inventario.bloqueado=inventario.bloqueado-deta.cantidada
+                        inventario.disponible=inventario.disponible+deta.cantidada
+                        inventario.save()
+                    except:
+                        pass
                 return Response(status=status.HTTP_200_OK)
             else:
                 pedido.estatus='A'
@@ -3186,10 +3210,17 @@ def validar_pedido(request):
                 configuracion.save()
                 # Se crea el detalle de la proforma con la información asociada en el detalle pedido
                 for deta in detashepedido:
+                    inventario = None
+                    try:
+                        inventario=Inventario.objects.get(id=deta.inventario.id)
+                        inventario.bloqueado=inventario.bloqueado - deta.cantidada
+                        inventario.save()
+                    except:
+                        pass
                     nuevo_detalle=DetalleProforma(
                         proforma=nueva_proforma,
                         precio_seleccionado=deta.precio_seleccionado,
-                        inventario=deta.inventario,
+                        inventario=inventario,
                         cantidada=deta.cantidada,
                         lote=deta.lote,
                         producto=deta.producto,
@@ -3201,15 +3232,11 @@ def validar_pedido(request):
                     nueva_proforma.total += deta.total_producto
                     nueva_proforma.saldo_proforma=nueva_proforma.total
                     nueva_proforma.save()
-                    inventario=Inventario.objects.get(id=deta.inventario.id)
-                    inventario.bloqueado=inventario.bloqueado - deta.cantidada
-                    inventario.save()
-                print('holo')
                 return Response(status=status.HTTP_200_OK)
         except ObjectDoesNotExist as e:
             return Response({'error': str(e)},status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return Response({'error': e},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
 # Funcion tipo vista para generar facturas
@@ -3218,9 +3245,9 @@ def validar_pedido(request):
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def generar_factura(request):
+    payload=request.data
     perfil=Perfil.objects.get(usuario=request.user)
     if verificar_permiso(perfil,'Factura','escribir'):
-        payload=json.loads(request.body)
         try:
             proforma=Proforma.objects.get(id=payload['idproforma'])
             detasheproforma=DetalleProforma.objects.filter(proforma=proforma)
@@ -3244,28 +3271,48 @@ def generar_factura(request):
             nueva_factura.save()
             configuracion.valor+=1
             configuracion.save()
+            subtotal=0
+            imponible=0
+            exento=0
+            impuesto=16
+            total_real=0
             for deta in detasheproforma:
-                    nuevo_detalle=DetalleFactura(
-                        factura=nueva_factura,
-                        inventario=deta.inventario,
-                        inventario_fijo=deta.inventario,
-                        cantidada=deta.cantidada,
-                        lote=deta.lote,
-                        fecha_vencimiento=deta.inventario.fecha_vencimiento,
-                        producto=deta.producto,
-                        producto_fijo=deta.producto.nombre,
-                        precio=deta.precio_seleccionado,
-                        total_producto=deta.total_producto,
-                        instancia=instancia)
-                    nuevo_detalle.save()
-                    nueva_factura.subtotal += float( deta.total_producto)
-                    nueva_factura.total += float( deta.total_producto)+(float( deta.total_producto) * (float(nueva_factura.impuesto) / 100))
-                    nueva_factura.save()
+                inventario = None
+                try:
+                    inventario=deta.inventario if deta.inventario else None
+                    inventario_id=inventario.id if inventario else None
+                    vencimiento=inventario.fecha_vencimiento if inventario else None
+                except:
+                    pass
+                nuevo_detalle=DetalleFactura(
+                    factura=nueva_factura,
+                    inventario=inventario,
+                    inventario_fijo=inventario_id,
+                    cantidada=deta.cantidada,
+                    lote=deta.lote,
+                    fecha_vencimiento=vencimiento,
+                    producto=deta.producto,
+                    producto_fijo=deta.producto.nombre,
+                    precio=deta.precio_seleccionado,
+                    total_producto=deta.total_producto,
+                    instancia=instancia)
+                nuevo_detalle.save()
+                if nuevo_detalle.producto.exonerado == False:
+                    imponible += nuevo_detalle.total_producto
+                else:
+                    exento += nuevo_detalle.total_producto
+            subtotal=imponible + exento
+            total_real=subtotal
+            if imponible:
+                total_real=total_real+(imponible*(impuesto/100))
+            nueva_factura.subtotal = subtotal
+            nueva_factura.total = total_real
+            nueva_factura.save()
             return Response(status=status.HTTP_200_OK)
         except ObjectDoesNotExist as e:
             return Response({'error': str(e)},status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return Response({'error': e},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': (e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
 # Funcion tipo vista para actualizar proformas 
@@ -3452,7 +3499,7 @@ def ubop(request):
                 lista.append(m.id)
         permisos=MenuInstancia.objects.filter(id__in=lista)
         for p in permisos:
-            Permiso.objects.create(instancia=perfil.instancia,menuinstancia=p,perfil=perfil,leer=True,escribir=True,borrar=True,actualizar=True)
+            permiso,create = Permiso.objects.get_or_create(instancia=perfil.instancia,menuinstancia=p,perfil=perfil,defaults={'leer':True,'escribir':True,'borrar':True,'actualizar':True})
         return Response('Hecho')
     except Exception as e:
         return Response('%s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -3564,6 +3611,142 @@ def comision(request):
             return Response('Error, %s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
+# Funcion para añadir clientes y vendedores
+@api_view(["GET"])
+@csrf_exempt
+def subir_xls(request):
+    df = pd.read_excel("clientes.xls", sheet_name="hoja1")
+    df = df.reset_index()
+    print("Inicio de credor de clientes")
+    for index, row in df.iterrows():
+        instancia = Instancia.objects.get(id=1)
+        empresa = Empresa.objects.get(id=row['EMPRESA'])
+        vendedor, created = Vendedor.objects.get_or_create(codigo=row['VENDEDOR'], defaults={'instancia':instancia,'nombre': row['NOMBRE_VENDEDOR']})
+        vendedor.save()
+        nuevo_cliente, created = Cliente.objects.get_or_create(
+            nombre=row['NOMBRE'],
+            defaults={
+                'instancia':instancia,
+                'codigo':row['CODIGO'],
+                'empresa': empresa,
+                'vendedor':vendedor,
+                'identificador':row['RIF'],
+                'ubicacion':row['DIRECCION'],
+                'telefono':row['TELEFONO'],
+                'mail':row['EMAIL'],
+                'credito':row['CREDITO'],
+                'activo':row['ACTIVO']
+            }
+        )
+        if(created):
+            nuevo_cliente.save()
+            print(nuevo_cliente)
+    print("Clientes guardados")
+    return Response('Carga de clientes terminada')
+# Funcion para añadir productos
+@api_view(["POST"])
+@csrf_exempt
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def subir_archivo(request):
+    data=request.data
+    archivo=data['archivo']
+    df = pd.read_excel(archivo.temporary_file_path(), sheet_name="Hoja1")
+    print(df)
+    try:
+        if data['tipo'] == 'xls' and data['archivo']:
+            return Response(df) # subir_xls2()
+        else:
+            return Response('No se subio el archivo')
+    except Exception as e:
+        print(e)
+        return Response(df)
+@api_view(["GET"])
+@csrf_exempt
+def subir_xls2():
+    print("Inicio de proceso")
+    df = pd.read_excel("productos.xls", sheet_name="Hoja1")
+    df = df.reset_index()  # make sure indexes pair with number of rows
+    print("Inicio creador de productos")
+    for index, row in df.iterrows():
+        if row['CODIGO']:
+            instancia = Instancia.objects.get(id=1)
+            marca, created = Marca.objects.get_or_create(nombre=row['MARCA'], defaults={'instancia':instancia,'nombre': row['MARCA']})
+            marca.save()
+            exonerado = True
+            venta_sin_inventario= True
+            lote= False
+            if(row['EXCENTO'] != 'SI'):
+                exonerado = False
+            if(row['VENTA_SIN_INVENTARIO'] == 'NO'):
+                venta_sin_inventario = False
+            if(row['LOTE'] == 'SI'):
+                lote: True
+            nuevo_producto, created = Producto.objects.get_or_create(
+                                marca=marca,
+                                nombre=row['DESCRIPCIÓN'],
+                                defaults={
+                                'instancia':instancia,
+                                'nombre':row['DESCRIPCIÓN'],
+                                'sku':row['CODIGO'],
+                                'costo':row['Costo'],
+                                'precio_1':row['Precio1'],
+                                'precio_2':row['Precio2'],
+                                'precio_3':row['Precio3'],
+                                'precio_4':row['Precio4'],
+                                'exonerado':exonerado,
+                                'servicio': False,
+                                'menejo_inventario': True,
+                                'venta_sin_inventario':True,
+                                'lote': lote,
+                                'activo': True
+                                }
+                                )
+            if(created):
+                nuevo_producto.save()
+                print(nuevo_producto)
+    print("Fin creador de productos")
+    return Response('Carga de productos terminada')
+# Funcion tipo vista para obtener la comisioens de un vendedor
+@api_view(["POST", "GET"])
+@csrf_exempt
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def calcular_comisiones(request):
+    perfil=Perfil.objects.get(usuario=request.user)
+    data=request.data
+    try:
+        if verificar_permiso(perfil,'Comisiones','leer'):
+            ini=data['fecha_inicio'].split('/')
+            fin=data['fecha_fin'].split('/')
+            fecha_inicio=ini[0]+'-'+ini[1]+'-'+ini[2]
+            fecha_fin=fin[0]+'-'+fin[1]+'-'+fin[2]
+            vendedor=Vendedor.objects.get(id=1)
+            rango=[fecha_inicio,fecha_fin]
+            tardio=timezone.now()-timezone.timedelta(weeks=4)
+            notas=NotasPago.objects.filter(vendedor=vendedor,fecha__date__range=rango).exclude(fecha__date__lt=tardio)
+            comision= {'total':0, 'objetos':[], 'info':{}}
+            for n in notas:
+                nota={'clienteNombre':n.cliente.nombre,'vendedorNombre':n.vendedor.nombre,'total':n.total,'detalles':[]}
+                detalle=DetalleNotasPago.objects.filter(notapago=n)
+                for d in detalle:
+                    detalle = {'proforma':d.proforma.id,'saldo_anterior':d.saldo_anterior,'monto':d.monto}
+                    proforma=Proforma.objects.get(id=d.proforma.id)
+                    try:
+                        if int(proforma.precio_seleccionadoo) in [1,2,4]:
+                            comision['total'] += ((5*d.monto)/100)
+                        else:
+                            raise
+                    except:
+                        comision['total'] += ((3*d.monto)/100)
+                    nota['detalles'].append(detalle)
+                comision['objetos'].append(nota)
+            return Response(comision,status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+    except Exception as e:
+        print(e)
+        return Response('%s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # Funcion para obtener las instancias en las acciones
 def obtener_instancia(perfil,instancia=None):
     return instancia if perfil.tipo=='S' and instancia else perfil.instancia.id
@@ -3819,21 +4002,6 @@ def paginas_totales(modelo,cantidad,filtros):
             raise
     except Exception as e:
         return {'error':[{'code':406,'valor':'%s'%(e)}]}
-@api_view(["GET"])
-@csrf_exempt
-@authentication_classes([BasicAuthentication])
-@permission_classes([IsAuthenticated])
-def c(r):
-    perfil=Perfil.objects.get(usuario=r.user)
-    # m=Marca.objects.all().first()
-    # for p in Producto.objects.all():
-    #     p.marca=m
-    #     p.save()
-    # if Producto.objects.all().count() < 1000:
-    #     for i in range(1500):
-    #         n='Prueba %s'%(i)
-    #         Producto.objects.create(nombre=n,instancia=perfil.instancia,precio_1=1,precio_2=2,sku='Prueba')
-    return Response('Hey')
 # Obtener correlativo
 def verificar_numerologia(datos,modelo):
     if modelo == Pedido:
@@ -3856,125 +4024,3 @@ def verificar_numerologia(datos,modelo):
     instancia=Instancia.objects.get(id=datos['instancia'])
     configuracion, creado = ConfiguracionPapeleria.objects.get_or_create(instancia=instancia,empresa=empresa,tipo=tipo,defaults={'valor':1})
     return configuracion
-
-@api_view(["GET"])
-@csrf_exempt
-def subir_xls(request):
-    df = pd.read_excel("clientes.xls", sheet_name="hoja1")
-    df = df.reset_index()
-    print("inicio carga de data")
-    for index, row in df.iterrows():
-        instancia = Instancia.objects.get(id=1)
-        empresa = Empresa.objects.get(id=row['EMPRESA'])
-        vendedor, created = Vendedor.objects.get_or_create(codigo=row['VENDEDOR'], defaults={'instancia':instancia,'nombre': row['NOMBRE_VENDEDOR']})
-        vendedor.save()
-        nuevo_cliente, created = Cliente.objects.get_or_create(
-            nombre=row['NOMBRE'],
-            defaults={
-                'instancia':instancia,
-                'codigo':row['CODIGO'],
-                'empresa': empresa,
-                'vendedor':vendedor,
-                'identificador':row['RIF'],
-                'ubicacion':row['DIRECCION'],
-                'telefono':row['TELEFONO'],
-                'mail':row['EMAIL'],
-                'credito':row['CREDITO'],
-                'activo':row['ACTIVO']
-            }
-        )
-        if(created):
-            nuevo_cliente.save()
-            print(nuevo_cliente)
-    print("fin carga de data")
-    data = {
-        "crear": "data"
-        }
-    return JsonResponse(data)
-
-@api_view(["GET"])
-@csrf_exempt
-def subir_xls2(request):
-    print("Inicio de proceso")
-    df = pd.read_excel("productos.xls", sheet_name="Hoja1")
-    df = df.reset_index()  # make sure indexes pair with number of rows
-    print("inico carga de data")
-    for index, row in df.iterrows():
-        instancia = Instancia.objects.get(id=2)
-        marca, created = Marca.objects.get_or_create(nombre=row['MARCA'], defaults={'instancia':instancia,'nombre': row['MARCA']})
-        marca.save()
-        exonerado = True
-        venta_sin_inventario= True
-        lote= False
-        if(row['IVA'] == 'SI'):
-            exonerado = False
-        if(row['VENTA_SIN_INVENTARIO'] == 'NO'):
-            venta_sin_inventario = False
-        if(row['LOTE'] == 'SI'):
-            lote: True
-        nuevo_producto, created = Producto.objects.get_or_create(
-                            marca=marca,
-                            nombre=row['DESCRIPCIÓN'],
-                            defaults={
-                            'instancia':instancia,
-                            'nombre':row['DESCRIPCIÓN'],
-                            'sku':row['CODIGO'],
-                            'costo':row['Costo'],
-                            'precio_1':row['Precio1'],
-                            'precio_2':row['Precio2'],
-                            'exonerado':exonerado,
-                            'servicio': False,
-                            'menejo_inventario': True,
-                            'venta_sin_inventario':True,
-                            'lote': lote,
-                            'activo': True
-                            }
-                            )
-        if(created):
-            nuevo_producto.save()
-            print(nuevo_producto)
-    print("fin carga de data")
-    data = {
-        "crear": "data"
-        }
-    return JsonResponse(data)
-from django.utils.timesince import timesince
-@api_view(["POST", "GET"])
-@csrf_exempt
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def calcular_comisiones(request):
-    perfil=Perfil.objects.get(usuario=request.user)
-    data=request.data
-    try:
-        if verificar_permiso(perfil,'Comisiones','leer'):
-            ini=data['fecha_inicio'].split('/')
-            fin=data['fecha_fin'].split('/')
-            fecha_inicio=ini[0]+'-'+ini[1]+'-'+ini[2]
-            fecha_fin=fin[0]+'-'+fin[1]+'-'+fin[2]
-            vendedor=Vendedor.objects.get(id=1)
-            rango=[fecha_inicio,fecha_fin]
-            tardio=timezone.now()-timezone.timedelta(weeks=4)
-            notas=NotasPago.objects.filter(vendedor=vendedor,fecha__date__range=rango).exclude(fecha__date__lt=tardio)
-            comision= {'total':0, 'objetos':[], 'info':{}}
-            for n in notas:
-                nota={'clienteNombre':n.cliente.nombre,'vendedorNombre':n.vendedor.nombre,'total':n.total,'detalles':[]}
-                detalle=DetalleNotasPago.objects.filter(notapago=n)
-                for d in detalle:
-                    detalle = {'proforma':d.proforma.id,'saldo_anterior':d.saldo_anterior,'monto':d.monto}
-                    proforma=Proforma.objects.get(id=d.proforma.id)
-                    try:
-                        if int(proforma.precio_seleccionadoo) in [1,2,4]:
-                            comision['total'] += ((5*d.monto)/100)
-                        else:
-                            raise
-                    except:
-                        comision['total'] += ((3*d.monto)/100)
-                    nota['detalles'].append(detalle)
-                comision['objetos'].append(nota)
-            return Response(comision,status=status.HTTP_200_OK)
-        else:
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
-    except Exception as e:
-        print(e)
-        return Response('%s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)

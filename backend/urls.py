@@ -84,8 +84,10 @@ urlpatterns = [
     path('pdf-factura/<int:id_factura>', views.FacturaPDF.as_view()),
     path('pdf-nota-pago/<int:id_notapago>', views.NotaPagoPDF.as_view()),
     path('pdf-proforma-guardar/', views.guardar_pdf),
-    # Excel
+    # Excels
     path('xls-generador/', views.vista_xls),
+    path('subir-xls/', views.subir_xls),
+    path('subir-archivo/', views.subir_archivo),
     # Login
     path('auth/login/', LoginView.as_view(), name='knox_login'),
     path('auth/logout/', knox_views.LogoutView.as_view(), name='knox_logout'),

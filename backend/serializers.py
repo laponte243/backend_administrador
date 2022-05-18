@@ -298,6 +298,10 @@ class PedidoSerializer(serializers.ModelSerializer):
     time =  serializers.SerializerMethodField('Loadtime')
     def Loadtime(self, obj):
        return obj.fecha_pedido.time()
+    pre_num =  serializers.SerializerMethodField('ObtenerNumero')
+    def ObtenerNumero(self, obj):
+        correlativo=ConfiguracionPapeleria.objects.get(empresa=obj.empresa,tipo="P")
+        return "%s-%s"%(correlativo.prefijo,obj.numerologia)
 class DetallePedidoSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetallePedido
@@ -348,7 +352,10 @@ class DetalleProformaSerializer(serializers.ModelSerializer):
        return obj.producto.nombre 
     almacen = serializers.SerializerMethodField('LoadNombreAlmacen')
     def LoadNombreAlmacen(self, obj):
-       return obj.inventario.almacen.id
+        inventario = obj.inventario
+        if inventario:
+            return inventario.almacen.id
+        return None
 class FacturaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Factura
@@ -356,6 +363,10 @@ class FacturaSerializer(serializers.ModelSerializer):
     date =  serializers.SerializerMethodField('LoadDate')
     def LoadDate(self, obj):
        return obj.fecha_factura.date()
+    pre_num =  serializers.SerializerMethodField('ObtenerNumero')
+    def ObtenerNumero(self, obj):
+        correlativo=ConfiguracionPapeleria.objects.get(empresa=obj.proforma.empresa,tipo="F")
+        return "%s-%s"%(correlativo.prefijo,obj.numerologia)
 class DetalleFacturaSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetalleFactura
@@ -365,7 +376,10 @@ class DetalleFacturaSerializer(serializers.ModelSerializer):
        return obj.producto.nombre
     almacen = serializers.SerializerMethodField('LoadNombreAlmacen')
     def LoadNombreAlmacen(self, obj):
-       return obj.inventario.almacen.id
+        inventario = obj.inventario
+        if inventario:
+            return inventario.almacen.id
+        return None
 class ImpuestosFacturaSerializer(serializers.ModelSerializer):
     class Meta:
         model = ImpuestosFactura
