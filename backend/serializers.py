@@ -205,7 +205,9 @@ class MovimientoInventarioSerializer(serializers.ModelSerializer):
         return obj.almacen.nombre
     date =  serializers.SerializerMethodField('LoadDate')
     def LoadDate(self, obj):
-        return obj.fecha_vencimiento.date() if obj.fecha_vencimiento else None
+        if obj.fecha_vencimiento:
+            return obj.fecha_vencimiento.date()
+        return None
 class AlmacenSerializer(serializers.ModelSerializer):
     class Meta:
         model = Almacen
@@ -237,6 +239,9 @@ class VendedorSerializer(serializers.ModelSerializer):
     nombreInstancia = serializers.SerializerMethodField('LoadNombreInstancia')
     def LoadNombreInstancia(self, obj):
         return obj.instancia.nombre
+    code_nomb = serializers.SerializerMethodField('LoadNumeroNombre')
+    def LoadNumeroNombre(self, obj):
+        return "%s - %s"%(obj.codigo,obj.nombre)
 
 class ClienteSerializer(serializers.ModelSerializer):
     class Meta:
@@ -302,23 +307,38 @@ class DetallePedidoSerializer(serializers.ModelSerializer):
        return obj.producto.nombre 
     almacen = serializers.SerializerMethodField('LoadNombreAlmacen')
     def LoadNombreAlmacen(self, obj):
-       return obj.inventario.almacen.id
+        inventario = obj.inventario
+        if inventario:
+            return inventario.almacen.id
+        return None
 class ProformaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Proforma
         fields = '__all__'
     nombreEmpresa = serializers.SerializerMethodField('LoadNombreEmpresa')
     def LoadNombreEmpresa(self, obj):
-       return obj.empresa.nombre 
+        return obj.empresa.nombre 
     nombreCliente = serializers.SerializerMethodField('LoadNombreCliente')
     def LoadNombreCliente(self, obj):
-       return obj.cliente.nombre 
+        return obj.cliente.nombre
     nombreVendedor = serializers.SerializerMethodField('LoadNombreVendedor')
     def LoadNombreVendedor(self, obj):
-       return obj.vendedor.nombre 
+        return obj.vendedor.nombre
+    codigoVendedor = serializers.SerializerMethodField('LoadNumeroVendedor')
+    def LoadNumeroVendedor(self, obj):
+        return obj.vendedor.codigo
     date =  serializers.SerializerMethodField('LoadDate')
     def LoadDate(self, obj):
-       return obj.fecha_proforma.date()
+        return obj.fecha_proforma.date()
+    date_despacho = serializers.SerializerMethodField('LoadDateDespacho')
+    def LoadDateDespacho(self, obj):
+        if obj.fecha_despacho:
+            return obj.fecha_despacho.date()
+        return ''
+    pre_num =  serializers.SerializerMethodField('ObtenerNumero')
+    def ObtenerNumero(self, obj):
+        correlativo=ConfiguracionPapeleria.objects.get(empresa=obj.empresa,tipo="E")
+        return "%s-%s"%(correlativo.prefijo,obj.numerologia)
 class DetalleProformaSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetalleProforma

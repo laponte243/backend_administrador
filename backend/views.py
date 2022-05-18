@@ -3103,8 +3103,11 @@ def actualizar_pedido(request):
             for dpedidos in detashepedido:
                 id_dpedidos.append(dpedidos.id)
             for i in payload['data']:
-                inventario=Inventario.objects.get(id=i['inventario'])
-                if i['id']!=None:
+                if i['inventario'] == 0:
+                    inventario=None
+                else:
+                    inventario=Inventario.objects.get(id=i['inventario'])
+                if i['id']!=None and inventario:
                     indexpedido=None
                     for index,item in enumerate(detashepedido):
                         if item.id==i['id']:
@@ -3125,10 +3128,11 @@ def actualizar_pedido(request):
                 pedido=pedido_id
                 nuevo_componente=DetallePedido(lote=i["lote"],total_producto=totalp,precio_seleccionado=precio_seleccionado,instancia_id=instancia.id,pedido=pedido,cantidada=cantidad,producto=producto,inventario=inventario)
                 nuevo_componente.save()
-                if i['id']==None:
-                    inventario.disponible=int(inventario.disponible) - cantidad
-                    inventario.bloqueado=int(inventario.bloqueado)+cantidad
-                inventario.save()
+                if inventario:
+                    if i['id']==None:
+                        inventario.disponible=int(inventario.disponible) - cantidad
+                        inventario.bloqueado=int(inventario.bloqueado)+cantidad
+                    inventario.save()
             pedido_id.total=total_proforma
             pedido_id.save()
             DetallePedido.objects.filter(id__in=id_dpedidos).delete()
@@ -3336,9 +3340,10 @@ def vista_xls(request):
                 i=i+1
                 excel_ws.write(i,0,'Codigo')
                 excel_ws.write(i,1,'Producto')
-                excel_ws.write(i,2,'Precio A')
-                excel_ws.write(i,3,'Precio B')
-                excel_ws.write(i,4,'Precio c')
+                excel_ws.write(i,2,'Precio 1')
+                excel_ws.write(i,3,'Precio 2')
+                excel_ws.write(i,4,'Precio 3')
+                excel_ws.write(i,4,'Precio 4')
                 i=i+1
                 for p in Producto.objects.filter(marca=m['id']).values():
                     excel_ws.write(i,0,p['sku'])
@@ -3346,6 +3351,7 @@ def vista_xls(request):
                     excel_ws.write(i,2,p['precio_1'])
                     excel_ws.write(i,3,p['precio_2'])
                     excel_ws.write(i,4,p['precio_3'])
+                    excel_ws.write(i,4,p['precio_4'])
                     i=i+1
             excel_wb.save(response)
             return response

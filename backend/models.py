@@ -273,7 +273,7 @@ class DetallePedido(models.Model):
     lote=models.TextField(max_length=150,blank=False,null=True,help_text="lote del producto")
     cantidada=models.FloatField(null=False,default=0,blank=False,help_text="Cantidad vendida")
     total_producto=models.FloatField(null=False,default=0,blank=False,help_text="total por producto")
-    inventario=models.ForeignKey(Inventario,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Inventario asociado")
+    inventario=models.ForeignKey(Inventario,null=True,blank=False,on_delete=models.DO_NOTHING,help_text="Inventario asociado")
     history=HistoricalRecords()
     def __str__(self):
         return "Pedido: #%s,$%s (%s/%s)"%(self.pedido.id,self.total_producto,self.producto,self.lote)
@@ -393,9 +393,10 @@ class NotasPago(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
     cliente=models.ForeignKey(Cliente,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="cliente asociado")
     vendedor=models.ForeignKey(Vendedor,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Vendedor asociado")
-    total=models.FloatField(null=False,default=0,blank=False,help_text="total de la nota")
-    comprobante=models.TextField(null=False,default=0,blank=False,help_text="comprobante del pago")
-    descripcion=models.TextField(max_length=150,blank=True,null=True,help_text="pequeña descripcion")
+    total=models.FloatField(null=False,default=0,blank=False,help_text="Total de la nota")
+    comprobante=models.TextField(null=False,default=0,blank=False,help_text="Comprobante de la nota de pago")
+    fecha_comprobante=models.DateTimeField(null=False,blank=False,help_text="Fecha del comprobante")
+    descripcion=models.TextField(max_length=150,blank=True,null=True,help_text="Pequeña descripcion")
     numerologia=models.TextField(null=False,blank=True)
     fecha=models.DateTimeField(auto_now_add=True)
 class DetalleNotasPago(models.Model):
