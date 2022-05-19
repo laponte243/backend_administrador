@@ -67,9 +67,8 @@ urlpatterns = [
     path('permisos-disponibles/', views.permisos_disponibles),
     path('perfiles-y-usuarios/', views.perfiles_usuarios),
     path('usuario-info/', views.usuario_info),
-    path('obtener-comision/', views.comision),
     path('paginas-totales/', views.paginas_totales),
-    path('calcular-comision/', views.calcular_comisiones),
+    path('calcular-comision/', views.comision),
     path('ubop/', views.ubop),
     # Guardado de registros
     path('borrar-nota/', views.borrar_nota),
@@ -86,8 +85,7 @@ urlpatterns = [
     path('pdf-proforma-guardar/', views.guardar_pdf),
     # Excels
     path('xls-generador/', views.vista_xls),
-    path('subir-xls/', views.subir_xls),
-    path('subir-archivo/', views.subir_archivo),
+    path('subir-archivo/', views.subir_xls2),
     # Login
     path('auth/login/', LoginView.as_view(), name='knox_login'),
     path('auth/logout/', knox_views.LogoutView.as_view(), name='knox_logout'),

@@ -35,11 +35,6 @@ class MenuInstancia(models.Model):
     parent=models.ForeignKey('self',null=True,blank=False,on_delete=models.DO_NOTHING,help_text="Si el menu es hijo de otro")
     orden=models.IntegerField(null=False,default=0)
     history=HistoricalRecords()
-    def __str__(self):
-        if (self.parent == None):
-            return '[%s] / %s'%(self.instancia.nombre,self.menu.router)
-        else:
-            return '[%s] / %s,%s'%(self.instancia.nombre,self.menu.parent.router,self.menu.router)
 class Perfil(models.Model):
     TIPO=(('S','Super'),('A','Admin'),('U','Usuario'),('V','Vendedor'))
     instancia=models.ForeignKey(Instancia,null=True,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
@@ -221,7 +216,7 @@ class Vendedor(models.Model):
     identificador=models.TextField(max_length=150,blank=True,help_text="nombre completo del vendedor")
     telefono=models.TextField(max_length=150,blank=True,help_text="telefono del vendedor")
     correo=models.TextField(max_length=150,blank=True,help_text="correo asociado al vendedor")
-    codigo=models.TextField(max_length=150,null=False,blank=False,help_text="codigo del vendedor")
+    codigo=models.IntegerField(null=False,blank=False,help_text="codigo del vendedor")
     activo=models.BooleanField(default=False,help_text="Esta activo?")
     history=HistoricalRecords()
     def __str__(self):
@@ -346,7 +341,8 @@ class Factura(models.Model):
     nota_entrega=models.TextField(default=False,help_text="fecha de generacion una nota de entrega?")
     # Utiles
     fecha_factura=models.DateTimeField(auto_now_add=True,help_text="fecha de generacion del pedido")
-    numerologia=models.TextField(null=False,blank=True)
+    numerologia=models.TextField(null=False,blank=False)
+    control=models.TextField(null=False,blank=False)
     history=HistoricalRecords()
     def __str__(self):
         return "Factura: #%s,$%s (%s/%s)"%(self.proforma.id,self.total,self.nombre_cliente,self.nombre_empresa)

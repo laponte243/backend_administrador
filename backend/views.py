@@ -208,7 +208,7 @@ class MenuVS(viewsets.ModelViewSet):
     # Permisos
     permiso='Usuarios_y_permisos'
     permission_classes=[IsAuthenticated]
-    authentication_classes=[TokenAuthentication]
+    authentication_classes=[BasicAuthentication]
     # Datos
     modelo=Menu
     # queryset=modelo.objects.all()
@@ -277,7 +277,7 @@ class MenuInstanciaVS(viewsets.ModelViewSet):
     # Permisos
     permiso='Usuarios_y_permisos'
     permission_classes=[IsAuthenticated]
-    authentication_classes=[TokenAuthentication]
+    authentication_classes=[BasicAuthentication]
     # Datos
     modelo=MenuInstancia
     # queryset=modelo.objects.all()
@@ -1878,6 +1878,8 @@ class NotaPagoVS(viewsets.ModelViewSet):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Notasdepago','escribir'):
             datos=request.data
+            datos['vendedor'] = Cliente.objects.get(id=datos['cliente']).vendedor.id
+            datos['empresa'] = Cliente.objects.get(id=datos['cliente']).empresa.id
             try:
                 datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
             except:
@@ -2037,13 +2039,17 @@ class FacturaVS(viewsets.ModelViewSet):
             except:
                 datos['instancia']=perfil.instancia.id
             configuracion=verificar_numerologia(datos,self.modelo)
+            configuracion_control=verificar_numerologia(datos,'NotaControl')
             datos['numerologia']=configuracion.valor
+            datos['control']=configuracion_control.valor
             serializer=self.get_serializer(data=datos)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
             headers=self.get_success_headers(serializer.data)
             configuracion.valor+=1
+            configuracion_control.valor+=1
             configuracion.save()
+            configuracion_control.save()
             return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
@@ -2698,11 +2704,9 @@ class PedidoPDF(PDFView):
     template_name='pedido.html'
     allow_force_html=True
     def get_context_data(self,*args,**kwargs):
-        try:
-            perfil=Perfil.objects.get(usuario=self.request.user)
-        except Exception as e:
-            self.template_name='forbidden.html'
-            return {}
+        # params=request.query_params
+        # token=params.get('token').split(' ')[1]
+        # if Token.objects.get(key=token):
         # Definicion de contenido extra para el template
         context=super().get_context_data(*args,**kwargs)
         pedido=Pedido.objects.get(id=kwargs['id_pedido'])
@@ -2740,6 +2744,9 @@ class ProformaPDF(PDFView):
     template_name='proforma.html'
     allow_force_html=True
     def get_context_data(self,*args,**kwargs):
+        # params=request.query_params
+        # token=params.get('token').split(' ')[1]
+        # if Token.objects.get(key=token):
         # Definicion de contenido extra para el template
         context=super().get_context_data(*args,**kwargs)
         proforma=Proforma.objects.get(id=kwargs['id_proforma'])
@@ -2779,10 +2786,7 @@ class ProformaPDF(PDFView):
             value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'mostrar':mostrar,'cantidad':total_cantidad,'precio':precio_unidad,'total_producto':round(costo_total,2)})
         # Setear los valores al template
         context['productos']=value['data']
-        if (float(total_calculado)==float(total_costo)):
-            context['total']=total_calculado
-        else:
-            context['total']='Error'
+        context['total']=total_calculado
         context['proforma']=proforma
         return context
 # Generar pagina tipo PDF para facturas
@@ -2790,6 +2794,9 @@ class FacturaPDF(PDFView):
     template_name='factura.html'
     allow_force_html=True
     def get_context_data(self,*args,**kwargs):
+        # params=request.query_params
+        # token=params.get('token').split(' ')[1]
+        # if Token.objects.get(key=token):
         # Definicion de contenido extra para el template
         conversion=None
         try:
@@ -2837,7 +2844,7 @@ class FacturaPDF(PDFView):
                 valuex['datax']=None
             costo_total=precio_unidad * float(total_cantidad)
             total_calculado += costo_total
-            value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'mostrar':mostrar,'cantidad':total_cantidad,'precio':precio_unidad,'total_producto':round(costo_total,2)})
+            value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'mostrar':mostrar,'cantidad':total_cantidad,'precio':round(precio_unidad,2),'total_producto':round(costo_total,2)})
         subtotal_conversion=subtotal * conversion.valor
         total_imponible = total_imponible * conversion.valor
         total_exento = total_exento * conversion.valor
@@ -2847,18 +2854,11 @@ class FacturaPDF(PDFView):
             total_real=total_real+iva
         # Setear los valores al template
         context['productos']=value['data']
-        if (float(total_calculado)==float(subtotal_conversion)):
-            context['subtotal']=subtotal_conversion
-            context['imponible']=total_imponible
-            context['monto_exento']=total_exento
-            context['impuesto']=iva
-            context['total']=round(total_real,2)
-        else:
-            context['subtotal']='Error'
-            context['imponible']='Error'
-            context['monto_exento']='Error'
-            context['subtotal']='Error'
-            context['total']='Error'
+        context['subtotal']=round(subtotal_conversion,2)
+        context['imponible']=round(total_imponible,2)
+        context['monto_exento']=round(total_exento,2)
+        context['impuesto']=iva
+        context['total']=round(total_real,2)
         context['factura']=factura
         return context
         # Sumatoria de los no exentos (Imponible)
@@ -3063,7 +3063,7 @@ def borrar_nota(request):
     if verificar_permiso(perfil,'Notasdepago','borrar'):
         payload=json.loads(request.body)
         try:
-            nota=NotasPago.objects.get(id=payload['idnota'])
+            nota=NotasPago.objects.get(id=payload['idNota'])
             for obj in DetalleNotasPago.objects.filter(notapago=nota):
                 proforma=Proforma.objects.get(id=obj.proforma.id)
                 proforma.saldo_proforma=float(proforma.saldo_proforma)+float(obj.monto)
@@ -3086,21 +3086,26 @@ def actualizar_nota(request):
     perfil=Perfil.objects.get(usuario=request.user)
     if verificar_permiso(perfil,'Notasdepago','actualizar'):
         payload=json.loads(request.body)
+        print(payload)
         try:
             for obj in payload['data']:
                 try:
                     if obj['monto'] > 0:
-                        DetalleNotasPago.objects.filter(proforma=obj['proforma']).delete()
                         proforma=Proforma.objects.get(id=obj['proforma'])
+                        detalle_original = DetalleNotasPago.objects.filter(notapago=payload['idNota'],proforma=proforma).first()
+                        if detalle_original:
+                            proforma.saldo_proforma=proforma.saldo_proforma + detalle_original.monto
+                            proforma.save()
+                            detalle_original.delete()
                         perfil=Perfil.objects.get(usuario=request.user)
                         instancia=Instancia.objects.get(perfil=perfil.id)
-                        nota_pago=NotasPago.objects.get(id=payload['idnota'])
+                        nota_pago=NotasPago.objects.get(id=payload['idNota'])
                         detalle_nota=DetalleNotasPago(instancia=instancia,proforma=proforma,notapago=nota_pago,monto=obj['monto'],saldo_anterior=obj['saldo_anterior'])
                         detalle_nota.save()
                         proforma.saldo_proforma=proforma.saldo_proforma - detalle_nota.monto
                         proforma.save()
-                except Exception as e:  
-                    pass
+                except Exception as e:
+                    print(e)
             return Response(status=status.HTTP_200_OK)
         except ObjectDoesNotExist as e:
             return Response({'error': str(e)},status=status.HTTP_404_NOT_FOUND)
@@ -3254,8 +3259,10 @@ def generar_factura(request):
             perfil=Perfil.objects.get(usuario=request.user)
             instancia=Instancia.objects.get(perfil=perfil.id)
             configuracion=verificar_numerologia({'empresa':proforma.empresa.id,'instancia':proforma.instancia.id},Factura)
+            configuracion_control=verificar_numerologia({'empresa':proforma.empresa.id,'instancia':proforma.instancia.id},'NotaControl')
             nueva_factura=Factura(proforma=proforma,instancia=instancia)
             nueva_factura.numerologia=configuracion.valor
+            nueva_factura.control=configuracion_control.valor
             nueva_factura.nombre_empresa=proforma.empresa.nombre
             nueva_factura.direccion_empresa= proforma.empresa.direccion_fiscal
             nueva_factura.id_cliente=proforma.cliente.id
@@ -3270,7 +3277,9 @@ def generar_factura(request):
             nueva_factura.impuesto=16
             nueva_factura.save()
             configuracion.valor+=1
+            configuracion_control.valor+=1
             configuracion.save()
+            configuracion_control.save()
             subtotal=0
             imponible=0
             exento=0
@@ -3294,19 +3303,19 @@ def generar_factura(request):
                     producto=deta.producto,
                     producto_fijo=deta.producto.nombre,
                     precio=deta.precio_seleccionado,
-                    total_producto=deta.total_producto,
+                    total_producto=round(deta.total_producto,2),
                     instancia=instancia)
                 nuevo_detalle.save()
                 if nuevo_detalle.producto.exonerado == False:
                     imponible += nuevo_detalle.total_producto
                 else:
                     exento += nuevo_detalle.total_producto
-            subtotal=imponible + exento
-            total_real=subtotal
+            subtotal=round(imponible,2) + round(exento,2)
+            total_real=round(subtotal,2)
             if imponible:
-                total_real=total_real+(imponible*(impuesto/100))
-            nueva_factura.subtotal = subtotal
-            nueva_factura.total = total_real
+                total_real=round(total_real,2)+(round(imponible,2)*(impuesto/100))
+            nueva_factura.subtotal = round(subtotal,2)
+            nueva_factura.total = round(total_real,2)
             nueva_factura.save()
             return Response(status=status.HTTP_200_OK)
         except ObjectDoesNotExist as e:
@@ -3390,7 +3399,7 @@ def vista_xls(request):
                 excel_ws.write(i,2,'Precio 1')
                 excel_ws.write(i,3,'Precio 2')
                 excel_ws.write(i,4,'Precio 3')
-                excel_ws.write(i,4,'Precio 4')
+                excel_ws.write(i,5,'Precio 4')
                 i=i+1
                 for p in Producto.objects.filter(marca=m['id']).values():
                     excel_ws.write(i,0,p['sku'])
@@ -3398,12 +3407,89 @@ def vista_xls(request):
                     excel_ws.write(i,2,p['precio_1'])
                     excel_ws.write(i,3,p['precio_2'])
                     excel_ws.write(i,4,p['precio_3'])
-                    excel_ws.write(i,4,p['precio_4'])
+                    excel_ws.write(i,5,p['precio_4'])
                     i=i+1
             excel_wb.save(response)
             return response
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
+    else:
+        return Response(status=status.HTTP_403_FORBIDDEN)
+        # Funcion para generar Excel de precios de productos
+@api_view(["POST","GET"])
+@csrf_exempt
+def comision(request):
+    params=request.query_params
+    token=params.get('token').split(' ')[1]
+    user = Token.objects.get(key=token).user
+    if user:
+        data={'fecha_inicio':params.get('fecha_inicio'),'fecha_fin':params.get('fecha_fin'),'vendedor':params.get('vendedor')}
+        perfil=Perfil.objects.get(usuario=user)
+        try:
+            if verificar_permiso(perfil,'Comisiones','leer'):
+                """ Data inicial """
+                # Obtner Vendedor para el filtro
+                vendedor=Vendedor.objects.get(id=data['vendedor'])
+                # Obtner el rango de fechas para el filtro
+                ini=data['fecha_inicio'].split('/')
+                fecha_inicio=ini[0]+'-'+ini[1]+'-'+ini[2] # Formateando Date inicial para timezone
+                fin=data['fecha_fin'].split('/')
+                fecha_fin=fin[0]+'-'+fin[1]+'-'+fin[2] # Formateando Date final para timezone
+                rango=[fecha_inicio,fecha_fin] # Rango
+                tardio=timezone.now()-timezone.timedelta(weeks=4) # Tiempo maximo de 30 dias
+                # Filtrar Notas de pago
+                notas=NotasPago.objects.filter(vendedor=vendedor,fecha_comprobante__date__range=rango)
+                # Excel
+                i=0
+                response=HttpResponse(content_type='application/ms-excel')
+                response['Content-Disposition']='attachment;filename="comision_%s_%s&%s.xls"'%(vendedor.codigo,fecha_inicio,fecha_fin)
+                excel_wb=xlwt.Workbook(encoding='utf-8')
+                excel_ws=excel_wb.add_sheet('Styling Data') # ws es Work Sheet
+                # Primera fila del excel
+                estilo=xlwt.easyxf('font: bold 1')
+                excel_ws.write(i,0,'Nota',estilo)
+                excel_ws.write(i,1,'Fecha comprobante',estilo)
+                excel_ws.write(i,2,'Proforma',estilo)
+                excel_ws.write(i,3,'Fecha despacho',estilo)
+                excel_ws.write(i,4,'Precio seleccionado',estilo)
+                excel_ws.write(i,5,'Total proforma',estilo)
+                excel_ws.write(i,6,'Monto pagado',estilo)
+                excel_ws.write(i,7,'Comision',estilo)
+                i=i+1
+                # Creador de filas
+                for n in notas:
+                    correlativo_nota=ConfiguracionPapeleria.objects.get(empresa=n.cliente.empresa,tipo="B")
+                    excel_ws.write(i,0,'%s%s'%(correlativo_nota.prefijo+'-' if correlativo_nota.prefijo else '',n.numerologia))
+                    excel_ws.write(i,1,'%s'%(n.fecha.date()))
+                    detalle=DetalleNotasPago.objects.filter(notapago=n)
+                    for d in detalle:
+                        print(d.__dict__)
+                        comision=0
+                        # Añadir detalle de la nota
+                        correlativo_prof=ConfiguracionPapeleria.objects.get(empresa=d.proforma.empresa,tipo="E")
+                        excel_ws.write(i,2,'%s%s'%(correlativo_prof.prefijo+'-' if correlativo_prof.prefijo else '',n.numerologia))
+                        excel_ws.write(i,3,'%s'%(d.proforma.fecha_despacho.date()))
+                        excel_ws.write(i,4,'%s'%(d.proforma.precio_seleccionadoo))
+                        excel_ws.write(i,5,'%s'%(d.proforma.total))
+                        excel_ws.write(i,6,'%s'%(d.monto))
+                        # Calcular comision
+                        proforma=Proforma.objects.get(id=d.proforma.id)
+                        if (d.proforma.fecha_despacho.date() - n.fecha_comprobante.date()).days < 30:
+                            if proforma.precio_seleccionadoo in ['precio_1','precio_2','precio_4']:
+                                comision = ((5*d.monto)/100)
+                            else:
+                                comision = ((3*d.monto)/100)
+                        excel_ws.write(i,7,'%s'%(comision))
+                        # excel_ws.write(i,6,'%s'%())
+                        i=i+1
+                    i=i+1
+                excel_wb.save(response)
+                return response
+            else:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+        except Exception as e:
+            print(e)
+            return Response('%s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         return Response(status=status.HTTP_403_FORBIDDEN)
 # Funcion tipo vista para guardar los pdfs de pedidos en el sistema operativo
@@ -3566,107 +3652,20 @@ def perfiles_usuarios(request):
 @permission_classes([IsAuthenticated])
 def usuario_info(request):
     return Response(PerfilSerializer(Perfil.objects.get(usuario=request.user)).data,status=status.HTTP_200_OK)
-@api_view(["POST", "GET"])
-@csrf_exempt
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def comision(request):
-    data=request.data
-    perfil=Perfil.objects.get(usuario=data.user)
-    if verificar_permiso(perfil,'Comisiones','leer'):
-        try:
-            if not data:
-                return Response("Error, Faltan los datos",status=status.HTTP_406_NOT_ACCEPTABLE)
-            comision={'total_comision':0,'notas':[]}
-            notas=NotasPago.objects.filter(instancia=perfil.instancia)
-            notas_e=notas.filter(cliente=data['cliente']) # ,fecha__month=data['mes'],fecha__year=data['año']
-            if len(notas_e)!=0:
-                for n in notas_e:
-                    nota={}
-                    nota['id']=n.id
-                    nota['cliente']=n.cliente.nombre
-                    nota['cliente_id']=n.cliente.id
-                    nota['comprobante']=n.comprobante
-                    nota['descripcion']=n.descripcion
-                    nota['fecha']=n.fecha
-                    nota['total']=n.total
-                    nota['detalles']=[]
-                    for d in DetalleNotasPago.objects.filter(notapago__id=n.id):
-                        detalle={}
-                        detalle['id']=d.id
-                        detalle['notapago_id']=d.notapago.id
-                        detalle['proforma_id']=d.proforma.id
-                        detalle['saldo_anterior']=d.saldo_anterior
-                        detalle['monto']=d.monto
-                        nota['detalles'].append(detalle)
-                    comision['total_comision']+=n.total
-                    comision['notas'].append(nota)
-                comision['cliente_id']=data['cliente']
-                comision['mes']=data['mes']
-                comision['año']=data['año']
-                return Response(comision,status=status.HTTP_200_OK)
-            else:
-                return Response("Error, No se encontraron notas de pago",status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response('Error, %s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    else:
-        return Response(status=status.HTTP_401_UNAUTHORIZED)
 # Funcion para añadir clientes y vendedores
-@api_view(["GET"])
-@csrf_exempt
-def subir_xls(request):
-    df = pd.read_excel("clientes.xls", sheet_name="hoja1")
-    df = df.reset_index()
-    print("Inicio de credor de clientes")
-    for index, row in df.iterrows():
-        instancia = Instancia.objects.get(id=1)
-        empresa = Empresa.objects.get(id=row['EMPRESA'])
-        vendedor, created = Vendedor.objects.get_or_create(codigo=row['VENDEDOR'], defaults={'instancia':instancia,'nombre': row['NOMBRE_VENDEDOR']})
-        vendedor.save()
-        nuevo_cliente, created = Cliente.objects.get_or_create(
-            nombre=row['NOMBRE'],
-            defaults={
-                'instancia':instancia,
-                'codigo':row['CODIGO'],
-                'empresa': empresa,
-                'vendedor':vendedor,
-                'identificador':row['RIF'],
-                'ubicacion':row['DIRECCION'],
-                'telefono':row['TELEFONO'],
-                'mail':row['EMAIL'],
-                'credito':row['CREDITO'],
-                'activo':row['ACTIVO']
-            }
-        )
-        if(created):
-            nuevo_cliente.save()
-            print(nuevo_cliente)
-    print("Clientes guardados")
-    return Response('Carga de clientes terminada')
-# Funcion para añadir productos
 @api_view(["POST"])
 @csrf_exempt
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def subir_archivo(request):
-    data=request.data
-    archivo=data['archivo']
-    df = pd.read_excel(archivo.temporary_file_path(), sheet_name="Hoja1")
-    print(df)
-    try:
-        if data['tipo'] == 'xls' and data['archivo']:
-            return Response(df) # subir_xls2()
-        else:
-            return Response('No se subio el archivo')
-    except Exception as e:
-        print(e)
-        return Response(df)
-@api_view(["GET"])
-@csrf_exempt
-def subir_xls2():
+def subir_xls2(request):
     print("Inicio de proceso")
-    df = pd.read_excel("productos.xls", sheet_name="Hoja1")
-    df = df.reset_index()  # make sure indexes pair with number of rows
+    if not request.FILES['file']:
+        print('NONE')
+        df = pd.read_excel("productos.xls", sheet_name="Hoja1")
+        df = df.reset_index()  # make sure indexes pair with number of rows
+    else:
+        print('UPLOAD')
+        df = pd.read_excel(request.FILES['file'], sheet_name="Hoja1")
     print("Inicio creador de productos")
     for index, row in df.iterrows():
         if row['CODIGO']:
@@ -3685,10 +3684,10 @@ def subir_xls2():
             nuevo_producto, created = Producto.objects.get_or_create(
                                 marca=marca,
                                 nombre=row['DESCRIPCIÓN'],
+                                sku=row['CODIGO'],
                                 defaults={
                                 'instancia':instancia,
                                 'nombre':row['DESCRIPCIÓN'],
-                                'sku':row['CODIGO'],
                                 'costo':row['Costo'],
                                 'precio_1':row['Precio1'],
                                 'precio_2':row['Precio2'],
@@ -3704,49 +3703,17 @@ def subir_xls2():
                                 )
             if(created):
                 nuevo_producto.save()
-                print(nuevo_producto)
+                print('Creado: ',nuevo_producto)
+            else:
+                nuevo_producto.costo=row['Costo']
+                nuevo_producto.precio_1=row['Precio1']
+                nuevo_producto.precio_2=row['Precio2']
+                nuevo_producto.precio_3=row['Precio3']
+                nuevo_producto.precio_4=row['Precio4']
+                nuevo_producto.save()
+                print('Actualizado: ',nuevo_producto)
     print("Fin creador de productos")
-    return Response('Carga de productos terminada')
-# Funcion tipo vista para obtener la comisioens de un vendedor
-@api_view(["POST", "GET"])
-@csrf_exempt
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def calcular_comisiones(request):
-    perfil=Perfil.objects.get(usuario=request.user)
-    data=request.data
-    try:
-        if verificar_permiso(perfil,'Comisiones','leer'):
-            ini=data['fecha_inicio'].split('/')
-            fin=data['fecha_fin'].split('/')
-            fecha_inicio=ini[0]+'-'+ini[1]+'-'+ini[2]
-            fecha_fin=fin[0]+'-'+fin[1]+'-'+fin[2]
-            vendedor=Vendedor.objects.get(id=1)
-            rango=[fecha_inicio,fecha_fin]
-            tardio=timezone.now()-timezone.timedelta(weeks=4)
-            notas=NotasPago.objects.filter(vendedor=vendedor,fecha__date__range=rango).exclude(fecha__date__lt=tardio)
-            comision= {'total':0, 'objetos':[], 'info':{}}
-            for n in notas:
-                nota={'clienteNombre':n.cliente.nombre,'vendedorNombre':n.vendedor.nombre,'total':n.total,'detalles':[]}
-                detalle=DetalleNotasPago.objects.filter(notapago=n)
-                for d in detalle:
-                    detalle = {'proforma':d.proforma.id,'saldo_anterior':d.saldo_anterior,'monto':d.monto}
-                    proforma=Proforma.objects.get(id=d.proforma.id)
-                    try:
-                        if int(proforma.precio_seleccionadoo) in [1,2,4]:
-                            comision['total'] += ((5*d.monto)/100)
-                        else:
-                            raise
-                    except:
-                        comision['total'] += ((3*d.monto)/100)
-                    nota['detalles'].append(detalle)
-                comision['objetos'].append(nota)
-            return Response(comision,status=status.HTTP_200_OK)
-        else:
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
-    except Exception as e:
-        print(e)
-        return Response('%s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    return Response('Carga de productos terminada',status=status.HTTP_200_OK)
 # Funcion para obtener las instancias en las acciones
 def obtener_instancia(perfil,instancia=None):
     return instancia if perfil.tipo=='S' and instancia else perfil.instancia.id
@@ -4014,8 +3981,8 @@ def verificar_numerologia(datos,modelo):
         tipo='N'
     # elif modelo == NotaDevolucion:
     #     tipo='A'
-    # elif modelo == NotaControl:
-    #     tipo='B'
+    elif modelo == 'NotaControl':
+        tipo='B'
     # elif modelo == NotaCredito:
     #     tipo='C'
     # elif modelo == NotaDebito:

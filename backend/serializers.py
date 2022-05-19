@@ -63,6 +63,10 @@ class NotaPagoMSerializer(serializers.ModelSerializer):
     nombreCliente = serializers.SerializerMethodField('LoadNombreCliente')
     def LoadNombreCliente(self, obj):
         return obj.cliente.nombre
+    pre_num =  serializers.SerializerMethodField('ObtenerNumero')
+    def ObtenerNumero(self, obj):
+        correlativo=ConfiguracionPapeleria.objects.get(empresa=obj.cliente.empresa,tipo="B")
+        return "%s-%s"%(correlativo.prefijo if correlativo.prefijo else 'B',obj.numerologia)
 class DetalleNotaPagoMSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetalleNotasPago
@@ -73,6 +77,13 @@ class DetalleNotaPagoMSerializer(serializers.ModelSerializer):
     cliente = serializers.SerializerMethodField('LoadCliente')
     def LoadCliente(self, obj):
         return obj.proforma.cliente.id
+    pre_num =  serializers.SerializerMethodField('ObtenerNumero')
+    def ObtenerNumero(self, obj):
+        correlativo=ConfiguracionPapeleria.objects.get(empresa=obj.proforma.empresa,tipo="E")
+        return "%s-%s"%(correlativo.prefijo,obj.proforma.numerologia)
+    num_pro =  serializers.SerializerMethodField('ObtenerNumeroPro')
+    def ObtenerNumeroPro(self, obj):
+        return "%s"%(obj.proforma.numerologia)
 class ModuloSerializer(serializers.ModelSerializer):
     class Meta:
         model = Modulo
@@ -97,7 +108,10 @@ class MenuInstanciaSerializer(serializers.ModelSerializer):
         return obj.menu.router
     nombreParent = serializers.SerializerMethodField('LoadNombreParent')
     def LoadNombreParent(self, obj):
-        return obj.parent.menu.router
+        if obj.parent:
+            return obj.parent.menu.router
+        else:
+            return None
 class PerfilSerializer(serializers.ModelSerializer):
     class Meta:
         model = Perfil
