@@ -3415,7 +3415,7 @@ def vista_xls(request):
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     else:
         return Response(status=status.HTTP_403_FORBIDDEN)
-        # Funcion para generar Excel de precios de productos
+# Funcion para generar Excel de las comisiones
 @api_view(["POST","GET"])
 @csrf_exempt
 def comision(request):
@@ -3456,6 +3456,7 @@ def comision(request):
                 excel_ws.write(i,6,'Monto pagado',estilo)
                 excel_ws.write(i,7,'Comision',estilo)
                 i=i+1
+                total_comision=0
                 # Creador de filas
                 for n in notas:
                     correlativo_nota=ConfiguracionPapeleria.objects.get(empresa=n.cliente.empresa,tipo="B")
@@ -3463,26 +3464,27 @@ def comision(request):
                     excel_ws.write(i,1,'%s'%(n.fecha.date()))
                     detalle=DetalleNotasPago.objects.filter(notapago=n)
                     for d in detalle:
-                        print(d.__dict__)
                         comision=0
                         # Añadir detalle de la nota
                         correlativo_prof=ConfiguracionPapeleria.objects.get(empresa=d.proforma.empresa,tipo="E")
                         excel_ws.write(i,2,'%s%s'%(correlativo_prof.prefijo+'-' if correlativo_prof.prefijo else '',n.numerologia))
                         excel_ws.write(i,3,'%s'%(d.proforma.fecha_despacho.date()))
                         excel_ws.write(i,4,'%s'%(d.proforma.precio_seleccionadoo))
-                        excel_ws.write(i,5,'%s'%(d.proforma.total))
+                        excel_ws.write(i,5,'%s'%(round(d.proforma.total,2)))
                         excel_ws.write(i,6,'%s'%(d.monto))
                         # Calcular comision
                         proforma=Proforma.objects.get(id=d.proforma.id)
                         if (d.proforma.fecha_despacho.date() - n.fecha_comprobante.date()).days < 30:
                             if proforma.precio_seleccionadoo in ['precio_1','precio_2','precio_4']:
-                                comision = ((5*d.monto)/100)
+                                comision = round(((5*d.monto)/100),2)
                             else:
-                                comision = ((3*d.monto)/100)
+                                comision = round(((3*d.monto)/100),2)
+                        total_comision+=comision
                         excel_ws.write(i,7,'%s'%(comision))
                         # excel_ws.write(i,6,'%s'%())
                         i=i+1
-                    i=i+1
+                excel_ws.write(i,6,'%s'%('Total:'),estilo)
+                excel_ws.write(i,7,'%s'%(round(total_comision,2)))
                 excel_wb.save(response)
                 return response
             else:

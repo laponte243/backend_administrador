@@ -88,7 +88,7 @@ class Empresa(models.Model):
                 'D', # Nota Debito
                 'E', # Proforma
                 'F', # Factura
-                'N', # Nota Entrega
+                'N', # Nota pago
                 'P', # Pedido
             ]
             for p in tipos:
@@ -107,7 +107,7 @@ class ContactoEmpresa(models.Model):
         return 'Contacto de la empresa %s'%(self.empresa)
 class ConfiguracionPapeleria(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
-    TIPO=(('A','Nota devolucion'),('B','Nota Control'),('C','Nota credito'),('D','Nota debito'),('E','Proforma'),('F','Factura'),('N','Nota entrega'),('P','Pedido'))
+    TIPO=(('A','Nota devolucion'),('B','Nota Control'),('C','Nota credito'),('D','Nota debito'),('E','Proforma'),('F','Factura'),('N','Nota pago'),('P','Pedido'))
     empresa=models.ForeignKey(Empresa,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="empresa asociada")
     prefijo=models.TextField(max_length=10,blank=True,null=True,help_text="prefijo para el numero")
     formato=models.TextField(max_length=20,blank=True,null=True,help_text="formato de numero con 0 adelante 0000000")
@@ -336,10 +336,8 @@ class Factura(models.Model):
     tipo_pago=models.TextField(max_length=150,blank=False,null=False,help_text="tipo de pago utilizado por el cliente de la venta")
     credito=models.TextField(default=False,help_text="La venta se realizo a credito?")
     dias_credito=models.TextField(null=True,default=0,help_text="dias de credito?")
-    # Estatus
-    impreso=models.BooleanField(default=False,help_text="Esta impreso?")
-    nota_entrega=models.TextField(default=False,help_text="fecha de generacion una nota de entrega?")
     # Utiles
+    impreso=models.BooleanField(default=False,help_text="Esta impreso?")
     fecha_factura=models.DateTimeField(auto_now_add=True,help_text="fecha de generacion del pedido")
     numerologia=models.TextField(null=False,blank=False)
     control=models.TextField(null=False,blank=False)

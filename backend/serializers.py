@@ -166,7 +166,7 @@ class ConfiguracionPapeleriaSerializer(serializers.ModelSerializer):
         n = 'Nota Debito' if obj.tipo == 'D' else n
         n = 'Proforma' if obj.tipo == 'E' else n
         n = 'Factura' if obj.tipo == 'F' else n
-        n = 'Nota Entrega' if obj.tipo == 'N' else n
+        n = 'Nota Pago' if obj.tipo == 'N' else n
         n = 'Pedido' if obj.tipo == 'P' else n
         return n
 
