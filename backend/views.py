@@ -3375,7 +3375,7 @@ def actualizar_proforma(request):
             return Response({'error': e},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
-# Funcion para generar Excel de precios de productos
+# Funcion tipo vista para generar Excel de precios de productos
 @api_view(["GET"])
 @csrf_exempt
 def vista_xls(request):
@@ -3415,7 +3415,7 @@ def vista_xls(request):
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     else:
         return Response(status=status.HTTP_403_FORBIDDEN)
-# Funcion para generar Excel de las comisiones
+# Funcion tipo vista para generar Excel de las comisiones
 @api_view(["POST","GET"])
 @csrf_exempt
 def comision(request):
@@ -3492,6 +3492,60 @@ def comision(request):
         except Exception as e:
             print(e)
             return Response('%s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    else:
+        return Response(status=status.HTTP_403_FORBIDDEN)
+# Funcion tipo vista para generar Excel del credito de los clientes
+@api_view(["GET"])
+@csrf_exempt
+def calcular_credito(request):
+    params=request.query_params
+    token=params.get('token').split(' ')[1]
+    user = Token.objects.get(key=token).user
+    if user:
+        cliente=Cliente.objects.get(id=params.get('id'))
+        data={'cliente':params.get('id')}
+        correlativo_pro=ConfiguracionPapeleria.objects.get(empresa=cliente.empresa,tipo="E")
+        p=[]
+        proformas =Proforma.objects.filter(cliente=cliente)
+        for pro in proformas:
+            factura = Factura.objects.filter(proforma=pro)
+            p.append({'fecha':pro.fecha_proforma,'pre_doc':correlativo_pro.prefijo if correlativo_pro.prefijo else '','num_doc':pro.numerologia,'monto':pro.total,'fecha_b': pro.fecha_despacho.date() if pro.fecha_despacho else '','factura':'*' if factura else None})
+        correlativo_npa=ConfiguracionPapeleria.objects.get(empresa=cliente.empresa,tipo="N")
+        n=[]
+        for npa in NotasPago.objects.filter(cliente=cliente):
+            factura = None
+            n.append({'fecha':npa.fecha,'pre_doc':correlativo_npa.prefijo if correlativo_npa.prefijo else '','num_doc':npa.numerologia,'monto':npa.total,'fecha_b':npa.fecha_comprobante.date(),'factura':'*' if factura else None})
+        data_excel = pd.DataFrame(p)
+        data_excel_2 = pd.DataFrame(n)
+        data_excel = data_excel.append(data_excel_2, ignore_index=True)
+        data_excel = data_excel.sort_values(by='fecha',ascending=True)
+        print(data_excel)
+        # Excel
+        i=0
+        response=HttpResponse(content_type='application/ms-excel')
+        response['Content-Disposition']='attachment;filename="deuda_%s.xls"'%(cliente.nombre)
+        excel_wb=xlwt.Workbook(encoding='utf-8')
+        excel_ws=excel_wb.add_sheet('Styling Data') # ws es Work Sheet
+        estilo=xlwt.easyxf('font: bold 1')
+        excel_ws.write(i,0,'Cliente:',estilo)
+        excel_ws.write(i,1,cliente.nombre)
+        excel_ws.write(i,2,'Vendedor:',estilo)
+        excel_ws.write(i,3,cliente.vendedor.nombre)
+        i+=1
+        excel_ws.write(i,0,'Fecha',estilo)
+        excel_ws.write(i,1,'Doc',estilo)
+        excel_ws.write(i,2,'Monto',estilo)
+        excel_ws.write(i,3,'Despacho/Comprobante',estilo)
+        excel_ws.write(i,4,'Factura',estilo)
+        for index, row in data_excel.iterrows():
+            i+=1
+            excel_ws.write(i,0,'%s'%(row.fecha.date()))
+            excel_ws.write(i,1,'%s%s'%(row.pre_doc if row.pre_doc + '-' else '',row.num_doc))
+            excel_ws.write(i,2,'%s'%(row.monto))
+            excel_ws.write(i,3,'%s'%(row.fecha_b))
+            excel_ws.write(i,4,'%s'%(row.factura if row.factura else ''))
+        excel_wb.save(response)
+        return response
     else:
         return Response(status=status.HTTP_403_FORBIDDEN)
 # Funcion tipo vista para guardar los pdfs de pedidos en el sistema operativo
