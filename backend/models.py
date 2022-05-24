@@ -313,8 +313,8 @@ class Factura(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
     proforma=models.ForeignKey(Proforma,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="proforma asociada")
     # Cliente
-    id_cliente=models.IntegerField(blank=False,null=False,help_text="ID del cliente en la venta")
     nombre_cliente=models.TextField(max_length=150,blank=False,null=False,help_text="Nombre del cliente en la venta")
+    codigo_cliente=models.TextField(blank=False,null=False,help_text="Codigo del cliente asociado")
     identificador_fiscal=models.TextField(max_length=150,blank=False,null=False,help_text="Identificador fiscal del cliente en la venta")
     direccion_cliente=models.TextField(max_length=150,blank=False,null=False,help_text="telefono del cliente en la venta")
     telefono_cliente=models.TextField(max_length=150,null=False,blank=False,help_text="empresa asociada")
@@ -324,9 +324,9 @@ class Factura(models.Model):
     telefonocontacto_empresa=models.TextField(max_length=150,null=False,blank=False,help_text="empresa asociada")
     direccion_empresa=models.TextField(max_length=150,null=False,blank=False,help_text="empresa asociada")
     # Vendedor
-    id_vendedor=models.IntegerField(blank=False,null=False,help_text="Nombre del vendedor en la venta")
-    nombre_vendedor=models.TextField(max_length=150,null=True,blank=False,help_text="vendedor asociado")
-    telefono_vendedor=models.TextField(max_length=150,null=False,blank=False,help_text="empresa asociada")
+    nombre_vendedor=models.TextField(max_length=150,null=True,blank=False,help_text="Nombre del vendedor asociado")
+    codigo_vendedor=models.TextField(blank=False,null=False,help_text="Codigo del vendedor asociado")
+    telefono_vendedor=models.TextField(max_length=150,null=False,blank=False,help_text="Telefono del vendedor asociado")
     # Total
     subtotal=models.TextField(max_length=150,null=False,default=0,blank=False,help_text="subtotal de la venta")
     monto_exento=models.TextField(max_length=150,null=False,default=0,blank=False,help_text="monto exento de la proforma")

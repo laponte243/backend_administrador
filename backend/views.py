@@ -1,8 +1,4 @@
 # Importes de Rest framework
-from os import stat_result
-import re
-from tkinter import E
-from idna import IDNABidiError
 from rest_framework import permissions,viewsets,status
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.authtoken.models import Token
@@ -1592,6 +1588,11 @@ class PedidoVS(viewsets.ModelViewSet):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Pedido','borrar'):
             instance=self.get_object()
+            for d in DetallePedido.objects.filter(pedido=instance).delete():
+                if d.inventario:
+                    inventario=Inventario.objects.get(id=d.inventario.id,producto=d.producto,lote__exact=d.lote)
+                    modificar_inventario('devolver',inventario,d.cantidada)
+                d.delete()
             if instance.instancia==perfil.instancia or perfil.tipo=='S':
                 instance.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
@@ -1636,19 +1637,20 @@ class DetallePedidoVS(viewsets.ModelViewSet):
     # Metodo crear
     def create(self,request):
         perfil=obt_per(self.request.user)
-        if verificar_permiso(perfil,'Pedido','escribir'):
-            datos=request.data
-            try:
-                datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
-            except:
-                datos['instancia']=perfil.instancia.id
-            serializer=self.get_serializer(data=datos)
-            serializer.is_valid(raise_exception=True)
-            self.perform_create(serializer)
-            headers=self.get_success_headers(serializer.data)
-            return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
-        else:
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        # if verificar_permiso(perfil,'Pedido','escribir'):
+        #     datos=request.data
+        #     try:
+        #         datos['instancia']=obtener_instancia(perfil,request.data['instancia'])
+        #     except:
+        #         datos['instancia']=perfil.instancia.id
+        #     serializer=self.get_serializer(data=datos)
+        #     serializer.is_valid(raise_exception=True)
+        #     self.perform_create(serializer)
+        #     headers=self.get_success_headers(serializer.data)
+        #     return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
+        # else:
+        #     return Response(status=status.HTTP_401_UNAUTHORIZED)
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
     def update(self,request,*args,**kwargs):
         perfil=obt_per(self.request.user)
         if verificar_permiso(perfil,'Pedido','actualizar'):
@@ -1662,20 +1664,22 @@ class DetallePedidoVS(viewsets.ModelViewSet):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
     def destroy(self,request,*args,**kwargs):
-        perfil=obt_per(self.request.user)
-        if verificar_permiso(perfil,'Pedido','borrar'):
-            instance=self.get_object()
-            inventario=Inventario.objects.get(id=instance.inventario.id)
-            inventario.bloqueado=inventario.bloqueado-instance.cantidada
-            inventario.disponible=inventario.disponible+instance.cantidada
-            if instance.instancia==perfil.instancia or perfil.tipo=='S':
-                instance.delete()
-                inventario.save()
-                return Response(status=status.HTTP_204_NO_CONTENT)
-            else:
-                return Response(status=status.HTTP_403_FORBIDDEN)
-        else:
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        # perfil=obt_per(self.request.user)
+        # if verificar_permiso(perfil,'Pedido','borrar'):
+        #     instance=self.get_object()
+        #     if instance.instancia==perfil.instancia or perfil.tipo=='S':
+        #         if instance.inventario:
+        #             inventario=Inventario.objects.get(id=instance.inventario.id)
+        #             inventario.bloqueado=inventario.bloqueado-instance.cantidada
+        #             inventario.disponible=inventario.disponible+instance.cantidada
+        #             inventario.save()
+        #         instance.delete()
+        #         return Response(status=status.HTTP_204_NO_CONTENT)
+        #     else:
+        #         return Response(status=status.HTTP_403_FORBIDDEN)
+        # else:
+        #     return Response(status=status.HTTP_401_UNAUTHORIZED)
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
     # Metodos de leer
     def list(self,request):
         try:
@@ -2714,26 +2718,31 @@ class PedidoPDF(PDFView):
         agrupador=DetallePedido.objects.filter(pedido=pedido).values('producto').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada'))
         # Ciclo para generar Json y data para el template
         for dato in agrupador:
+            # Obtener producto
             productox=Producto.objects.get(id=dato['producto'])
+            # Iniciar variable de los detalles
             valuex={'datax':[]}
+            # Iniciar variables del pedido
             total_cantidad=0
             mostrar=True
             detallado=DetallePedido.objects.filter(pedido=pedido,producto=productox).order_by('producto__id')
-            if productox.lote==True and len(detallado) > 1:
+            # Condiciones para mostrar o no los lotes y detalles
+            if productox.lote==True and len(detallado) > 1: # Conficion para cuando se debe mostrar el lote, y hay varios detalles, del producto
                 for detalle in detallado:
                     valuex['datax'].append({'lote':detalle.lote,'cantidad':detalle.cantidada})
                     total_cantidad += detalle.cantidada
-            elif productox.lote==True and len(detallado)==1:
+            elif productox.lote==True and len(detallado)==1: # Conficion para cuando se debe mostrar el lote, y hay un solo detalle, del producto
                 valuex['datax']=''
                 mostrar=False
                 for detalle in detallado:
                     valuex['datax']=detalle.lote
                     total_cantidad += detalle.cantidada
-            else:
+            else: # Conficion para cuando no se debe mostrar el lote del producto
                 mostrar=False
                 for detalle in detallado:
                     total_cantidad += detalle.cantidada
                 valuex['datax']=None
+            # Agregar detalles al arreglo de detalles
             value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'mostrar':mostrar,'cantidad':total_cantidad})
         # Setear los valores al template
         context['productos']=value['data']
@@ -2750,39 +2759,44 @@ class ProformaPDF(PDFView):
         # Definicion de contenido extra para el template
         context=super().get_context_data(*args,**kwargs)
         proforma=Proforma.objects.get(id=kwargs['id_proforma'])
-        total_costo=float(proforma.total)
         value={'data':[]}
         total_calculado=0
         agrupador=DetalleProforma.objects.filter(proforma=proforma).values('producto','precio').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada'))
         # Ciclo para generar Json y data para el template
         for dato in agrupador:
+            # Obtener producto
             productox=Producto.objects.get(id=dato['producto'])
+            # Iniciar variable de los detalles
             valuex={'datax':[]}
+            # Iniciar variables de la proforma
             total_cantidad=0
             precio_unidad=0
             costo_total=0
             mostrar=True
             detallado=DetalleProforma.objects.filter(proforma=proforma,producto=productox).order_by('producto__id')
-            if productox.lote==True and len(detallado) > 1:
+            # Condiciones para mostrar o no los lotes y detalles
+            if productox.lote==True and len(detallado) > 1: # Conficion para cuando se debe mostrar el lote, y hay varios detalles, del producto
                 for detalle in detallado:
                     valuex['datax'].append({'lote':detalle.lote,'cantidad':detalle.cantidada})
                     total_cantidad += detalle.cantidada
                     precio_unidad=detalle.precio
-            elif productox.lote==True and len(detallado)==1:
+            elif productox.lote==True and len(detallado)==1: # Conficion para cuando se debe mostrar el lote, y hay un solo detalle, del producto
                 valuex['datax']=''
                 mostrar=False
                 for detalle in detallado:
                     valuex['datax']=detalle.lote
                     total_cantidad += detalle.cantidada
                     precio_unidad=detalle.precio
-            else:
+            else: # Conficion para cuando no se debe mostrar el lote del producto
                 mostrar=False
                 for detalle in detallado:
                     total_cantidad += detalle.cantidada
                     precio_unidad=detalle.precio
                 valuex['datax']=None
+            # Obtener los costos totales
             costo_total=float(precio_unidad) * float(total_cantidad)
             total_calculado += round(costo_total,2)
+            # Agregar detalles al arreglo de detalles
             value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'mostrar':mostrar,'cantidad':total_cantidad,'precio':precio_unidad,'total_producto':round(costo_total,2)})
         # Setear los valores al template
         context['productos']=value['data']
@@ -3120,55 +3134,85 @@ def actualizar_nota(request):
 @permission_classes([IsAuthenticated])
 def actualizar_pedido(request):
     perfil=Perfil.objects.get(usuario=request.user)
+    instancia=Instancia.objects.get(perfil=perfil.id)
+    info={'errores':[]}
     if verificar_permiso(perfil,'Pedido','actualizar'):
-        payload=json.loads(request.body)
+        # Cargar la data recibida
+        nuevos_detalles=request.data['detalles']
         try:
-            pedido=Pedido.objects.get(id=payload['idpedido'])
-            detashepedido=DetallePedido.objects.filter(pedido=pedido)
-            id_dpedidos=[]
-            total_proforma=0.0
-            for dpedidos in detashepedido:
-                id_dpedidos.append(dpedidos.id)
-            for i in payload['data']:
-                if i['inventario'] == 0:
-                    inventario=None
-                else:
-                    inventario=Inventario.objects.get(id=i['inventario'])
-                if i['id']!=None and inventario:
-                    indexpedido=None
-                    for index,item in enumerate(detashepedido):
-                        if item.id==i['id']:
-                            indexpedido=index
-                    cantidadanterior=detashepedido[indexpedido].cantidada
-                    nuevodisponible=i['cantidada'] - cantidadanterior
-                    inventario.disponible -= nuevodisponible
-                    inventario.bloqueado += nuevodisponible
-                perfil=Perfil.objects.get(usuario=request.user)
-                precio_seleccionado=i['precio_seleccionado']
-                producto=Producto.objects.get(id=i["producto"])
-                instancia=Instancia.objects.get(perfil=perfil.id)
-                cantidad=int(i["cantidada"])
-                totalp=cantidad * precio_seleccionado
-                precio_unidad=float(precio_seleccionado) # Calcular el precio de cada producto
-                totalp=cantidad * float(precio_unidad) # Calcular el precio final segun la cantidad
-                total_proforma+=float(totalp)
-                nuevo_componente=DetallePedido(lote=i["lote"],total_producto=totalp,precio_seleccionado=precio_seleccionado,instancia_id=instancia.id,pedido=pedido,cantidada=cantidad,producto=producto,inventario=inventario)
-                nuevo_componente.save()
-                if inventario:
-                    if i['id']==None:
-                        inventario.disponible=int(inventario.disponible) - cantidad
-                        inventario.bloqueado=int(inventario.bloqueado)+cantidad
-                    inventario.save()
-            pedido.total=total_proforma
+            # Obtener pedido
+            pedido=Pedido.objects.get(id=request.data['id_pedido'])
+            # Salvar los detalles antiguos del pedido
+            viejos_detalles=DetallePedido.objects.filter(pedido=pedido)
+            # Iniciar total del pedido
+            total=0
+            # Borrar los detalles antiguos del pedido
+            for d in viejos_detalles:
+                try:
+                    # Modificar el inventario si existe
+                    if d.inventario:
+                        inventario=Inventario.objects.get(id=d.inventario.id,producto=d.producto,lote__exact=d.lote)
+                        retornado=modificar_inventario('devolver',inventario,d.cantidada) if inventario else 'Inventario no encontrado'
+                        if retornado:
+                            raise Exception(retornado)
+                except Exception as e:
+                    print(e)
+                    # Guardar Error
+                    info['errores'].append({'code':'404','error':str(e)})
+                # Eliminar detalle
+                d.delete()
+            # Guardar los nuevos detalles del pedido
+            for d in nuevos_detalles:
+                try:
+                    # Obtener inventario del nuevo pedido
+                    inventario=None if not d['inventario'] else Inventario.objects.get(id=d['inventario'])
+                    # Obtener producto
+                    producto=Producto.objects.get(id=d["producto"])
+                    # Obtener el precio seleccionado del producto y su cantidad en el pedido
+                    precio_seleccionado=float(d['precio_seleccionado'])
+                    cantidad=int(d['cantidada'])
+                    # Calcular el precio de cada producto segun la cantidad
+                    total_producto=cantidad * precio_seleccionado
+                    # Sumar al precio final 
+                    total+=total_producto
+                    # Crear detalle
+                    nuevo_detalle=DetallePedido(lote=d["lote"],total_producto=total_producto,precio_seleccionado=precio_seleccionado,instancia_id=instancia.id,pedido=pedido,cantidada=cantidad,producto=producto,inventario=inventario)
+                    nuevo_detalle.save()
+                    # Encaso de tener un inventario, modificarlo
+                    if inventario:
+                        retornado=modificar_inventario('bloquear',inventario,cantidad)
+                        if retornado:
+                            raise Exception(retornado)
+                except Exception as e:
+                    print(e)
+                    info['errores'].append({'code':'404','error':str(e)})
+            # Modificar total y guardar pedido
+            pedido.total=total
             pedido.save()
-            DetallePedido.objects.filter(id__in=id_dpedidos).delete()
-            return Response(status=status.HTTP_200_OK)
-        except ObjectDoesNotExist as e:
-            return Response({'error': str(e)},status=status.HTTP_404_NOT_FOUND)
+            return Response(info,status=status.HTTP_200_OK)
         except Exception as e:
-            return Response({'error': e},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            print(e)
+            return Response(str(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
+# Funcion para modificar las cantidades del inventario
+def modificar_inventario(tipo,inventario,cantidad):
+    if inventario:
+        # Buscar u obtener Query de inventario
+        inventario=Inventario.objects.get(id=inventario) if isinstance(inventario, int) else inventario
+        # Si el tipo de movimiento es devolver, suma al disponible y resta al bloqueado
+        if tipo == 'devolver':
+            inventario.disponible += cantidad
+            inventario.bloqueado -= cantidad
+        # Si el tipo de movimiento es bloquear, suma al bloqueado y resta al disponible
+        elif tipo == 'bloquear':
+            inventario.disponible -= cantidad
+            inventario.bloqueado += cantidad
+        # Guardar inventario
+        inventario.save()
+        return False # False signifca que no hubo error
+    else:
+        return 'Falta asignar un inventario'
 # Funcion tipo vista para hacer la validacion de los pedidos
 @api_view(["POST"])
 @csrf_exempt

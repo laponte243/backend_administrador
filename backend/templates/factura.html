@@ -155,13 +155,13 @@
         </div>
         <div class="item8">
             <p>
-                <strong>Cliente:</strong> {{factura.nombre_cliente}}, 
-                <strong>Fecha:</strong> {{factura.fecha_factura}}, 
+                <strong>Cliente:</strong> {{factura.codigo_cliente}} - {{factura.nombre_cliente}}, 
+                <strong>Fecha:</strong> {{factura.fecha_factura|date:"d/m/Y"}}, 
                 <strong>Direccion fiscal:</strong> {{factura.direccion_cliente}}, 
                 <strong>Email:</strong> {{factura.correo_cliente}}, 
                 <strong>RIF:</strong> {{factura.identificador_fiscal}}, 
                 <strong>Telefono:</strong> {{factura.telefono_cliente}},
-                <!-- <strong>Vendedor:</strong> {{factura.nombre_vendedor}},  -->
+                <strong>Vendedor:</strong> {{factura.codigo_vendedor}} - {{factura.nombre_vendedor}},
                 <strong>Condicion:</strong> Contado. 
             </p>
             <div class="row" style="margin-top: none;">
@@ -223,7 +223,7 @@
         <div class="item8_c">
             <p>
                 Imponible: {{imponible}} Bs.S <br>
-                Impuesto: {{impuesto}} Bs.S
+                Impuesto: {{impuesto}}
             </p>
         </div>
         <div class="item8_d">

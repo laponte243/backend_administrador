@@ -99,19 +99,17 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th style="width: 50%">Cliente</th>
-                            <th style="width: 10%">Codigo</th>
-                            <th style="width: 20%">Fecha</th>
-                            <th style="width: 10%">Vendedor</th>
+                            <th style="width: 45%">Cliente</th>
+                            <th style="width: 10%">Fecha</th>
+                            <th style="width: 35%;text-align: center">Vendedor</th>
                             <th style="width: 10%">Condicion</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td><strong><em>{{proforma.cliente.nombre}}</em></strong></td>
-                            <td style="text-align: center">{{proforma.id}}</td>
+                            <td>{{proforma.cliente.codigo}} - {{proforma.cliente.nombre}}</td>
                             <td>{{proforma.fecha_proforma|date:"d/m/Y"}}</td>
-                            <td style="text-align: center">{{proforma.vendedor.id}}</td>
+                            <td style="text-align: center">{{proforma.vendedor.codigo}} - {{proforma.vendedor.nombre}}</td>
                             <td><strong>Contado</strong></td>
                         </tr>
                     </tbody>

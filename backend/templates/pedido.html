@@ -13,25 +13,6 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script> 
     <title>Pedido</title>
-    <!-- <style>
-        .separator {
-            display: flex;
-            align-items: center;
-            text-align: center;
-            margin-top: 20px;
-        }
-        .separator::before, .separator::after {
-            content: '';
-            flex: 1;
-            border-bottom: 1px solid #000;
-        }
-        .separator::before {
-            margin-right: .25em;
-        }
-        .separator::after {
-            margin-left: .25em;
-        }
-    </style> -->
 </head>
 
 <style>
@@ -101,19 +82,17 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th style="width: 50%">Cliente</th>
-                            <th style="width: 10%">Codigo</th>
-                            <th style="width: 20%">Fecha</th>
-                            <th style="width: 10%">Vendedor</th>
+                            <th style="width: 45%">Cliente</th>
+                            <th style="width: 10%">Fecha</th>
+                            <th style="width: 35%;text-align: center">Vendedor</th>
                             <th style="width: 10%">Condicion</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td><strong><em>{{pedido.cliente.nombre}}</em></strong></td>
-                            <td style="text-align: center">{{pedido.id}}</td>
+                            <td>{{pedido.cliente.codigo}} - {{pedido.cliente.nombre}}</td>
                             <td>{{pedido.fecha_pedido|date:"d/m/Y"}}</td>
-                            <td style="text-align: center">{{pedido.vendedor.id}}</td>
+                            <td style="text-align: center">{{pedido.vendedor.codigo}} - {{pedido.vendedor.nombre}}</td>
                             <td><strong>Contado</strong></td>
                         </tr>
                     </tbody>
