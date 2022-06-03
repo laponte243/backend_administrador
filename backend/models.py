@@ -72,15 +72,17 @@ class Nota(models.Model):
         abstract=True
 class Empresa(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
-    nombre=models.TextField(max_length=150,blank=False,null=False,help_text="Razon social de la empresa")
-    direccion_fiscal=models.TextField(max_length=150,blank=False,null=False,help_text="direccion fiscal de la empresa")
-    # logo=models.ImageField(upload_to='empresas',null=True,help_text="logo de la empresa")
+    nombre=models.CharField(max_length=150,blank=False,null=False,help_text="Razon social de la empresa")
+    correo=models.CharField(max_length=150,blank=False,null=False,help_text="Correo de la empresa")
+    direccion=models.TextField(blank=False,null=False,help_text="Direccion fiscal de la empresa")
+    telefono=models.CharField(max_length=32,null=False,help_text="Telefono de la empresa")
+    logo=models.ImageField(upload_to='static/media',null=True,help_text="Logo de la empresa")
     history=HistoricalRecords()
     def __str__(self):
         return '%s'%(self.nombre)
     def save(self):
         super().save()
-        if self.id:
+        if self.id and not ConfiguracionPapeleria.objects.filter(id=self.id):
             tipos=[
                 'A', # Nota Devolucion
                 'B', # Nota Control
@@ -138,6 +140,7 @@ class Impuestos(models.Model):
 class Marca(models.Model):
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
     nombre=models.TextField(max_length=220,blank=True,help_text="Nombre de la marca")
+    prioridad=models.IntegerField(null=False,default=2)
     logo=models.ImageField(upload_to='marcas',null=True,help_text="logo de la marca")
     history=HistoricalRecords()
     def __str__(self):
@@ -216,7 +219,7 @@ class Vendedor(models.Model):
     identificador=models.TextField(max_length=150,blank=True,help_text="nombre completo del vendedor")
     telefono=models.TextField(max_length=150,blank=True,help_text="telefono del vendedor")
     correo=models.TextField(max_length=150,blank=True,help_text="correo asociado al vendedor")
-    codigo=models.IntegerField(null=False,blank=False,help_text="codigo del vendedor")
+    codigo=models.TextField(null=False,blank=False,help_text="codigo del vendedor")
     activo=models.BooleanField(default=False,help_text="Esta activo?")
     history=HistoricalRecords()
     def __str__(self):
@@ -311,7 +314,8 @@ class DetalleProforma(models.Model):
 class Factura(models.Model):
     # Llaves foraneas
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
-    proforma=models.ForeignKey(Proforma,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="proforma asociada")
+    proforma=models.ForeignKey(Proforma,null=True,blank=False,on_delete=models.DO_NOTHING,help_text="proforma asociada")
+    origen=models.IntegerField(null=True)
     # Cliente
     nombre_cliente=models.TextField(max_length=150,blank=False,null=False,help_text="Nombre del cliente en la venta")
     codigo_cliente=models.TextField(blank=False,null=False,help_text="Codigo del cliente asociado")
@@ -342,8 +346,12 @@ class Factura(models.Model):
     numerologia=models.TextField(null=False,blank=False)
     control=models.TextField(null=False,blank=False)
     history=HistoricalRecords()
+    def save(self):
+        if self.id and not self.origen:
+            self.origen = self.proforma.id
+        super().save()
     def __str__(self):
-        return "Factura: #%s,$%s (%s/%s)"%(self.proforma.id,self.total,self.nombre_cliente,self.nombre_empresa)
+        return "Factura: #%s (%s),$%s (%s/%s)"%(self.id,self.proforma.id if self.proforma else 'Nulificado',self.total,self.nombre_cliente,self.nombre_empresa)
 class DetalleFactura(models.Model):
     # Relaciones foraneas principales
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")

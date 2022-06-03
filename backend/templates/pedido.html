@@ -1,159 +1,186 @@
 <!DOCTYPE html>
+
 {% load static %}
 {% load l10n %}
 {% localize on %}
     {{ value }}
 {% endlocalize %}
+
 <html lang="es">
-
-<head>
-    <meta charset="UTF-8">
- <meta name="viewport" content="width=device-width, initial-scale=1">
-     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script> 
-    <title>Pedido</title>
-</head>
-
-<style>
-    @page {
-        margin: 0;
-        padding: 0;
-    }
-    .container {
-        margin-left: 5%;
-        margin-right: 5%;
-        font-size: 11px;
-        background: rgb(255, 255, 255);
-    }
-    .item1 {
-        margin-top: 8%;
-        font-size: 0.9em;
-        /* grid-area: header; */
-    }
-    .item2 {
-        margin-top: 2%;
-        font-size: 0.8em;
-        /* grid-area: leyenda; */
-    }
-    .item3 {
-        font-size: 1.1em;
-        /* grid-area: contenido; */
-    }
-    .item4 {
-        font-size: 0.8em;
-        /* grid-area: detalle; */
-    }
-    .item5 {
-        margin-top: 4%;
-        font-size: 1em;
-        /* grid-area: total; */
-    }
-    .table>thead>tr>th {
-        border-bottom: 2px solid rgb(184, 184, 184);
-    }
-    .filahr{
-        padding:0px;
-        margin:0px;
-    }
-    .filaDetalle {
-        border-bottom:1px solid rgb(224, 224, 224);
-        border-top:1px solid rgb(202, 202, 202);
-    }
-</style>
-
-<body>
-    <div class="container">
-        <div class="item1">
-            <img src="ejemplologo.jpeg" alt="LOGO MEDICALVET CENTRO, C.A" width="800" height="500">
-        </div>
-        <div class="item2">
-            <p>
-                Ctra. Vieja Tocuyito, Edif. 15, Apto. 12, Conjunto Residencial 'El Portal de Luis', Tocuyito - Edo.Carabobo <br>
-                Telefono: 
-                Correo: medicalvetcentro@homail.com
-            </p>
-        </div>
-        <div class="item3" style="text-align: right">
-            <strong><p> PEDIDO: {{pedido.id}}</p></strong>
-        </div>
-        <div class="row">
-            <div class="col-xs-12">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th style="width: 45%">Cliente</th>
-                            <th style="width: 10%">Fecha</th>
-                            <th style="width: 35%;text-align: center">Vendedor</th>
-                            <th style="width: 10%">Condicion</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>{{pedido.cliente.codigo}} - {{pedido.cliente.nombre}}</td>
-                            <td>{{pedido.fecha_pedido|date:"d/m/Y"}}</td>
-                            <td style="text-align: center">{{pedido.vendedor.codigo}} - {{pedido.vendedor.nombre}}</td>
-                            <td><strong>Contado</strong></td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div class="row" style="margin-top: 1%">
-                    <div class="col-xs-8">Direccion fiscal: {{pedido.cliente.ubicacion}}</div>
-                    <div class="col-xs-4" style="text-align: right">RIF: {{pedido.cliente.identificador}}</div>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script> 
+        <title>Pedido</title>
+    </head>
+    <style>
+        @page {
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            margin-left: 5%;
+            margin-right: 5%;
+            font-size: 11px;
+            background: rgb(255, 255, 255);
+        }
+        .item1 {
+            margin-top: 8%;
+            font-size: 0.9em;
+            /* grid-area: header; */
+        }
+        .item2 {
+            margin-top: 2%;
+            font-size: 0.8em;
+            /* grid-area: leyenda; */
+        }
+        .item3 {
+            font-size: 1.1em;
+            /* grid-area: contenido; */
+        }
+        .item4 {
+            font-size: 0.8em;
+            /* grid-area: detalle; */
+        }
+        .item5 {
+            margin-top: 4%;
+            font-size: 1em;
+            /* grid-area: total; */
+        }
+        .table>thead>tr>th {
+            border-bottom: 2px solid rgb(184, 184, 184);
+        }
+        .filaDetalle {
+            border-bottom:1px solid rgb(224, 224, 224);
+            border-top:1px solid rgb(202, 202, 202);
+        }
+    </style>
+    <body>
+        <div class="container">
+            {% if error != 'None' %}
+                <div class="item1">
+                    <img src="{% static empresa.logo %}" alt="LOGO {{empresa.nombre}}"  style="width:220px;height:50px;"/>
                 </div>
-                <div class="row" style="margin-top: 1%">
-                    <div class="col-xs-8">Email: {{pedido.cliente.mail}}</div>
-                    <div class="col-xs-4" style="text-align: right">Telefono: {{pedido.cliente.telefono}}</div>
+                <div class="item2">
+                    <p>
+                        {{ empresa.direccion }} <br>
+                        Telefono: {{ empresa.telefono }}
+                        Correo: {{ empresa.correo }}
+                    </p>
                 </div>
-            </div>
-        </div>
-
-        <div class="row" style="margin-top: 5%">
-            <div class="col-xs-12">
-                <table class="table table-responsive table-condensed" style="border-bottom: none;">
-                    <thead style="border-bottom: none;">
-                        <tr style="border-bottom: none;">
-                            <th style="width: 10%">ID</th>
-                            <th style="width: 50%">PRODUCTO</th>
-                            <th style="width: 10%">LOTES</th>
-                            <th style="width: 30%; text-align:right;">CANTIDAD</th>
-                        </tr>
-                    </thead>
-                    <tbody style="border-bottom: none; border-top: none;">
-                        {% for producto in productos %}
-                            <tr style="border-bottom: none; border-top: none;">
-                                <td class="filaDetalle">{{forloop.counter}}</td>
-                                <td class="filaDetalle">{{producto.producto_nombre}}</td>
-                                <td class="filaDetalle">
-                                    {% if not producto.mostrar %}
-                                        {% if producto.detalle %}
-                                            <span style="font-size: 8px;">{{ producto.detalle }}</span>
+                <div class="item3" style="text-align: right">
+                    <strong><p> PEDIDO: {{pedido.id}}</p></strong>
+                </div>
+                <div class="row">
+                    <div class="col-xs-12">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 45%">Cliente</th>
+                                    <th style="width: 10%">Fecha</th>
+                                    <th style="width: 35%;text-align: center">Vendedor</th>
+                                    <th style="width: 10%">Condicion</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>{{pedido.cliente.codigo}} - {{pedido.cliente.nombre}}</td>
+                                    <td>{{pedido.fecha_pedido|date:"d/m/Y"}}</td>
+                                    <td style="text-align: center">{{pedido.vendedor.codigo}} - {{pedido.vendedor.nombre}}</td>
+                                    <td><strong>Contado</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="row" style="margin-top: 1%">
+                            <div class="col-xs-8">Direccion fiscal: {{pedido.cliente.ubicacion}}</div>
+                            <div class="col-xs-4" style="text-align: right">RIF: {{pedido.cliente.identificador}}</div>
+                        </div>
+                        <div class="row" style="margin-top: 1%">
+                            <div class="col-xs-8">Email: {{pedido.cliente.mail}}</div>
+                            <div class="col-xs-4" style="text-align: right">Telefono: {{pedido.cliente.telefono}}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row" style="margin-top: 5%">
+                    <div class="col-xs-12">
+                        <table class="table table-responsive table-condensed" style="border-bottom: none;">
+                            <thead style="border-bottom: none;">
+                                <tr style="border-bottom: none;">
+                                    <th style="width: 6%">ID</th>
+                                    <th style="width: 55%">PRODUCTO</th>
+                                    <th style="width: 17%; text-align:center;">LOTES</th>
+                                    <th style="width: 17%; text-align:center;">VENCIMIENTO</th>
+                                    <th style="width: 5%; text-align:right;">CANTIDAD</th>
+                                    <!-- <th style="width: 10%">P/UNIDAD</th>
+                                    <th style="width: 15%;text-align: right;">TOTAL</th> -->
+                                </tr>
+                            </thead>
+                            <tbody style="border-bottom: none; border-top: none;">
+                                {% for producto in productos %}
+                                    <tr style="border-bottom: none; border-top: none;">
+                                        <td class="filaDetalle">{{forloop.counter}}</td>
+                                        <td class="filaDetalle">{{producto.producto_nombre}}</td>
+                                        {% if not producto.mostrar %}
+                                            <td class="filaDetalle" style="text-align:center;">
+                                            {% if producto.detalle %}
+                                                <span style="font-size: 8px;">{{ producto.detalle.lote }}</span>
+                                            {% endif %}
+                                            </td>
+                                            <td class="filaDetalle" style="text-align:center;">
+                                            {% if producto.detalle.vencimiento %}
+                                                <span style="font-size: 8px;">{{ producto.detalle.vencimiento|date:"d/m/Y" }}</span>
+                                            {% endif %}
+                                            </td>
+                                        {% else %}
+                                            <td class="filaDetalle"></td>
+                                            <td class="filaDetalle"></td>
                                         {% endif %}
+                                        <td class="filaDetalle" style="text-align: right;">{{producto.cantidad}}</td>
+                                        <!-- <td class="filaDetalle" style="text-align: center;">{{producto.precio}}</td>
+                                        <td class="filaDetalle" style="text-align: right;">{{producto.total_producto}}</td> -->
+                                    </tr>
+                                    {% if producto.mostrar %}
+                                        {% for subdeta in producto.detalle %}
+                                            <tr style="visibility:visible; font-size: 8px; border-top: none; height: 20px;">
+                                                <td colspan="2" style="text-align:right; border-top: none; border-bottom: none;">
+                                                    -
+                                                </td>
+                                                <td colspan="1" style="text-align:center; border-top: none; border-bottom: none;">
+                                                    {{subdeta.lote}}
+                                                </td>
+                                                <td colspan="1" style="text-align:center; border-top: none; border-bottom: none;">
+                                                    {{subdeta.vencimiento|date:"d/m/Y"}}
+                                                </td>
+                                                <td colspan="1" style="text-align:right; border-top: none; border-bottom: none;">
+                                                    {{subdeta.cantidad}}
+                                                </td>
+                                                <!-- <td colspan="2" style="text-align:center; border-top: none; border-bottom: none;"">
+                                                    {{subdeta.total_producto}}
+                                                </td> -->
+                                            </tr> 
+                                        {% endfor %}
                                     {% endif %}
-                                </td>
-                                <td class="filaDetalle" style="text-align:right;">{{producto.cantidad}}</td>
-                            </tr>
-                            {% if producto.mostrar %}
-                                {% for subdeta in producto.detalle %}
-                                    <tr style="visibility:visible; font-size: 8px; border-top: none; height: 20px;">
-                                        <td colspan="2" style="text-align:right; border-top: none; border-bottom: none;">
-                                            -
-                                        </td>
-                                        <td colspan="1" style="text-align:center; border-top: none; border-bottom: none;">
-                                            {{subdeta.lote}}
-                                        </td>
-                                        <td colspan="1" style="text-align:right; border-top: none; border-bottom: none;">
-                                            {{subdeta.cantidad}}
-                                        </td>
-                                    </tr> 
                                 {% endfor %}
-                            {% endif %}
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- <div class="row"">
+                    <div class="col-xs-7" style="text-align: right; bottom: 0">
+                    </div>
+                    <div class="col-xs-4" style="text-align: right; bottom: 0">
+                        <p>
+                            TOTAL: {{total}}
+                        </p>
+                    </div>
+                </div> -->
+            {% else %}
+                <div>
+                    {{ error }}
+                </div>
+            {% endif %}
         </div>
-    </div>
-</body>
-
+    </body>
 </html>

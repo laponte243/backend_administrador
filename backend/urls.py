@@ -77,11 +77,12 @@ urlpatterns = [
     path('actualizar-proforma/', views.actualizar_proforma),
     path('validar-pedido/', views.validar_pedido),
     path('generar-factura/', views.generar_factura),
+    path('anular-factura/', views.anular_factura),
     # Mostrar PDFs 
-    path('pdf-pedido/<int:id_pedido>', views.PedidoPDF.as_view()),
-    path('pdf-proforma/<int:id_proforma>', views.ProformaPDF.as_view()),
-    path('pdf-factura/<int:id_factura>', views.FacturaPDF.as_view()),
-    path('pdf-nota-pago/<int:id_notapago>', views.NotaPagoPDF.as_view()),
+    path('pdf-pedido/<int:id_pedido>/<str:token>/', views.PedidoPDF.as_view()),
+    path('pdf-proforma/<int:id_proforma>/<str:token>/', views.ProformaPDF.as_view()),
+    path('pdf-factura/<int:id_factura>/<str:token>/', views.FacturaPDF.as_view()),
+    path('pdf-nota-pago/<int:id_notapago>/<str:token>/', views.NotaPagoPDF.as_view()),
     path('pdf-proforma-guardar/', views.guardar_pdf),
     # Excels
     path('xls-generador/', views.vista_xls),

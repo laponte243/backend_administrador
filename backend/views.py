@@ -14,7 +14,7 @@ from django.db.models import *
 from django.contrib.auth import *
 from django.core import serializers as sr
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import JsonResponse,HttpResponse,request
+from django.http import JsonResponse,HttpResponse,request,QueryDict
 from django.shortcuts import render,get_object_or_404
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
@@ -36,14 +36,15 @@ from django.template.loader import render_to_string
 from django_renderpdf.views import PDFView
 from email import header
 from urllib import response
-from numpy import indices
+from numpy import indices, safe_eval
+from xlwt import *
 import pandas as pd
 import csv
-import xlwt
 import requests
 import datetime
 import random
 import string
+
 # Acceso de KNOX
 class LoginView(KnoxLoginView):
     permission_classes=(permissions.AllowAny,)
@@ -58,18 +59,21 @@ class LoginView(KnoxLoginView):
         temp_list.data["last_name"]=user.last_name
         temp_list.data["last_login"]=user.last_login
         return Response({"data": temp_list.data})
+
 # Vista creada para el modelo de Group
 class GroupVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
     queryset=Group.objects.none()
     serializer_class=GroupMSerializer
+
 # Vista creada para el modelo de Permission
 class PermissionVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
     queryset=Permission.objects.none()
     serializer_class=PermissionMSerializer
+
 # Vista modificada para el modelo mixim de User
 class UserVS(viewsets.ModelViewSet):
     # Permisos
@@ -162,6 +166,7 @@ class UserVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Vista del modelo Modulo
 class ModuloVS(viewsets.ModelViewSet):
     # Permisos
@@ -199,6 +204,7 @@ class ModuloVS(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_401_UNAUTHORIZED)
         else:
             return Modulo.objects.none()
+
 # Vista para el modelo Menu
 class MenuVS(viewsets.ModelViewSet):
     # Permisos
@@ -235,6 +241,7 @@ class MenuVS(viewsets.ModelViewSet):
             return Menu.objects.all()
         else:
             return Menu.objects.none()
+
 # Instancia
 class InstanciaVS(viewsets.ModelViewSet):
     # Permisos
@@ -268,6 +275,7 @@ class InstanciaVS(viewsets.ModelViewSet):
     def get_queryset(self):
         perfil=obt_per(self.request.user)
         return Instancia.objects.all().order_by('nombre') if perfil.tipo=='S' else Instancia.objects.none()
+
 # Menus por instancia
 class MenuInstanciaVS(viewsets.ModelViewSet):
     # Permisos
@@ -317,6 +325,7 @@ class MenuInstanciaVS(viewsets.ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
+
 # Perfiles de usuarios
 class PerfilVS(viewsets.ModelViewSet):
     # Permisos
@@ -413,6 +422,8 @@ class PerfilVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)# Permisos de los usuarios
+
+# Permisos de los usuarios
 class PermisoVS(viewsets.ModelViewSet):
     # Permisos
     permiso='Usuarios_y_permisos'
@@ -491,6 +502,7 @@ class PermisoVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Empresas registradas de la instancia
 class EmpresaVS(viewsets.ModelViewSet):
     # Permisos
@@ -568,6 +580,7 @@ class EmpresaVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Contactos de las empresas
 class ContactoEmpresaVS(viewsets.ModelViewSet):
     # Permisos
@@ -643,6 +656,7 @@ class ContactoEmpresaVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Configuracion de papelerias
 class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
     permiso='Empresa'
@@ -717,6 +731,7 @@ class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Tasas de conversiones de la instancia
 class TasaConversionVS(viewsets.ModelViewSet):
     # Permisos
@@ -792,6 +807,7 @@ class TasaConversionVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Impuestos registrados
 class ImpuestosVS(viewsets.ModelViewSet):
     # Permisos
@@ -867,6 +883,7 @@ class ImpuestosVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Marcas registradas en la instancia
 class MarcaVS(viewsets.ModelViewSet):
     # Permisos
@@ -939,6 +956,7 @@ class MarcaVS(viewsets.ModelViewSet):
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
     def retrieve(self, request, pk=None):
         return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data)
+
 # Productos registrados en la instancia
 class ProductoVS(viewsets.ModelViewSet):
     # Permisos
@@ -1014,6 +1032,7 @@ class ProductoVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # ImagenesP registradas en la instancia
 class ProductoImagenVS(viewsets.ModelViewSet):
     # Permisos
@@ -1068,6 +1087,7 @@ class ProductoImagenVS(viewsets.ModelViewSet):
     # Metodo leer no disponible
     def get_queryset(self):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
 # Almacen registrado en la instancia
 class AlmacenVS(viewsets.ModelViewSet):
     # Permisos
@@ -1143,6 +1163,7 @@ class AlmacenVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Movimientos del inventario registrados en el sistema
 class MovimientoInventarioVS(viewsets.ModelViewSet):
     # Permisos
@@ -1241,6 +1262,7 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Detalles del inventario registrados
 class DetalleInventarioVS(viewsets.ModelViewSet):
     # Permisos
@@ -1315,6 +1337,7 @@ class DetalleInventarioVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Vendedores registrados en la instancia
 class VendedorVS(viewsets.ModelViewSet):
     # Permisos
@@ -1390,6 +1413,7 @@ class VendedorVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Clientes registrados en la instancia
 class ClienteVS(viewsets.ModelViewSet):
     # Permisos
@@ -1451,7 +1475,28 @@ class ClienteVS(viewsets.ModelViewSet):
                 objetos=self.queryset if perfil.tipo=='S' else self.queryset.filter(perfil__instancia=instancia)
                 objetos=objetos.exclude(perfil__tipo__in=['A','S']) if perfil.tipo=='U' or perfil.tipo=='V' else objetos
                 # Paginacion
+                codigo = None
                 paginado=paginar(objetos,self.request.query_params.copy(),self.modelo)
+                if not paginado['objetos']:
+                    parametros=self.request.query_params.copy()
+                    # Eliminar parametros de paginado
+                    try: parametros.pop('p_pagina')
+                    except: pass
+                    try: parametros.pop('p_ordenar')
+                    except: pass
+                    try: parametros.pop('p_cantidad')
+                    except: pass
+                    # Extraer valor para buscar por codigo
+                    extras=[]
+                    for p in parametros.keys():
+                        codigo = parametros[p] if not codigo or p == 'nombre__icontains' else codigo
+                        extras.append(p)
+                    if codigo:
+                        params = self.request.query_params.copy()
+                        params['codigo__icontains'] = codigo
+                        for e in extras:
+                            params.pop(e)
+                        paginado=paginar(objetos,params,self.modelo)
                 # Data e Info de la paginacion
                 data=self.serializer_class(paginado['objetos'],many=True).data
                 # Respuesta
@@ -1465,6 +1510,7 @@ class ClienteVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Contactos de los clientes de la instancias
 class ContactoClienteVS(viewsets.ModelViewSet):
     # Permisos
@@ -1540,6 +1586,7 @@ class ContactoClienteVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Pedidos registrados en la instancia
 class PedidoVS(viewsets.ModelViewSet):
     # Permisos
@@ -1624,6 +1671,7 @@ class PedidoVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Detalles de los pedidos
 class DetallePedidoVS(viewsets.ModelViewSet):
     # Permisos
@@ -1704,6 +1752,7 @@ class DetallePedidoVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Proformas registrados en la instancia
 class ProformaVS(viewsets.ModelViewSet):
     # Permisos
@@ -1789,6 +1838,7 @@ class ProformaVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Detalles de las proformas de la instancia
 class DetalleProformaVS(viewsets.ModelViewSet):
     # Permisos
@@ -1867,6 +1917,7 @@ class DetalleProformaVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Notas de pago
 class NotaPagoVS(viewsets.ModelViewSet):
     # Permisos
@@ -1948,6 +1999,7 @@ class NotaPagoVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Detalles de las notas de pago de la instancia
 class DetalleNotaPagoVS(viewsets.ModelViewSet):
     # Permisos
@@ -2023,6 +2075,7 @@ class DetalleNotaPagoVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Facturas registradas en la instancia
 class FacturaVS(viewsets.ModelViewSet):
     # Permisos
@@ -2104,6 +2157,7 @@ class FacturaVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Detalles de las facturas de la instancia
 class DetalleFacturaVS(viewsets.ModelViewSet):
     # Permisos
@@ -2179,6 +2233,7 @@ class DetalleFacturaVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Impuestos en las facturas de la instancia
 class ImpuestosFacturaVS(viewsets.ModelViewSet):
     # Permisos
@@ -2254,6 +2309,7 @@ class ImpuestosFacturaVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Numerologia de las facturas de la instancia
 class NumerologiaFacturaVS(viewsets.ModelViewSet):
     # Permisos
@@ -2329,6 +2385,7 @@ class NumerologiaFacturaVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Notas de las facturas de la instancia
 class NotaFacturaVS(viewsets.ModelViewSet):
     # Permisos
@@ -2404,6 +2461,7 @@ class NotaFacturaVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Proveedores registrados en la instancia
 class ProveedorVS(viewsets.ModelViewSet):
     # Permisos
@@ -2479,6 +2537,7 @@ class ProveedorVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Compras registradas en la instancia
 class CompraVS(viewsets.ModelViewSet):
     # Permisos
@@ -2554,6 +2613,7 @@ class CompraVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Detalle de las compras
 class DetalleCompraVS(viewsets.ModelViewSet):
     # Permisos
@@ -2627,6 +2687,7 @@ class DetalleCompraVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 # Notas de las compras de la intancia
 class NotaCompraVS(viewsets.ModelViewSet):
     # Permisos
@@ -2702,182 +2763,227 @@ class NotaCompraVS(viewsets.ModelViewSet):
             return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if verificar_permiso(obt_per(request.user),self.permiso,'leer') else User.objects.none()
         except Exception as e:
             return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
 """ PDFs """
 # Generar pagina tipo PDF para pedidos
 class PedidoPDF(PDFView):
     template_name='pedido.html'
     allow_force_html=True
     def get_context_data(self,*args,**kwargs):
-        # params=request.query_params
-        # token=params.get('token').split(' ')[1]
-        # if Token.objects.get(key=token):
-        # Definicion de contenido extra para el template
         context=super().get_context_data(*args,**kwargs)
-        pedido=Pedido.objects.get(id=kwargs['id_pedido'])
-        value={'data':[]}
-        agrupador=DetallePedido.objects.filter(pedido=pedido).values('producto').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada'))
-        # Ciclo para generar Json y data para el template
-        for dato in agrupador:
-            # Obtener producto
-            productox=Producto.objects.get(id=dato['producto'])
-            # Iniciar variable de los detalles
-            valuex={'datax':[]}
-            # Iniciar variables del pedido
-            total_cantidad=0
-            mostrar=True
-            detallado=DetallePedido.objects.filter(pedido=pedido,producto=productox).order_by('producto__id')
-            # Condiciones para mostrar o no los lotes y detalles
-            if productox.lote==True and len(detallado) > 1: # Conficion para cuando se debe mostrar el lote, y hay varios detalles, del producto
-                for detalle in detallado:
-                    valuex['datax'].append({'lote':detalle.lote,'cantidad':detalle.cantidada})
-                    total_cantidad += detalle.cantidada
-            elif productox.lote==True and len(detallado)==1: # Conficion para cuando se debe mostrar el lote, y hay un solo detalle, del producto
-                valuex['datax']=''
-                mostrar=False
-                for detalle in detallado:
-                    valuex['datax']=detalle.lote
-                    total_cantidad += detalle.cantidada
-            else: # Conficion para cuando no se debe mostrar el lote del producto
-                mostrar=False
-                for detalle in detallado:
-                    total_cantidad += detalle.cantidada
-                valuex['datax']=None
-            # Agregar detalles al arreglo de detalles
-            value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'mostrar':mostrar,'cantidad':total_cantidad})
-        # Setear los valores al template
-        context['productos']=value['data']
-        context['pedido']=pedido
-        return context
+        context['error'] = None
+        try:
+            if Token.objects.get(key=kwargs['token']):
+                # Definicion de contenido extra para el template
+                pedido=Pedido.objects.get(id=kwargs['id_pedido'])
+                value={'data':[]}
+                agrupador=DetallePedido.objects.filter(pedido=pedido).values('producto').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada'))
+                # Ciclo para generar Json y data para el template
+                for dato in agrupador:
+                    # Obtener producto
+                    productox=Producto.objects.get(id=dato['producto'])
+                    # Iniciar variable de los detalles
+                    valuex={'datax':[]}
+                    # Iniciar variables del pedido
+                    total_cantidad=0
+                    mostrar=True
+                    detallado=DetallePedido.objects.filter(pedido=pedido,producto=productox).order_by('producto__id')
+                    # Condiciones para mostrar o no los lotes y detalles
+                    if productox.lote==True and len(detallado) > 1: # Conficion para cuando se debe mostrar el lote, y hay varios detalles, del producto
+                        for detalle in detallado:
+                            valuex['datax'].append({'lote':detalle.lote  if detalle.lote else 'Sin lote','cantidad':detalle.cantidada,'vencimiento':detalle.inventario.fecha_vencimiento.date() if detalle.inventario else ''})
+                            total_cantidad += detalle.cantidada
+                    elif productox.lote==True and len(detallado)==1: # Conficion para cuando se debe mostrar el lote, y hay un solo detalle, del producto
+                        mostrar=False
+                        for detalle in detallado:
+                            valuex['datax'] = {'lote':detalle.lote,'vencimiento':detalle.inventario.fecha_vencimiento.date() if detalle.inventario else ''}
+                            total_cantidad += detalle.cantidada
+                    else: # Conficion para cuando no se debe mostrar el lote del producto
+                        mostrar=False
+                        for detalle in detallado:
+                            total_cantidad += detalle.cantidada
+                        valuex['datax']=None
+                    # Agregar detalles al arreglo de detalles
+                    value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'mostrar':mostrar,'cantidad':total_cantidad})
+                # Setear los valores al template
+                context['productos']=value['data']
+                context['pedido']=pedido
+                # Setear los valores de la empresa
+                empresa=pedido.cliente.empresa
+                context['empresa']={'nombre':empresa.nombre.upper(),'logo':'media/'+empresa.logo.name.split('/')[2],'correo':empresa.correo,'telefono':empresa.telefono,'direccion':empresa.direccion}
+                return context
+            else:
+                raise Exception('Token del usuario invalido')
+        except Exception as e:
+            context['error'] = e
+            return context
+
 # Generar pagina tipo PDF para proformas
 class ProformaPDF(PDFView):
     template_name='proforma.html'
     allow_force_html=True
     def get_context_data(self,*args,**kwargs):
-        # params=request.query_params
-        # token=params.get('token').split(' ')[1]
-        # if Token.objects.get(key=token):
-        # Definicion de contenido extra para el template
         context=super().get_context_data(*args,**kwargs)
-        proforma=Proforma.objects.get(id=kwargs['id_proforma'])
-        value={'data':[]}
-        total_calculado=0
-        agrupador=DetalleProforma.objects.filter(proforma=proforma).values('producto','precio').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada'))
-        # Ciclo para generar Json y data para el template
-        for dato in agrupador:
-            # Obtener producto
-            productox=Producto.objects.get(id=dato['producto'])
-            # Iniciar variable de los detalles
-            valuex={'datax':[]}
-            # Iniciar variables de la proforma
-            total_cantidad=0
-            precio_unidad=0
-            costo_total=0
-            mostrar=True
-            detallado=DetalleProforma.objects.filter(proforma=proforma,producto=productox).order_by('producto__id')
-            # Condiciones para mostrar o no los lotes y detalles
-            if productox.lote==True and len(detallado) > 1: # Conficion para cuando se debe mostrar el lote, y hay varios detalles, del producto
-                for detalle in detallado:
-                    valuex['datax'].append({'lote':detalle.lote,'cantidad':detalle.cantidada})
-                    total_cantidad += detalle.cantidada
-                    precio_unidad=detalle.precio
-            elif productox.lote==True and len(detallado)==1: # Conficion para cuando se debe mostrar el lote, y hay un solo detalle, del producto
-                valuex['datax']=''
-                mostrar=False
-                for detalle in detallado:
-                    valuex['datax']=detalle.lote
-                    total_cantidad += detalle.cantidada
-                    precio_unidad=detalle.precio
-            else: # Conficion para cuando no se debe mostrar el lote del producto
-                mostrar=False
-                for detalle in detallado:
-                    total_cantidad += detalle.cantidada
-                    precio_unidad=detalle.precio
-                valuex['datax']=None
-            # Obtener los costos totales
-            costo_total=float(precio_unidad) * float(total_cantidad)
-            total_calculado += round(costo_total,2)
-            # Agregar detalles al arreglo de detalles
-            value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'mostrar':mostrar,'cantidad':total_cantidad,'precio':precio_unidad,'total_producto':round(costo_total,2)})
-        # Setear los valores al template
-        context['productos']=value['data']
-        context['total']=total_calculado
-        context['proforma']=proforma
-        return context
+        context['error'] = None
+        try:
+            if Token.objects.get(key=kwargs['token']):
+                # Definicion de contenido extra para el template
+                context=super().get_context_data(*args,**kwargs)
+                proforma=Proforma.objects.get(id=kwargs['id_proforma'])
+                value={'data':[]}
+                total_exento=0
+                total_imponible=0
+                total_calculado=0
+                agrupador=DetalleProforma.objects.filter(proforma=proforma).values('producto','precio').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada'))
+                # Ciclo para generar Json y data para el template
+                for dato in agrupador:
+                    # Obtener producto
+                    productox=Producto.objects.get(id=dato['producto'])
+                    # Verficar exonerado
+                    if productox.exonerado == False:
+                        total_imponible += round(dato['total'],2)
+                    else:
+                        total_exento += round(dato['total'],2)
+                    # Iniciar variable de los detalles
+                    valuex={'datax':[]}
+                    # Iniciar variables de la proforma
+                    total_cantidad=0
+                    precio_unidad=0
+                    costo_total=0
+                    mostrar=True
+                    detallado=DetalleProforma.objects.filter(proforma=proforma,producto=productox).order_by('producto__id')
+                    # Condiciones para mostrar o no los lotes y detalles
+                    if productox.lote==True and len(detallado) > 1: # Conficion para cuando se debe mostrar el lote, y hay varios detalles, del producto
+                        for detalle in detallado:
+                            valuex['datax'].append({'lote':detalle.lote if detalle.lote else 'Sin lote','cantidad':detalle.cantidada,'vencimiento':detalle.inventario.fecha_vencimiento.date() if detalle.inventario else ''})
+                            total_cantidad += detalle.cantidada
+                            precio_unidad=round(detalle.precio,2)
+                    elif productox.lote==True and len(detallado)==1: # Conficion para cuando se debe mostrar el lote, y hay un solo detalle, del producto
+                        mostrar=False
+                        for detalle in detallado:
+                            valuex['datax'] = {'lote':detalle.lote,'vencimiento':detalle.inventario.fecha_vencimiento.date() if detalle.inventario else ''}
+                            total_cantidad += detalle.cantidada
+                            precio_unidad=round(detalle.precio,2)
+                    else: # Conficion para cuando no se debe mostrar el lote del producto
+                        mostrar=False
+                        for detalle in detallado:
+                            total_cantidad += detalle.cantidada
+                            precio_unidad=round(detalle.precio,2)
+                        valuex['datax']=None
+                    # Obtener los costos totales
+                    costo_total=float(precio_unidad) * float(total_cantidad)
+                    total_calculado += round(costo_total,2)
+                    # Agregar detalles al arreglo de detalles
+                    value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'mostrar':mostrar,'cantidad':total_cantidad,'precio':precio_unidad,'total_producto':round(costo_total,2)})
+                # Sumatoria de los exentos valores
+                total_real=(total_imponible + total_exento)
+                # 16% (IVA)
+                iva=round(total_imponible*(16/100),2)
+                if total_imponible:
+                    total_real=total_real+iva
+                # Setear los valores al template
+                context['productos']=value['data']
+                context['proforma']=proforma
+                context['subtotal']=round(total_calculado,2)
+                context['imponible']=round(total_imponible,2)
+                context['monto_exento']=round(total_exento,2)
+                context['impuesto']=iva
+                context['total']=round(total_real,2)
+                # Setear los valores de la empresa
+                empresa=proforma.cliente.empresa
+                context['empresa']={'nombre':empresa.nombre.upper(),'logo':'media/'+empresa.logo.name.split('/')[2],'correo':empresa.correo,'telefono':empresa.telefono,'direccion':empresa.direccion}
+                return context
+            else:
+                raise Exception('Token del usuario invalido')
+        except Exception as e:
+            print(e)
+            context['error'] = e
+            return context
+
 # Generar pagina tipo PDF para facturas
 class FacturaPDF(PDFView):
     template_name='factura.html'
     allow_force_html=True
     def get_context_data(self,*args,**kwargs):
-        # params=request.query_params
-        # token=params.get('token').split(' ')[1]
-        # if Token.objects.get(key=token):
-        # Definicion de contenido extra para el template
-        conversion=None
-        try:
-            conversion=TasaConversion.objects.filter(fecha_tasa__date=datetime.datetime.today().date()).latest('fecha_tasa__date')
-        except:
-            conversion=TasaConversion.objects.latest('fecha_tasa')
         context=super().get_context_data(*args,**kwargs)
-        factura=Factura.objects.get(id=kwargs['id_factura'])
-        subtotal=float(factura.subtotal)
-        total_costo=round(float(factura.total) * conversion.valor,2)
-        value={'data':[]}
-        total_exento=0
-        total_imponible=0
-        total_calculado=0
-        # Ciclo para generar Json y data para el template
-        for dato in DetalleFactura.objects.filter(factura=factura).values('producto','precio').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada')):
-            productox=Producto.objects.get(id=dato['producto'])
-            if productox.exonerado == False:
-                total_imponible += dato['total']
+        context['error'] = None
+        try:
+            if Token.objects.get(key=kwargs['token']):
+                conversion=None
+                try:
+                    conversion=TasaConversion.objects.filter(fecha_tasa__date=datetime.datetime.today().date()).latest('fecha_tasa__date')
+                except:
+                    conversion=TasaConversion.objects.latest('fecha_tasa')
+                context=super().get_context_data(*args,**kwargs)
+                factura=Factura.objects.get(id=kwargs['id_factura'])
+                subtotal=float(factura.subtotal)
+                total_costo=round(float(factura.total) * conversion.valor,2)
+                value={'data':[]}
+                total_exento=0
+                total_imponible=0
+                total_calculado=0
+                # Ciclo para generar Json y data para el template
+                for dato in DetalleFactura.objects.filter(factura=factura).values('producto','precio').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada')):
+                    productox=Producto.objects.get(id=dato['producto'])
+                    if productox.exonerado == False:
+                        total_imponible += dato['total']
+                    else:
+                        total_exento += dato['total']
+                    valuex={'datax':[]}
+                    total_cantidad=0
+                    precio_unidad=0.0
+                    costo_total=0.0
+                    mostrar=True
+                    detallado=DetalleFactura.objects.filter(factura=factura,producto=productox).order_by('producto__id')
+                    if productox.lote==True and len(detallado) > 1:
+                        for detalle in detallado:
+                            valuex['datax'].append({'lote':detalle.lote if detalle.lote else 'Sin lote','cantidad':detalle.cantidada,'vencimiento':detalle.inventario.fecha_vencimiento.date() if detalle.inventario else ''})
+                            total_cantidad += int(detalle.cantidada)
+                            precio_unidad=float(detalle.precio) * conversion.valor
+                    elif productox.lote==True and len(detallado)==1:
+                        valuex['datax']=''
+                        mostrar=False
+                        for detalle in detallado:
+                            valuex['datax'] = {'lote':detalle.lote,'vencimiento':detalle.inventario.fecha_vencimiento.date() if detalle.inventario else ''}
+                            total_cantidad += int(detalle.cantidada)
+                            precio_unidad=float(detalle.precio) * conversion.valor
+                    else:
+                        mostrar=False
+                        for detalle in detallado:
+                            total_cantidad += int(detalle.cantidada)
+                            precio_unidad=float(detalle.precio) * conversion.valor
+                        valuex['datax']=None
+                    costo_total=precio_unidad * float(total_cantidad)
+                    total_calculado += costo_total
+                    value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'mostrar':mostrar,'cantidad':total_cantidad,'precio':round(precio_unidad,2),'total_producto':round(costo_total,2)})
+                subtotal_conversion=subtotal * conversion.valor
+                # Sumatoria de los no exentos (Imponible)
+                total_imponible = total_imponible * conversion.valor
+                # Sumatoria de los exentos (Exonerados)
+                total_exento = total_exento * conversion.valor
+                total_real=(total_imponible + total_exento)
+                # 16% (IVA)
+                iva=round(total_imponible*(16/100),2)
+                if total_imponible:
+                    total_real=total_real+iva
+                # Setear los valores al template
+                context['productos']=value['data']
+                context['subtotal']=round(subtotal_conversion,2)
+                context['imponible']=round(total_imponible,2)
+                context['monto_exento']=round(total_exento,2)
+                context['impuesto']=iva
+                context['total']=round(total_real,2)
+                context['factura']=factura
+                # Setear los valores de la empresa
+                empresa=factura.proforma.cliente.empresa
+                context['empresa']={'nombre':empresa.nombre.upper(),'logo':'media/'+empresa.logo.name.split('/')[2],'correo':empresa.correo,'telefono':empresa.telefono,'direccion':empresa.direccion}
+                return context
             else:
-                total_exento += dato['total']
-            valuex={'datax':[]}
-            total_cantidad=0
-            precio_unidad=0.0
-            costo_total=0.0
-            mostrar=True
-            detallado=DetalleFactura.objects.filter(factura=factura,producto=productox).order_by('producto__id')
-            if productox.lote==True and len(detallado) > 1:
-                for detalle in detallado:
-                    valuex['datax'].append({'lote':detalle.lote,'cantidad':detalle.cantidada})
-                    total_cantidad += int(detalle.cantidada)
-                    precio_unidad=float(detalle.precio) * conversion.valor
-            elif productox.lote==True and len(detallado)==1:
-                valuex['datax']=''
-                mostrar=False
-                for detalle in detallado:
-                    valuex['datax']=detalle.lote
-                    total_cantidad += int(detalle.cantidada)
-                    precio_unidad=float(detalle.precio) * conversion.valor
-            else:
-                mostrar=False
-                for detalle in detallado:
-                    total_cantidad += int(detalle.cantidada)
-                    precio_unidad=float(detalle.precio) * conversion.valor
-                valuex['datax']=None
-            costo_total=precio_unidad * float(total_cantidad)
-            total_calculado += costo_total
-            value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'mostrar':mostrar,'cantidad':total_cantidad,'precio':round(precio_unidad,2),'total_producto':round(costo_total,2)})
-        subtotal_conversion=subtotal * conversion.valor
-        total_imponible = total_imponible * conversion.valor
-        total_exento = total_exento * conversion.valor
-        total_real=(total_imponible + total_exento)
-        iva=round(total_imponible*(16/100),2)
-        if total_imponible:
-            total_real=total_real+iva
-        # Setear los valores al template
-        context['productos']=value['data']
-        context['subtotal']=round(subtotal_conversion,2)
-        context['imponible']=round(total_imponible,2)
-        context['monto_exento']=round(total_exento,2)
-        context['impuesto']=iva
-        context['total']=round(total_real,2)
-        context['factura']=factura
-        return context
-        # Sumatoria de los no exentos (Imponible)
-        # Sumatoria de los exentos (Exonerados)
-        # 16% (IVA)
+                raise Exception('Token del usuario invalido')
+        except Exception as e:
+            context['error'] = e
+            return context
+
 # Generar pagina tipo PDF para notas de pago
 class NotaPagoPDF(PDFView):
     template_name='notapago.html'
@@ -2903,7 +3009,9 @@ class NotaPagoPDF(PDFView):
         context['reduccion_total']=reduccion_total
         context['notapago']=notapago
         return context
+
 """ Funciones y funciones tipo vistas """
+
 # Reseteo de contraseña
 @receiver(reset_password_token_created)
 def password_reset_token_created(sender,instance,reset_password_token,*args,**kwargs):
@@ -2919,6 +3027,7 @@ def password_reset_token_created(sender,instance,reset_password_token,*args,**kw
     msg=EmailMessage(subject,html_content,from_email,[to])
     msg.content_subtype="html"  # Main content is now text/html
     msg.send()
+
 # Funcion tipo vista para obtener objetos del inventario
 @api_view(["GET"])
 @csrf_exempt
@@ -2929,15 +3038,47 @@ def inventario(request):
     modelo=Inventario
     if verificar_permiso(perfil,'Inventario','leer'):
         if perfil:
+            # Obtener inventarios de la instancia
             inventarios=Inventario.objects.filter(instancia=perfil.instancia)
+            # Ciclo para sacar los inventarios vacios
             for o in inventarios:
                 if o.disponible==0 and o.bloqueado==0:
                     inventarios=inventarios.exclude(id=o.id)
+            # Sumar los inventarios del mismo producto en el mismo almacen
             inventarios=inventarios.values('almacen','almacen__nombre','producto','producto__nombre').annotate(sum_disponible=Sum('disponible'),sum_bloqueado=Sum('bloqueado'))
-            inventarios_p=paginar(inventarios,request.query_params.copy(),modelo)
+            # Iniciar Diccionario de django para los filtros
+            diccionario = QueryDict('', mutable=True)
+            # Obtener JSON/Dict 
+            json=verificar_filtros_inventario(['almacen__nombre','producto__nombre'],request.query_params.copy())
+            if json: diccionario.update(json)
+            inventarios_p=paginar(inventarios,diccionario,modelo)
             return Response(inventarios_p,status=status.HTTP_200_OK)
     else:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+# Funcion para verificar los filtros al hacer la busqueda de los inventarios
+def verificar_filtros_inventario(valores,parametros):
+    diccionario=dict()
+    # Guardar p_pagina al diccionario
+    try: diccionario['p_pagina']=parametros.get('p_pagina')
+    except: pass
+    # Guardar p_ordenar al diccionario
+    try:
+        ordenar=parametros.get('p_ordenar')
+        if ((ordenar == 'almacen' or ordenar == 'producto') or (ordenar == '-almacen' or ordenar == '-producto')) or ((ordenar == 'almacen__nombre' or ordenar == 'producto__nombre') or (ordenar == '-almacen__nombre' or ordenar == '-producto__nombre')):
+            diccionario['p_ordenar']=ordenar
+    except Exception as e: pass
+    # Guardar p_cantidad al diccionario
+    try: diccionario['p_cantidad']=parametros.get('p_cantidad')
+    except: pass
+    for p in parametros:
+        campos=p.split('__')
+        for v in valores:
+            campo=v.split('__')
+            if campos[0] == campo[0]:
+                diccionario[p]=parametros.get(p)
+    return diccionario
+
 # Funcion tipo vista para crear un nuevo usuario
 @api_view(["POST"])
 @csrf_exempt
@@ -2983,6 +3124,7 @@ def crear_nuevo_usuario(request):
         except:
             pass
         return Response('%s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 # Funcion tipo vista para obtener el menu de la pagina segun el perfil, los permisos y la intancia del usuario
 @api_view(["GET"])
 @csrf_exempt
@@ -3048,6 +3190,7 @@ def obtener_menu(request):
         return Response([menus])
     else:
         return Response(status=status.HTTP_403_FORBIDDEN)
+
 # Funcion para obtener las columnas 
 @api_view(["POST"])
 @csrf_exempt
@@ -3068,6 +3211,8 @@ def obtener_columnas(request):
         return Response(columnas)
     except ObjectDoesNotExist as e:
         return Response({'error': str(e)},status=status.HTTP_404_NOT_FOUND)
+
+# Funcion tipo vista para borrar las notas
 @api_view(["POST"])
 @csrf_exempt
 @authentication_classes([TokenAuthentication])
@@ -3091,6 +3236,7 @@ def borrar_nota(request):
             return Response({'error': e},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
+
 # Funcion tipo vista para actualizar las notas de pago
 @api_view(["POST"])
 @csrf_exempt
@@ -3100,7 +3246,6 @@ def actualizar_nota(request):
     perfil=Perfil.objects.get(usuario=request.user)
     if verificar_permiso(perfil,'Notasdepago','actualizar'):
         payload=json.loads(request.body)
-        print(payload)
         try:
             for obj in payload['data']:
                 try:
@@ -3127,6 +3272,7 @@ def actualizar_nota(request):
             return Response({'error': e},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
+
 # Funcion tipo vista para actualizar los pedidos de la instancia
 @api_view(["POST"])
 @csrf_exempt
@@ -3195,6 +3341,7 @@ def actualizar_pedido(request):
             return Response(str(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
+
 # Funcion para modificar las cantidades del inventario
 def modificar_inventario(tipo,inventario,cantidad):
     if inventario:
@@ -3213,6 +3360,7 @@ def modificar_inventario(tipo,inventario,cantidad):
         return False # False signifca que no hubo error
     else:
         return 'Falta asignar un inventario'
+
 # Funcion tipo vista para hacer la validacion de los pedidos
 @api_view(["POST"])
 @csrf_exempt
@@ -3288,6 +3436,7 @@ def validar_pedido(request):
             return Response({'error': str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
+
 # Funcion tipo vista para generar facturas
 @api_view(["POST"])
 @csrf_exempt
@@ -3296,47 +3445,67 @@ def validar_pedido(request):
 def generar_factura(request):
     payload=request.data
     perfil=Perfil.objects.get(usuario=request.user)
+    instancia=Instancia.objects.get(perfil=perfil.id)
     if verificar_permiso(perfil,'Factura','escribir'):
         try:
-            proforma=Proforma.objects.get(id=payload['idproforma'])
+            # Obtener proforma
+            proforma = Proforma.objects.get(id=payload['idproforma'])
+            # En caso de generar una factura como peticion directa, verificar existencia de una factura asociada a la proforma
+            factura = Factura.objects.filter(proforma=proforma).first()
+            if factura:
+                # Anular factura encontrada
+                factura.proforma = None
+                factura.save()
+            # Obtener detalles de la proforma
             detasheproforma=DetalleProforma.objects.filter(proforma=proforma)
-            perfil=Perfil.objects.get(usuario=request.user)
-            instancia=Instancia.objects.get(perfil=perfil.id)
+            # Obtener correlativo/configuracion/numerologia/papeleria del la factura y la nota de control
             configuracion=verificar_numerologia({'empresa':proforma.empresa.id,'instancia':proforma.instancia.id},Factura)
             configuracion_control=verificar_numerologia({'empresa':proforma.empresa.id,'instancia':proforma.instancia.id},'NotaControl')
-            nueva_factura=Factura(proforma=proforma,instancia=instancia)
+            # Iniciar factura
+            nueva_factura=Factura(proforma=proforma,origen=proforma.id,instancia=instancia)
+            # Definir correlativos
             nueva_factura.numerologia=configuracion.valor
             nueva_factura.control=configuracion_control.valor
+            # Definir valores de la empresa
             nueva_factura.nombre_empresa=proforma.empresa.nombre
-            nueva_factura.direccion_empresa= proforma.empresa.direccion_fiscal
-            nueva_factura.id_cliente=proforma.cliente.id
+            nueva_factura.direccion_empresa=proforma.empresa.direccion
+            # Definir valores del cliente
             nueva_factura.nombre_cliente=proforma.cliente.nombre
+            nueva_factura.codigo_cliente=proforma.cliente.codigo
             nueva_factura.identificador_fiscal=proforma.cliente.identificador
             nueva_factura.direccion_cliente=proforma.cliente.ubicacion
             nueva_factura.telefono_cliente=proforma.cliente.telefono
             nueva_factura.correo_cliente=proforma.cliente.mail
-            nueva_factura.id_vendedor=proforma.cliente.id
+            # Definir valores del vendedor
             nueva_factura.nombre_vendedor=proforma.vendedor.nombre
+            nueva_factura.codigo_vendedor=proforma.vendedor.codigo
             nueva_factura.telefono_vendedor=proforma.vendedor.telefono
+            # Extras
             nueva_factura.impuesto=16
+            # Guardar factura
             nueva_factura.save()
+            # Modificar correlativos
             configuracion.valor+=1
             configuracion_control.valor+=1
             configuracion.save()
             configuracion_control.save()
+            # Iniciar valores de los detales para la factura
             subtotal=0
             imponible=0
             exento=0
             impuesto=16
             total_real=0
+            # Ciclo para crear los detalles
             for deta in detasheproforma:
                 inventario = None
                 try:
+                    # Obtener inventario
                     inventario=deta.inventario if deta.inventario else None
                     inventario_id=inventario.id if inventario else None
                     vencimiento=inventario.fecha_vencimiento if inventario else None
                 except:
                     pass
+                # Iniciar nuevo detalle de la factura
                 nuevo_detalle=DetalleFactura(
                     factura=nueva_factura,
                     inventario=inventario,
@@ -3349,17 +3518,25 @@ def generar_factura(request):
                     precio=deta.precio_seleccionado,
                     total_producto=round(deta.total_producto,2),
                     instancia=instancia)
+                # Guardar detalle
                 nuevo_detalle.save()
+                # Obtener imponible del detalle si no es exonerado
                 if nuevo_detalle.producto.exonerado == False:
                     imponible += nuevo_detalle.total_producto
+                # Obtener exento del detalle si es exonerado
                 else:
                     exento += nuevo_detalle.total_producto
+            # Calcular valor total
             subtotal=round(imponible,2) + round(exento,2)
             total_real=round(subtotal,2)
+            # Calcular imponible
             if imponible:
+                # Sumar al total
                 total_real=round(total_real,2)+(round(imponible,2)*(impuesto/100))
+            # Modificar total y subtotal de la factura
             nueva_factura.subtotal = round(subtotal,2)
             nueva_factura.total = round(total_real,2)
+            # Guardar modificacion
             nueva_factura.save()
             return Response(status=status.HTTP_200_OK)
         except ObjectDoesNotExist as e:
@@ -3368,6 +3545,27 @@ def generar_factura(request):
             return Response({'error': (e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+@api_view(["POST"])
+@csrf_exempt
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def anular_factura(request):
+    perfil = Perfil.objects.get(usuario=request.user)
+    data = request.data
+    if verificar_permiso(perfil,'Factura','escribir'):
+        try:
+            factura = Factura.objects.get(id=data['id'])
+            factura.origen = factura.proforma.id if not factura.origen else factura.origen
+            factura.proforma = None
+            factura.save()
+            return Response(status=status.HTTP_200_OK)
+        except Exception as e:
+            print(e)
+            return Response({'error': (e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    else:
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
+
 # Funcion tipo vista para actualizar proformas 
 @api_view(["POST"])
 @csrf_exempt
@@ -3419,6 +3617,7 @@ def actualizar_proforma(request):
             return Response({'error': e},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
+
 # Funcion tipo vista para generar Excel de precios de productos
 @api_view(["GET"])
 @csrf_exempt
@@ -3428,37 +3627,52 @@ def vista_xls(request):
     if Token.objects.get(key=token):
         perfil=Perfil.objects.get(usuario=1)
         if verificar_permiso(perfil,'Productos','leer'):
+            # Crear archivo temporal
             response=HttpResponse(content_type='application/ms-excel')
             response['Content-Disposition']='attachment;filename="productos.xls"'
-            excel_wb=xlwt.Workbook(encoding='utf-8')
-            excel_ws=excel_wb.add_sheet('Styling Data') # ws es Work Sheet
-            i=0
-            for m in Marca.objects.all().values():
-                estilo=xlwt.easyxf('font: bold 1')
-                excel_ws.write(i,0,'Marca:',estilo)
-                excel_ws.write(i,1,m['nombre'])
-                i=i+1
-                excel_ws.write(i,0,'Codigo')
-                excel_ws.write(i,1,'Producto')
-                excel_ws.write(i,2,'Precio 1')
-                excel_ws.write(i,3,'Precio 2')
-                excel_ws.write(i,4,'Precio 3')
-                excel_ws.write(i,5,'Precio 4')
-                i=i+1
+            # Iniciar Excel
+            excel_wb=Workbook(encoding='utf-8')
+            excel_ws=excel_wb.add_sheet('Hoja1') # ws es Work Sheet
+            # Añadiendo estilo
+            excel_ws.col(0).width = 11600 # Tamaño columna nombre marca
+            excel_ws.col(1).width = 8000 # Tamaño columna codigo producto
+            excel_ws.col(2).width = 13000 # Tamaño columna nombre producto
+            estilo=easyxf('font: bold 1')
+            i=0 # Saltador de fila
+            # Escribir nombres de las columnas
+            excel_ws.write(i,0,'MARCA',estilo)
+            excel_ws.write(i,1,'CODIGO',estilo)
+            excel_ws.write(i,2,'DESCRIPCIÓN',estilo)
+            excel_ws.write(i,3,'COSTO',estilo)
+            excel_ws.write(i,4,'PRECIO 1',estilo)
+            excel_ws.write(i,5,'PRECIO 2',estilo)
+            excel_ws.write(i,6,'PRECIO 3',estilo)
+            excel_ws.write(i,7,'PRECIO 4',estilo)
+            i=i+1 # Saltar fila
+            # Ciclo por cada marca
+            for m in Marca.objects.all().order_by('prioridad').values():
+                # Ciclo por cada producto
                 for p in Producto.objects.filter(marca=m['id']).values():
-                    excel_ws.write(i,0,p['sku'])
-                    excel_ws.write(i,1,p['nombre'])
-                    excel_ws.write(i,2,p['precio_1'])
-                    excel_ws.write(i,3,p['precio_2'])
-                    excel_ws.write(i,4,p['precio_3'])
-                    excel_ws.write(i,5,p['precio_4'])
-                    i=i+1
+                    # Escribir productos
+                    excel_ws.write(i,0,m['nombre']) # Nombre marca
+                    excel_ws.write(i,1,p['sku']) # Codigo producto
+                    excel_ws.write(i,2,p['nombre']) # Nombre producto
+                    excel_ws.write(i,3,p['costo']) # Costo producto
+                     # Precios del producto
+                    excel_ws.write(i,4,p['precio_1'])
+                    excel_ws.write(i,5,p['precio_2'])
+                    excel_ws.write(i,6,p['precio_3'])
+                    excel_ws.write(i,7,p['precio_4'])
+                    i=i+1 # Saltar fila
+            # Guardar excel en el archivo temporal
             excel_wb.save(response)
+            # Restornar archivo
             return response
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     else:
         return Response(status=status.HTTP_403_FORBIDDEN)
+
 # Funcion tipo vista para generar Excel de las comisiones
 @api_view(["POST","GET"])
 @csrf_exempt
@@ -3487,48 +3701,61 @@ def comision(request):
                 i=0
                 response=HttpResponse(content_type='application/ms-excel')
                 response['Content-Disposition']='attachment;filename="comision_%s_%s&%s.xls"'%(vendedor.codigo,fecha_inicio,fecha_fin)
-                excel_wb=xlwt.Workbook(encoding='utf-8')
-                excel_ws=excel_wb.add_sheet('Styling Data') # ws es Work Sheet
+                excel_wb=Workbook(encoding='utf-8')
+                excel_ws=excel_wb.add_sheet('Comisiones') # ws es Work Sheet
+                # Añadiendo estilo
+                excel_ws.col(0).width = 2500 # Tamaño columna numero de nota
+                excel_ws.col(1).width = 3500 # Tamaño columna numero de comporbante
+                excel_ws.col(2).width = 5000 # Tamaño columna fecha de comporbante
+                excel_ws.col(3).width = 2500 # Tamaño columna numero de proforma
+                excel_ws.col(4).width = 5000 # Tamaño columna fecha despacho
+                excel_ws.col(5).width = 5000 # Tamaño columna precio seleccionado
+                excel_ws.col(6).width = 3500 # Tamaño columna total proforma
+                excel_ws.col(7).width = 3500 # Tamaño columna monto pagado
+                estilo=easyxf('font: bold 1')
                 # Primera fila del excel
-                estilo=xlwt.easyxf('font: bold 1')
-                excel_ws.write(i,0,'Nota',estilo)
-                excel_ws.write(i,1,'Fecha comprobante',estilo)
-                excel_ws.write(i,2,'Proforma',estilo)
-                excel_ws.write(i,3,'Fecha despacho',estilo)
-                excel_ws.write(i,4,'Precio seleccionado',estilo)
-                excel_ws.write(i,5,'Total proforma',estilo)
-                excel_ws.write(i,6,'Monto pagado',estilo)
-                excel_ws.write(i,7,'Comision',estilo)
+                excel_ws.write(i,0,'Nº Nota',estilo)
+                excel_ws.write(i,1,'Nº Comprobante',estilo)
+                excel_ws.write(i,2,'Fecha comprobante',estilo)
+                excel_ws.write(i,3,'Nº Proforma',estilo)
+                excel_ws.write(i,4,'Fecha despacho',estilo)
+                excel_ws.write(i,5,'Precio seleccionado',estilo)
+                excel_ws.write(i,6,'Total proforma',estilo)
+                excel_ws.write(i,7,'Monto pagado',estilo)
+                excel_ws.write(i,8,'Comision',estilo)
                 i=i+1
                 total_comision=0
                 # Creador de filas
                 for n in notas:
-                    correlativo_nota=ConfiguracionPapeleria.objects.get(empresa=n.cliente.empresa,tipo="B")
+                    correlativo_nota=ConfiguracionPapeleria.objects.get(empresa=n.cliente.empresa,tipo="N")
                     excel_ws.write(i,0,'%s%s'%(correlativo_nota.prefijo+'-' if correlativo_nota.prefijo else '',n.numerologia))
-                    excel_ws.write(i,1,'%s'%(n.fecha.date()))
+                    excel_ws.write(i,1,'%s'%(n.comprobante))
+                    excel_ws.write(i,2,'%s'%(n.fecha.date()))
                     detalle=DetalleNotasPago.objects.filter(notapago=n)
                     for d in detalle:
                         comision=0
                         # Añadir detalle de la nota
                         correlativo_prof=ConfiguracionPapeleria.objects.get(empresa=d.proforma.empresa,tipo="E")
-                        excel_ws.write(i,2,'%s%s'%(correlativo_prof.prefijo+'-' if correlativo_prof.prefijo else '',n.numerologia))
-                        excel_ws.write(i,3,'%s'%(d.proforma.fecha_despacho.date()))
-                        excel_ws.write(i,4,'%s'%(d.proforma.precio_seleccionadoo))
-                        excel_ws.write(i,5,'%s'%(round(d.proforma.total,2)))
-                        excel_ws.write(i,6,'%s'%(d.monto))
+                        excel_ws.write(i,3,'%s%s'%(correlativo_prof.prefijo+'-' if correlativo_prof.prefijo else '',n.numerologia))
+                        excel_ws.write(i,4,'%s'%(d.proforma.fecha_despacho.date() if d.proforma.fecha_despacho else 'S/D' ))
+                        excel_ws.write(i,5,'%s'%(d.proforma.precio_seleccionadoo))
+                        excel_ws.write(i,6,'%s'%(round(d.proforma.total,2)))
+                        excel_ws.write(i,7,'%s'%(d.monto))
                         # Calcular comision
                         proforma=Proforma.objects.get(id=d.proforma.id)
-                        if (d.proforma.fecha_despacho.date() - n.fecha_comprobante.date()).days < 30:
-                            if proforma.precio_seleccionadoo in ['precio_1','precio_2','precio_4']:
-                                comision = round(((5*d.monto)/100),2)
-                            else:
-                                comision = round(((3*d.monto)/100),2)
-                        total_comision+=comision
-                        excel_ws.write(i,7,'%s'%(comision))
+                        if d.proforma.fecha_despacho:
+                            if (d.proforma.fecha_despacho.date() - n.fecha_comprobante.date()).days < 30:
+                                if proforma.precio_seleccionadoo in ['precio_1','precio_2','precio_4']:
+                                    comision = round(((5*d.monto)/100),2)
+                                else:
+                                    comision = round(((3*d.monto)/100),2)
+                            total_comision+=comision
+                        excel_ws.write(i,8,'%s'%(comision))
+                        excel_ws.write(i,9,'%s'%('Sin despachar'))
                         # excel_ws.write(i,6,'%s'%())
                         i=i+1
-                excel_ws.write(i,6,'%s'%('Total:'),estilo)
-                excel_ws.write(i,7,'%s'%(round(total_comision,2)))
+                excel_ws.write(i,7,'%s'%('Total:'),estilo)
+                excel_ws.write(i,8,'%s'%(round(total_comision,2)))
                 excel_wb.save(response)
                 return response
             else:
@@ -3538,60 +3765,98 @@ def comision(request):
             return Response('%s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         return Response(status=status.HTTP_403_FORBIDDEN)
+
 # Funcion tipo vista para generar Excel del credito de los clientes
 @api_view(["GET"])
 @csrf_exempt
 def calcular_credito(request):
     params=request.query_params
+    # Verificar token del usuario
     token=params.get('token').split(' ')[1]
     user = Token.objects.get(key=token).user
     if user:
+        # Obtener cliente
         cliente=Cliente.objects.get(id=params.get('id'))
-        data={'cliente':params.get('id')}
+        # Obtener correlativo proforma
         correlativo_pro=ConfiguracionPapeleria.objects.get(empresa=cliente.empresa,tipo="E")
+        # Obtener proformas
         p=[]
         proformas =Proforma.objects.filter(cliente=cliente)
         for pro in proformas:
             factura = Factura.objects.filter(proforma=pro)
-            p.append({'fecha':pro.fecha_proforma,'pre_doc':correlativo_pro.prefijo if correlativo_pro.prefijo else '','num_doc':pro.numerologia,'monto':pro.total,'fecha_b': pro.fecha_despacho.date() if pro.fecha_despacho else '','factura':'*' if factura else None})
+            p.append({'doc':'proforma','fecha':pro.fecha_proforma,'pre_doc':correlativo_pro.prefijo if correlativo_pro.prefijo else '','num_doc':pro.numerologia,'monto':str(round(pro.saldo_proforma,2)).replace('.',','),'fecha_b': pro.fecha_despacho.date() if pro.fecha_despacho else '','factura':factura.values_list('id') if factura else None})
+        # Obtener correlativo nota de pago
         correlativo_npa=ConfiguracionPapeleria.objects.get(empresa=cliente.empresa,tipo="N")
+        # Obtener nota de pago
         n=[]
         for npa in NotasPago.objects.filter(cliente=cliente):
             factura = None
-            n.append({'fecha':npa.fecha,'pre_doc':correlativo_npa.prefijo if correlativo_npa.prefijo else '','num_doc':npa.numerologia,'monto':npa.total,'fecha_b':npa.fecha_comprobante.date(),'factura':'*' if factura else None})
+            n.append({'doc':'not_pago','fecha':npa.fecha,'pre_doc':correlativo_npa.prefijo if correlativo_npa.prefijo else '','num_doc':npa.numerologia,'monto':str(round(npa.total,2)).replace('.',','),'fecha_b':npa.fecha_comprobante.date(),'factura':'*' if factura else None})
+        # Generar Dataframes
         data_excel = pd.DataFrame(p)
         data_excel_2 = pd.DataFrame(n)
+        # Fusionas Dataframes y ordenar por fecha
         data_excel = data_excel.append(data_excel_2, ignore_index=True)
         data_excel = data_excel.sort_values(by='fecha',ascending=True)
-        print(data_excel)
-        # Excel
-        i=0
+        # Iniciar Excel
         response=HttpResponse(content_type='application/ms-excel')
         response['Content-Disposition']='attachment;filename="deuda_%s.xls"'%(cliente.nombre)
-        excel_wb=xlwt.Workbook(encoding='utf-8')
-        excel_ws=excel_wb.add_sheet('Styling Data') # ws es Work Sheet
-        estilo=xlwt.easyxf('font: bold 1')
+        excel_wb=Workbook(encoding='utf-8')
+        excel_ws=excel_wb.add_sheet('Credito') # ws es Work Sheet
+        # Iniciar valores del Excel
+        i=0 # Salto de linea
+        total=0 # Deuda total del cliente
+        # Añadiendo estilo
+        estilo=easyxf('font: bold 1') # Estilo especial a campos y casillas importantes
+        excel_ws.col(3).width = 6000 # Tamaño columna total proforma
+        excel_ws.col(4).width = 6000 # Tamaño columna monto pagado
+        # Definir cliente
         excel_ws.write(i,0,'Cliente:',estilo)
         excel_ws.write(i,1,cliente.nombre)
+        # Definir vendedor
         excel_ws.write(i,2,'Vendedor:',estilo)
         excel_ws.write(i,3,cliente.vendedor.nombre)
-        i+=1
+        i+=1 # Salto de linea
+        # Excribir campos
         excel_ws.write(i,0,'Fecha',estilo)
         excel_ws.write(i,1,'Doc',estilo)
         excel_ws.write(i,2,'Monto',estilo)
-        excel_ws.write(i,3,'Despacho/Comprobante',estilo)
+        excel_ws.write(i,3,'Fecha',estilo)
         excel_ws.write(i,4,'Factura',estilo)
         for index, row in data_excel.iterrows():
-            i+=1
-            excel_ws.write(i,0,'%s'%(row.fecha.date()))
-            excel_ws.write(i,1,'%s%s'%(row.pre_doc if row.pre_doc + '-' else '',row.num_doc))
-            excel_ws.write(i,2,'%s'%(row.monto))
-            excel_ws.write(i,3,'%s'%(row.fecha_b))
-            excel_ws.write(i,4,'%s'%(row.factura if row.factura else ''))
+            if row.monto != '0':
+                i+=1 # Salto de linea
+                # Escribir valores del documento
+                excel_ws.write(i,0,'%s'%(row.fecha.date()))
+                excel_ws.write(i,1,'%s%s'%(row.pre_doc if row.pre_doc + '-' else '',row.num_doc))
+                number_style = XFStyle()
+                number_style.num_format_str = '0.00'
+                excel_ws.write(i,2,row.monto,number_style)
+                if row.fecha_b:
+                    excel_ws.write(i,3,'%s%s'%(row.fecha_b, ' (Despacho)' if row.doc == 'proforma' else ' (Comprobante)'))
+                else:
+                    excel_ws.write(i,3,'Sin despachar')
+                if row.factura:
+                    fac = Factura.objects.filter(id__in=row.factura).first()
+                    correlativo_fac = ConfiguracionPapeleria.objects.get(empresa=cliente.empresa,tipo="F")
+                    excel_ws.write(i,4,'%s%s (%s)'%(correlativo_fac.prefijo+'-' if correlativo_fac.prefijo else '', fac.numerologia if fac else '',fac.fecha_factura.date()))
+                else:
+                    excel_ws.write(i,4,'Sin factura' if row.doc == 'proforma' else '')
+                # Calular total
+                if row.doc=='proforma':
+                    total+=round(float(row.monto.replace(',','.')),2) # Aumentar deuda
+                elif row.doc=='not_pago':
+                    total-=round(float(row.monto.replace(',','.')),2) # Disminuir deuda
+        i+=1 # Salto de linea
+        excel_ws.write(i,1,'%s'%('Saldo pendiente:'),estilo)
+        excel_ws.write(i,2,'%s'%(str(total).replace('.',',')))
+        # Guardado temporal del excel
         excel_wb.save(response)
+        # Retornar y generar
         return response
     else:
         return Response(status=status.HTTP_403_FORBIDDEN)
+
 # Funcion tipo vista para guardar los pdfs de pedidos en el sistema operativo
 @api_view(["GET"])
 @csrf_exempt
@@ -3615,6 +3880,7 @@ def guardar_pdf(request):
             return Response(False,status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
+
 # Funcion tipo vista para obtener las ventas totales del mes actual y el anterior
 @api_view(["GET"])
 @csrf_exempt
@@ -3624,14 +3890,20 @@ def ventas_totales(request):
     try:
         ahora=timezone.now()
         antes=timezone.datetime(month=ahora.month,year=ahora.year,day=1)
-        total_actual=Proforma.objects.filter(fecha_proforma__range=(antes,ahora)).aggregate(cantidad=Sum('total'))
+        total_actual=Proforma.objects.filter(fecha_proforma__range=(antes,ahora)).aggregate(cantidad=Round(Sum('total')))
         mucho_antes=antes-timezone.timedelta(weeks=4)
         mucho_antes=mucho_antes.replace(day=1)
-        total_anterior=Proforma.objects.filter(fecha_proforma__range=(mucho_antes,antes)).aggregate(cantidad=Sum('total'))
+        total_anterior=Proforma.objects.filter(fecha_proforma__range=(mucho_antes,antes)).aggregate(cantidad=Round(Sum('total')))
         total={'actual':{'fecha':antes,'total':total_actual,},'anterior':{'fecha':mucho_antes,'total':total_anterior,},}
         return Response(total,status=status.HTTP_200_OK)
     except Exception as e:
         return Response('%s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# Funcion para redondear decimales en los Sum y Avg
+class Round(Func):
+    function = 'ROUND'
+    template='%(function)s(%(expressions)s, 2)'
+
 # Funcion tipo para obtener los permisos disponibles para la instancia
 @api_view(["GET"])
 @csrf_exempt
@@ -3671,6 +3943,7 @@ def permisos_disponibles(request):
             return Response('%s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         Response(status=status.HTTP_401_UNAUTHORIZED)
+
 # Crear permisos
 @api_view(["GET"])
 @csrf_exempt
@@ -3689,6 +3962,7 @@ def ubop(request):
         return Response('Hecho')
     except Exception as e:
         return Response('%s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 # Funcion tipo vista para obtener los usuarios y su informacion
 @api_view(["GET"])
 @csrf_exempt
@@ -3745,6 +4019,7 @@ def perfiles_usuarios(request):
         return Response({'objetos':disponibles,'info':usuarios['info']},status=status.HTTP_200_OK)
     except:
         return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 # Funcion tipo vista para obtener los datos del usuario
 @api_view(["GET"])
 @csrf_exempt
@@ -3752,71 +4027,80 @@ def perfiles_usuarios(request):
 @permission_classes([IsAuthenticated])
 def usuario_info(request):
     return Response(PerfilSerializer(Perfil.objects.get(usuario=request.user)).data,status=status.HTTP_200_OK)
+
 # Funcion para añadir clientes y vendedores
 @api_view(["POST"])
 @csrf_exempt
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def subir_xls2(request):
-    print("Inicio de proceso")
     if not request.FILES['file']:
-        print('NONE')
         df = pd.read_excel("productos.xls", sheet_name="Hoja1")
         df = df.reset_index()  # make sure indexes pair with number of rows
     else:
-        print('UPLOAD')
-        df = pd.read_excel(request.FILES['file'], sheet_name="Hoja1")
-    print("Inicio creador de productos")
+        df = pd.read_excel(request.FILES['file'])
     for index, row in df.iterrows():
         if row['CODIGO']:
-            instancia = Instancia.objects.get(id=1)
+            instancia = Instancia.objects.all().first()
+            try:
+                perfil = Perfil.objects.get(user=request.user)
+                instancia = Instancia.objects.get(id=perfil.instancia)
+            except:
+                pass
             marca, created = Marca.objects.get_or_create(nombre=row['MARCA'], defaults={'instancia':instancia,'nombre': row['MARCA']})
             marca.save()
             exonerado = True
             venta_sin_inventario= True
             lote= False
-            if(row['EXCENTO'] != 'SI'):
-                exonerado = False
-            if(row['VENTA_SIN_INVENTARIO'] == 'NO'):
-                venta_sin_inventario = False
-            if(row['LOTE'] == 'SI'):
-                lote: True
+            try:
+                if(row['EXCENTO'] != 'SI'):
+                    exonerado = False
+            except:
+                pass
+            try:
+                if(row['VENTA_SIN_INVENTARIO'] == 'NO'):
+                    venta_sin_inventario = False
+            except:
+                pass
+            try:
+                if(row['LOTE'] == 'SI'):
+                    lote: True
+            except:
+                pass
             nuevo_producto, created = Producto.objects.get_or_create(
-                                marca=marca,
-                                nombre=row['DESCRIPCIÓN'],
-                                sku=row['CODIGO'],
-                                defaults={
-                                'instancia':instancia,
-                                'nombre':row['DESCRIPCIÓN'],
-                                'costo':row['Costo'],
-                                'precio_1':row['Precio1'],
-                                'precio_2':row['Precio2'],
-                                'precio_3':row['Precio3'],
-                                'precio_4':row['Precio4'],
-                                'exonerado':exonerado,
-                                'servicio': False,
-                                'menejo_inventario': True,
-                                'venta_sin_inventario':True,
-                                'lote': lote,
-                                'activo': True
-                                }
-                                )
+                marca=marca,
+                nombre=row['DESCRIPCIÓN'],
+                sku=row['CODIGO'],
+                defaults={
+                    'instancia':instancia,
+                    'costo':row['COSTO'],
+                    'precio_1':row['PRECIO 1'],
+                    'precio_2':row['PRECIO 2'],
+                    'precio_3':row['PRECIO 3'],
+                    'precio_4':row['PRECIO 4'],
+                    'lote': lote,
+                    'exonerado':exonerado,
+                    'venta_sin_inventario':venta_sin_inventario,
+                    'servicio': False,
+                    'menejo_inventario': True,
+                    'activo': True
+                }
+            )
             if(created):
                 nuevo_producto.save()
-                print('Creado: ',nuevo_producto)
             else:
-                nuevo_producto.costo=row['Costo']
-                nuevo_producto.precio_1=row['Precio1']
-                nuevo_producto.precio_2=row['Precio2']
-                nuevo_producto.precio_3=row['Precio3']
-                nuevo_producto.precio_4=row['Precio4']
+                nuevo_producto.costo=row['COSTO']
+                nuevo_producto.precio_1=row['PRECIO 1']
+                nuevo_producto.precio_2=row['PRECIO 2']
+                nuevo_producto.precio_3=row['PRECIO 3']
+                nuevo_producto.precio_4=row['PRECIO 4']
                 nuevo_producto.save()
-                print('Actualizado: ',nuevo_producto)
-    print("Fin creador de productos")
     return Response('Carga de productos terminada',status=status.HTTP_200_OK)
+
 # Funcion para obtener las instancias en las acciones
 def obtener_instancia(perfil,instancia=None):
     return instancia if perfil.tipo=='S' and instancia else perfil.instancia.id
+
 # Verificar que el usuario tenga permisos
 def verificar_permiso(perfil,vista,accion):
     try:
@@ -3833,6 +4117,7 @@ def verificar_permiso(perfil,vista,accion):
         elif accion=='borrar':
             return permiso.borrar
     return False
+
 # Funcion para la primera carga del sistema
 def crear_super_usuario(request):
     if Menu.objects.all().count()==0:
@@ -3867,6 +4152,7 @@ def crear_super_usuario(request):
         return "Super creado"
     else:
         return "Ya existe un superusuario"
+
 # Funcion para generar contraseñas
 def generar_clave():
     lower=string.ascii_lowercase
@@ -3876,9 +4162,11 @@ def generar_clave():
     all=lower+upper+numeros+symbols
     temp=random.sample(all,16)
     return "".join(temp)
+
 # Funcion para obtener el perfil del usuario
 def obt_per(user):
     return Perfil.objects.get(usuario=user)
+
 # Funcion para obtener la data de los permisos
 def guardar_permisos(data,perfil_n=None,perfil_c=None,perfil=None):
     try:
@@ -3911,6 +4199,7 @@ def guardar_permisos(data,perfil_n=None,perfil_c=None,perfil=None):
         except:
             pass
         return {'error':e}
+
 # Funcion para crear/guardar los permisos
 def crear_permiso(instancia,data,menu,perfil,creador):
     try:
@@ -3922,6 +4211,7 @@ def crear_permiso(instancia,data,menu,perfil,creador):
     permiso.borrar=data['borrar'] if creador.borrar else False
     permiso.actualizar=data['actualizar'] if creador.actualizar else False
     permiso.save()
+
 # Funcion para crear los admins por la nueva instancia
 def crear_admin(data,super_p):
     try:
@@ -3946,11 +4236,13 @@ def crear_admin(data,super_p):
         except:
             pass
         return Response('%s'%(e),status=status.HTTP_417_EXPECTATION_FAILED)
+
 # Funcion para crear menu de la instancia
 def crear_menu(instancia,menu,parent=None):
     menu=Menu.objects.get(router__exact=menu)
     menu_i=MenuInstancia.objects.create(instancia=instancia,menu=menu,parent=parent)
     return menu_i
+
 # Funcion para obtener los menus superiores
 def obtener_padres(perfil):
     menus=MenuInstancia.objects.filter(instancia=perfil.instancia)
@@ -3968,49 +4260,65 @@ def obtener_padres(perfil):
         lista.append(menu.id)
     del lista[0]
     return lista
+
 # Funcion para paginar y filtrar objetos
 def paginar(objetos,parametros,modelo=None):
     retorno={}
     devueltos=[]
     errores=[]
     # Parametros
+    # Intenta conseguir la pagina actual
+    try: pagina=int(parametros.get('p_pagina')); parametros.pop('p_pagina')
+    # Si no, devuelve la primera pagina
+    except: pagina=1
+    # Intenta conseguir el valor por cual ordenar los objetos
+    try: ordenar=parametros.get('p_ordenar'); parametros.pop('p_ordenar')
+    # Si no, lo ordena por id (del mas nuevo al mas antiguo)
+    except: ordenar=''
+    # Intenta conseguir la cantidad de objetos en la pagina
     try:
-        pagina=int(parametros.get('p_pagina'))
-        parametros.pop('p_pagina')
-    except:
-        pagina=1
-    try:
-        ordenar=parametros.get('p_ordenar')
-        parametros.pop('p_ordenar')
-    except:
-        ordenar=''
-    try:
-        cantidad=int(parametros.get('p_cantidad'))
-        parametros.pop('p_cantidad')
-        if cantidad>100:
-            raise
-    except:
-        errores.append({'code':404,'valor':'%s'%('La cantidad dada no es aceptable')})
-        cantidad=10
+        cantidad=int(parametros.get('p_cantidad')); parametros.pop('p_cantidad')
+        if cantidad>100: raise # Si se detectan mas de cien objetos, lanza un raise
+    # Si no, devuelve cincuenta como generico
+    except: errores.append({'code':404,'valor':'%s'%('La cantidad dada no es aceptable')}); cantidad=50
     # Intentar obtener objetos por filtro
     filtros=[]
     if parametros:
+        # Ciclo por cada campo del diccionario
         for p in parametros.keys():
             try:
+                # Separar el filtro por campos y opciones (model/field__extra/field...)
                 campos=p.split('__')
+                # Obtener el valor del campo
                 valores=parametros.get(p)
+                # Verificar si el filtro busca con un arreglo
                 if campos[-1]=='in' or campos[-1]=='range':
+                    # Si hace la busqueda con un arreglo,
+                    # separar el valor del parametro (string) en varios objetos (array) por cada coma (',')
                     valores=valores.split(',')
+                # Hacer un filtro especial (por argumentos definidos) en los objetos a paginar
                 objetos=objetos.filter(**{p: valores}) if parametros.get(p) else objetos
+                # if not primeros and multi:
+                #     segundos = objetos
+                #     for m in multi:
+                #         segundos = segundos.filter(**{m: valores}) if parametros.get(p) else objetos
+                #     objetos = segundos
+                # else:
+                # objetos = primeros
+                # Salvar informacion del filtro 
                 filtros.append({'campo':p,'valor':valores})
             except Exception as e:
-                errores.append({'code':500,'valor':'%s'%(e)})
+                # Salvar informacion del error en filtro
+                errores.append({'code':500,'valor':'%s'%(e)}) # Ej: "'nobre' no es un campo existente en el modelo 'Clientes'"
+                # No hacer filtro
                 objetos=objetos
     # Intentar ordenar los objetos
     try:
         objetos=objetos.order_by(ordenar) if len(ordenar) > 0 else objetos
     except Exception as e:
+        # Salvar informacion del error al ordenar
         errores.append({'code':404,'valor':'%s'%(e)})
+        # No hacer ordenado
         objetos=objetos
     # Variables
     devueltos=[]
@@ -4020,55 +4328,79 @@ def paginar(objetos,parametros,modelo=None):
     # Ciclo while para hacer la paginacion
     try:
         while True:
+            # Si la pagina en el ciclo es la misma que la pagina solicitada agregar objeto a los devueltos
             if page==pagina:
                 try:
                     devueltos.append(objetos[id])
                 except:
                     pass
+            # Si la vuelta del ciclo es igual a la cantidad solicitada
             if vuelta==cantidad:
-                page+=1
-                vuelta=0
+                page+=1 # Saltar pagina del ciclo
+                vuelta=0 # Reiniciar vuelta del ciclo
+                # Si la pagina en el ciclo es mayor que la pagina solicitada, terminar ciclo
                 if page>pagina:
                     break
-            vuelta+=1
-            id+=1
+            vuelta+=1 # Saltar vuelta del ciclo
+            id+=1 # Saltar id del objeto
     except Exception as e:
+        # Salvar informacion del error al paginar
         errores.append({'code':500,'valor':'%s'%(e)})
-        devueltos=objetos[:10]
+        # Devolver primeros objetos solicitados
+        devueltos=objetos[:50]
+    # Recopilar informacion del paginado
     info=paginas_totales(modelo,cantidad,filtros)
     info['pagina_actual']=pagina
     info['ordenado_por']=ordenar
     info['cantidad_seleccionada']=cantidad
     info['errores']=[]
+    # Recopilar errores
     for e in errores:
         info['errores'].append(e)
+    # Guardar informacion
     retorno['info']=info
+    # Guardar objetos retornados
     retorno['objetos']=devueltos
     return retorno
+
 # Funcion para calcular paginas
 def paginas_totales(modelo,cantidad,filtros):
     try:
+        # Verificar si tiene un modelo
         if modelo:
+            # Valores base
             paginas=1
             vueltas=0
+            # Obtener todos los objetos del modelo
             objetos=modelo.objects.all()
+            # Verificar si tiene filtros
             if filtros:
+                # Ciclo por cada filtro encontrado
                 for f in filtros:
+                    # Hacer un filtro especial (por argumentos definidos) en los objetos a analizar
                     objetos=objetos.filter(**{f['campo']:f['valor']})
+                # Cuantificar objetos
                 total=objetos.count()
                 objetos=None
             else:
+                # Cuantificar objetos
                 total=modelo.objects.all().count()
+            # Ciclo por la cantidad total de objetos encontrados
             for i in range(total):
+                # Si la vuelta es igual a la cantidad
                 if vueltas==cantidad:
-                    paginas+=1
-                    vueltas=0
-                vueltas+=1
+                    paginas+=1 # Saltar pagina
+                    vueltas=0 # Reiniciar vuelta
+                vueltas+=1 # Saltar vuelta
+            # Retornar datos
             return {'objetos_totales':total,'paginas_totales':paginas,'error':[]}
         else:
+            # En caso de no encontrar modelo, lanzar raise
             raise
     except Exception as e:
+        # Retornar error
         return {'error':[{'code':406,'valor':'%s'%(e)}]}
+
 # Obtener correlativo
 def verificar_numerologia(datos,modelo):
     if modelo == Pedido:
