@@ -15,5 +15,6 @@ urlpatterns = [
     path('errores/', views.errores),
     path('obtener-grafica/', views.obtener_grafica),
     path('promedios-tres-dias/', views.promedio_tres_dias),
-    path('suscribir-usuario/', views.suscribir)
+    path('suscribir-usuario/', views.suscribir),
+    path('ultimo-registro/', views.ultimo_registro)
 ]

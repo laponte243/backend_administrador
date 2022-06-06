@@ -1,4 +1,5 @@
 # Importes de Utiles de Django
+from venv import create
 from django.views.decorators.csrf import csrf_exempt
 from django.template.loader import render_to_string
 from django.shortcuts import render
@@ -26,17 +27,11 @@ import time
 class RegistroTemperaturaVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
+    queryset=RegistroTemperatura.objects.all()
     serializer_class=RegistroTemperaturaSerializer
     # Metodo get en base a multiples instancias
     def update(self):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-    def get_queryset(self):
-        perfil=Perfil.objects.get(usuario=self.request.user)
-        instancia=perfil.instancia
-        if (perfil.tipo=='S'):
-            return RegistroTemperatura.objects.all().order_by('-id')
-        else:
-            return RegistroTemperatura.objects.filter(instancia=instancia).order_by('-id')
 # Vista rest api para los nodos 
 class NodoVS(viewsets.ModelViewSet):
     permission_classes=[IsAuthenticated]
@@ -369,3 +364,18 @@ def correo_temperatura_baja(nodo,promedio):
 class Round(Func):
     function='ROUND'
     arity=2
+
+@api_view(["GET"])
+@csrf_exempt
+@permission_classes([AllowAny])
+def ultimo_registro(request):
+    try:
+        ahora=timezone.now()
+        antes=ahora-timezone.timedelta(hours=24)
+        objeto=RegistroTemperatura.objects.filter(created_at__range=(antes,ahora)).order_by('-id')[0:1]
+        print(objeto)
+        registro=RegistroTemperaturaSerializer(objeto)
+        return Response(registro.data,status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response('Sin registros',status=status.HTTP_404_NOT_FOUND)
