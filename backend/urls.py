@@ -5,6 +5,7 @@ from django.urls import include, path
 from knox import views as knox_views
 # Raiz
 from . import views
+from . import views_2
 from backend.views import LoginView
 # Router
 router = routers.DefaultRouter()
@@ -88,6 +89,7 @@ urlpatterns = [
     path('xls-generador/', views.vista_xls),
     path('subir-archivo/', views.subir_xls2),
     path('calcular-credito/', views.calcular_credito),
+    path('analisis-vencimiento/', views_2.analisis_vencimiento),
     # Login
     path('auth/login/', LoginView.as_view(), name='knox_login'),
     path('auth/logout/', knox_views.LogoutView.as_view(), name='knox_logout'),

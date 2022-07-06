@@ -1,4 +1,3 @@
-
 # Importes de Django
 from django.db import models
 from django.contrib.auth.models import *
@@ -77,8 +76,7 @@ class Empresa(models.Model):
     correo=models.CharField(max_length=150,blank=False,null=False,help_text="Correo de la empresa")
     direccion=models.TextField(blank=False,null=False,help_text="Direccion fiscal de la empresa")
     telefono=models.CharField(max_length=32,null=False,help_text="Telefono de la empresa")
-    #logo=models.TextField(null=True,help_text="Logo de la empresa")
-    logo=models.FileField(null=True)
+    logo=models.TextField(null=True,help_text="Logo de la empresa")
     history=HistoricalRecords()
     def __str__(self):
         return '%s'%(self.nombre)

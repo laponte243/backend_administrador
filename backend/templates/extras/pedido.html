@@ -59,10 +59,11 @@
     </style>
     <body>
         <div class="container">
-            <div class="item1">
-                <img src="{{logo}}" alt="LOGO {{empresa.nombre}}" style="width:220px;height:50px;"/>
-            </div>
             {% if error != 'None' %}
+                <div class="item1">
+                    {{ empresa }}
+                    <img src="{% static empresa.logo %}" alt="LOGO {{empresa.nombre}}"  style="width:220px;height:50px;"/>
+                </div>
                 <div class="item2">
                     <p>
                         {{ empresa.direccion }} <br>

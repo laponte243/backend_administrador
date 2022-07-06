@@ -2842,6 +2842,8 @@ class PedidoPDF(PDFView):
                 empresa=pedido.cliente.empresa
                 context['empresa']=empresa
                 context['logo'] = self.request.build_absolute_uri(empresa.logo.url)
+                print(context['logo'])
+                # context['empresa']['logo'] = 
                 return context
             else:
                 raise Exception('Token del usuario invalido')

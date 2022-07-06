@@ -72,8 +72,9 @@ class NotaPagoMSerializer(serializers.ModelSerializer):
         return obj.cliente.codigo + ' - ' + obj.cliente.nombre
     pre_num =  serializers.SerializerMethodField('ObtenerNumero')
     def ObtenerNumero(self, obj):
-        correlativo=ConfiguracionPapeleria.objects.get(empresa=obj.cliente.empresa,tipo="B")
-        return "%s-%s"%(correlativo.prefijo if correlativo.prefijo else 'B',obj.numerologia)
+        correlativo=ConfiguracionPapeleria.objects.get(empresa=obj.cliente.empresa,tipo="N")
+        print(correlativo)
+        return "%s-%s"%(correlativo.prefijo if correlativo.prefijo else 'N',obj.numerologia)
 class DetalleNotaPagoMSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetalleNotasPago

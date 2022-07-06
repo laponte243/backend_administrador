@@ -16,14 +16,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'backend',
     'tempro',
-    'corsheaders',
-    'knox',
+    'django_extensions',
     'rest_framework',
+    'knox',
+    'django_filters',
     'rest_framework.authtoken',
     'dj_rest_auth',
+    'corsheaders',
     'simple_history',
-    'django_extensions',
-    'django_filters',
     'django_tables2',
     'django_rest_passwordreset',]
 
@@ -113,6 +113,13 @@ DATABASES = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     # 'default': {
+    #     'ENGINE': 'django.db.backends.postgresql_psycopg2',
+    #     'NAME': 'badministrador',
+    #     'USER': 'uadministrador',
+    #     'PASSWORD': 'padministrador',
+    #     'HOST': 'localhost',
+    #     'PORT': '5432',
+    # 'default': {
     #    'ENGINE': 'django.db.backends.postgresql_psycopg2',
     #    'NAME': 'medicallv1',
     #    'USER': 'gf',
@@ -144,6 +151,10 @@ USE_TZ = True
 
 STATIC_URL = '/static_administrador/'
 STATIC_ROOT = 'static/'
+#MEDIA_URL = 'static/media_administrador/'
+#MEDIA_ROOT = BASE_DIR / 'static/media/'
+MEDIA_URL = '/media_administrador/'
+MEDIA_ROOT = '/django/productivo/administrador/media_root/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

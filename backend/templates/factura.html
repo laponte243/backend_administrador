@@ -173,88 +173,91 @@
                         <strong>Vendedor:</strong> {{factura.codigo_vendedor}} - {{factura.nombre_vendedor}},
                         <strong>Condicion:</strong> Contado. 
                     </p>
-                    <!-- <div class="row">
-                        <div class="col-xs-12">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 45%">Cliente</th>
-                                        <th style="width: 10%">Fecha</th>
-                                        <th style="width: 35%;text-align: center">Vendedor</th>
-                                        <th style="width: 10%">Condicion</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>{{proforma.cliente.codigo}} - {{proforma.cliente.nombre}}</td>
-                                        <td>{{proforma.fecha_proforma|date:"d/m/Y"}}</td>
-                                        <td style="text-align: center">{{proforma.vendedor.codigo}} - {{proforma.vendedor.nombre}}</td>
-                                        <td><strong>Contado</strong></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <div class="row" style="margin-top: 1%">
-                                <div class="col-xs-8">Direccion fiscal: {{proforma.cliente.ubicacion}}</div>
-                                <div class="col-xs-4" style="text-align: right">RIF: {{proforma.cliente.identificador}}</div>
-                            </div>
-                            <div class="row" style="margin-top: 1%">
-                                <div class="col-xs-8">Email: {{proforma.cliente.mail}}</div>
-                                <div class="col-xs-4" style="text-align: right">Telefono: {{proforma.cliente.telefono}}</div>
-                            </div>
+                <!-- <div class="row">
+                    <div class="col-xs-12">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 45%">Cliente</th>
+                                    <th style="width: 10%">Fecha</th>
+                                    <th style="width: 35%;text-align: center">Vendedor</th>
+                                    <th style="width: 10%">Condicion</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>{{proforma.cliente.codigo}} - {{proforma.cliente.nombre}}</td>
+                                    <td>{{proforma.fecha_proforma|date:"d/m/Y"}}</td>
+                                    <td style="text-align: center">{{proforma.vendedor.codigo}} - {{proforma.vendedor.nombre}}</td>
+                                    <td><strong>Contado</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="row" style="margin-top: 1%">
+                            <div class="col-xs-8">Direccion fiscal: {{proforma.cliente.ubicacion}}</div>
+                            <div class="col-xs-4" style="text-align: right">RIF: {{proforma.cliente.identificador}}</div>
                         </div>
-                    </div> -->
-                    <div class="row" style="margin-top: none;">
-                        <div class="col-xs-12">
-                            <table class="table table-responsive table-condensed" style="border-bottom: none;">
-                                <thead style="border-bottom: none;">
-                                    <tr style="border-bottom: none;">
-                                        <th style="width: 5%">ID</th>
-                                        <th style="width: 61%">PRODUCTO</th>
-                                        <!-- <th style="width: 16%;text-align: center;">LOTES</th> -->
-                                        <!-- <th style="width: 12%">VENCIMIENTO</th> -->
-                                        <th style="width: 5%;text-align: center;">CANT.</th>
-                                        <th style="width: 17%;text-align: center;">P/UNIDAD</th>
-                                        <th style="width: 17%;text-align: right;">TOTAL</th>
-                                    </tr>
-                                </thead>
-                                <tbody style="border-bottom: none; border-top: none;">
-                                    {% for producto in productos %}
-                                        <tr style="border-bottom: none; height: 28px;">
-                                            <td class="filaDetalle" style="text-align: left">{{forloop.counter}}</td>
-                                            {% if producto.detalle and not producto.mostrar %}
-                                                <td class="filaDetalle" style="text-align: left">{{producto.producto_nombre}} <span style="font-size: 8px;">|| Lote: {{producto.detalle.lote}} (Vence: {{producto.detalle.vencimiento|date:"d/m/Y"}})</span></td>
-                                            {% else %}
-                                                <td class="filaDetalle" style="text-align: left">{{producto.producto_nombre}}</td>
-                                            {% endif %}
-                                            <td class="filaDetalle" style="text-align: center"> {{producto.cantidad}}</td>
-                                            <td class="filaDetalle" style="text-align: center"> {{producto.precio}} Bs.S</td>
-                                            <td class="filaDetalle" style="text-align: right"> {{producto.total_producto}} Bs.S</td>
-                                        </tr>
-                                        {% if producto.mostrar %}
-                                            <tr style="visibility:visible;font-size: 8px; border-top: none; height: 20px;">
-                                                <td colspan="1" style="text-align:center; border-top: none; border-bottom: none;">
-
-                                                </td>
-                                                <td colspan="4" style="text-align:left; border-top: none; border-bottom: none;">
-                                                    {% for subdeta in producto.detalle %}
-                                                        {% if forloop.counter == 1 %}
-                                                            -
-                                                        {% else %}
-                                                            ||
-                                                        {% endif %}
-                                                        {% if subdeta.vencimiento != '' %}
-                                                            {{subdeta.cantidad}} - Lote: {{subdeta.lote}} (Vence: {{subdeta.vencimiento|date:"d/m/Y"}})
-                                                        {% else %}
-                                                            {{subdeta.cantidad}} - Lote: {{subdeta.lote}}
-                                                        {% endif %}
-                                                    {% endfor %}
-                                                </td>
-                                            </tr> 
+                        <div class="row" style="margin-top: 1%">
+                            <div class="col-xs-8">Email: {{proforma.cliente.mail}}</div>
+                            <div class="col-xs-4" style="text-align: right">Telefono: {{proforma.cliente.telefono}}</div>
+                        </div>
+                    </div>-->
+                </div>
+                <div class="row" style="margin-top: 180px;">
+                    <div class="col-xs-12">
+                        <table class="table table-responsive table-condensed" style="border-bottom: none;">
+                            <thead style="border-bottom: none;">
+                                <tr style="border-bottom: none;">
+                                    <th style="width: 5%">ID</th>
+                                    <th style="width: 61%">PRODUCTO</th>
+                                    <!-- <th style="width: 16%;text-align: center;">LOTES</th> -->
+                                    <!-- <th style="width: 12%">VENCIMIENTO</th> -->
+                                    <th style="width: 5%;text-align: center;">CANT.</th>
+                                    <th style="width: 17%;text-align: center;">P/UNIDAD</th>
+                                    <th style="width: 17%;text-align: right;">TOTAL</th>
+                                </tr>
+                            </thead>
+                            <tbody style="border-bottom: none; border-top: none;">
+                                {% for producto in productos %}
+                                    <tr style="border-bottom: none; height: 28px;">
+                                        <td class="filaDetalle" style="text-align: left">{{forloop.counter}}</td>
+                                        {% if producto.detalle and not producto.mostrar %}
+                                            <td class="filaDetalle" style="text-align: left">{{producto.producto_nombre}}
+                                                <span style="font-size: 8px;">
+                                                    || Lote: {{producto.detalle.lote}} (Vence: {{producto.detalle.vencimiento|date:"d/m/Y"}})
+                                                </span>
+                                            </td>
+                                        {% else %}
+                                            <td class="filaDetalle" style="text-align: left">{{producto.producto_nombre}}</td>
                                         {% endif %}
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+                                        <td class="filaDetalle" style="text-align: center"> {{producto.cantidad}}</td>
+                                        <td class="filaDetalle" style="text-align: center"> {{producto.precio}} Bs.S</td>
+                                        <td class="filaDetalle" style="text-align: right"> {{producto.total_producto}} Bs.S</td>
+                                    </tr>
+                                    {% if producto.mostrar %}
+                                        <tr style="visibility:visible;font-size: 8px; border-top: none; height: 20px;">
+                                            <td colspan="1" style="text-align:center; border-top: none; border-bottom: none;">
+
+                                            </td>
+                                            <td colspan="4" style="text-align:left; border-top: none; border-bottom: none;">
+                                                {% for subdeta in producto.detalle %}
+                                                    {% if forloop.counter == 1 %}
+                                                        -
+                                                    {% else %}
+                                                        ||
+                                                    {% endif %}
+                                                    {% if subdeta.vencimiento != '' %}
+                                                        {{subdeta.cantidad}} - Lote: {{subdeta.lote}} (Vence: {{subdeta.vencimiento|date:"d/m/Y"}})
+                                                    {% else %}
+                                                        {{subdeta.cantidad}} - Lote: {{subdeta.lote}}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </td>
+                                        </tr> 
+                                    {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
                 <div class="item8_b">

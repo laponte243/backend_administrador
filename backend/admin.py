@@ -47,7 +47,7 @@ admin.site.register(DetalleCompra)
 admin.site.register(NotaCompra)
 try:
     admin.site.unregister(models.AuthToken)
-    admin.site.unregister(TokenProxy)
+    # admin.site.unregister(TokenProxy)
     admin.site.unregister(Group)
     admin.site.unregister(ResetPasswordToken)
     # admin.site.unregister(User)
