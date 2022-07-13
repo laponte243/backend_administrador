@@ -433,6 +433,46 @@ class DetalleProformaSerializer(serializers.ModelSerializer):
         if inventario:
             return inventario.fecha_vencimiento.date()
         return None
+
+class NotaDevolucionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NotaDevolucion
+        fields = '__all__'
+    nombreEmpresa = serializers.SerializerMethodField('LoadNombreEmpresa')
+    def LoadNombreEmpresa(self, obj):
+        return obj.empresa.nombre
+    codigo_cliente = serializers.SerializerMethodField('LoadCodigoCliente')
+    def LoadCodigoCliente(self, obj):
+        return obj.cliente.codigo
+    nombre_cliente = serializers.SerializerMethodField('LoadNombreCliente')
+    def LoadNombreCliente(self, obj):
+        return obj.cliente.nombre
+    nombreCliente = serializers.SerializerMethodField('LoadCodigoNombreCliente')
+    def LoadCodigoNombreCliente(self, obj):
+        return obj.cliente.codigo + ' - ' + obj.cliente.nombre
+    nombreVendedor = serializers.SerializerMethodField('LoadNombreVendedor')
+    def LoadNombreVendedor(self, obj):
+        return obj.vendedor.nombre
+    codigoVendedor = serializers.SerializerMethodField('LoadNumeroVendedor')
+    def LoadNumeroVendedor(self, obj):
+        return obj.vendedor.codigo
+    pre_num =  serializers.SerializerMethodField('ObtenerNumero')
+    def ObtenerNumero(self, obj):
+        correlativo=ConfiguracionPapeleria.objects.get(empresa=obj.empresa,tipo="E")
+        return "%s-%s"%(correlativo.prefijo,obj.numerologia)
+class DetalleNotaDevolucionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DetalleNotaDevolucion
+        fields = '__all__'
+    nombreProducto = serializers.SerializerMethodField('LoadNombreProducto')
+    def LoadNombreProducto(self, obj):
+       return obj.producto.nombre 
+    almacen = serializers.SerializerMethodField('LoadNombreAlmacen')
+    def LoadNombreAlmacen(self, obj):
+        inventario = obj.inventario
+        if inventario:
+            return inventario.almacen.id
+        return None
 class FacturaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Factura

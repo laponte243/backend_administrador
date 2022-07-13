@@ -3650,7 +3650,7 @@ def actualizar_proforma(request):
 @api_view(["GET"])
 @csrf_exempt
 def vista_xls(request):
-    params=request.query_params
+    params=request.query_params.copy()
     token=params.get('token').split(' ')[1]
     if Token.objects.get(key=token):
         perfil=Perfil.objects.get(usuario=1)
@@ -3705,7 +3705,7 @@ def vista_xls(request):
 @api_view(["POST","GET"])
 @csrf_exempt
 def comision(request):
-    params=request.query_params
+    params=request.query_params.copy()
     token=params.get('token').split(' ')[1]
     user = Token.objects.get(key=token).user
     if user:
@@ -3800,7 +3800,7 @@ def comision(request):
 @api_view(["GET"])
 @csrf_exempt
 def calcular_credito(request):
-    params=request.query_params
+    params=request.query_params.copy()
     # Verificar token del usuario
     token=params.get('token').split(' ')[1]
     user = Token.objects.get(key=token).user
@@ -4441,8 +4441,8 @@ def verificar_numerologia(datos,modelo):
         tipo='F'
     elif modelo == NotasPago:
         tipo='N'
-    # elif modelo == NotaDevolucion:
-    #     tipo='A'
+    elif modelo == NotaDevolucion:
+        tipo='A'
     elif modelo == 'NotaControl':
         tipo='B'
     # elif modelo == NotaCredito:
