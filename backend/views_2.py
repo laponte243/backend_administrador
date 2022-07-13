@@ -46,6 +46,203 @@ import datetime
 import random
 import string
 
+
+# Notas de devolucion registradas en la instancia
+class NotaDevolucionVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='NotaDevolucion'
+    permission_classes=[IsAuthenticated]
+    authentication_classes=[TokenAuthentication]
+    # Datos
+    modelo=NotaDevolucion
+    queryset=modelo.objects.all()
+    serializer_class=NotaDevolucionSerializer
+    # Metodo crear
+    def create(self,request):
+        perfil=views.obt_per(self.request.user)
+        if views.verificar_permiso(perfil,'NotaDevolucion','escribir'):
+            datos=request.data
+            try:
+                datos['instancia']=views.obtener_instancia(perfil,request.data['instancia'])
+            except:
+                datos['instancia']=perfil.instancia.id
+            datos['fecha_devolucion'] = timezone.now().date()
+            configuracion=views.verificar_numerologia(datos,self.modelo)
+            datos['numerologia']=configuracion.valor
+            serializer=self.get_serializer(data=datos)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            headers=self.get_success_headers(serializer.data)
+            configuracion.valor+=1
+            configuracion.save()
+            for d in datos['detalles']:
+                detalle = DetalleNotaDevolucion.objects.create(
+                    instancia=perfil.instancia,
+                    nota_devolucion=serializer.data.id,
+                    producto=d['producto'],
+                    inventario=d['inventario'],
+                    precio_seleccionado=d['precio_seleccionado'],
+                    lote=d['lote'],
+                    cantidada=d['cantidada'],
+                    total_producto=d['total_producto'],
+                )
+                #NotaDevolucion
+                views.modificar_inventario('devolver',detalle.inventario,detalle.cantidada)
+            return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
+        else:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+    def update(self,request,*args,**kwargs):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        # perfil=views.obt_per(self.request.user)
+        # if views.verificar_permiso(perfil,'NotaDevolucion','actualizar'):
+        #     partial=True
+        #     instance=self.get_object()
+        #     try:
+        #         if request.data['fecha_despacho'] == True and instance.fecha_despacho == None:
+        #             request.data['fecha_despacho'] = timezone.now()
+        #     except Exception as e:
+        #         print(e)
+        #     if instance.instancia==perfil.instancia or perfil.tipo=='S':
+        #         serializer=self.get_serializer(instance,data=request.data,partial=partial)
+        #         serializer.is_valid(raise_exception=True)
+        #         self.perform_update(serializer)
+        #         return Response(serializer.data,status=status.HTTP_200_OK)
+        #     else:
+        #         return Response(status=status.HTTP_403_FORBIDDEN)
+        # else:
+        #     return Response(status=status.HTTP_401_UNAUTHORIZED)
+    def destroy(self,request,*args,**kwargs):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        # perfil=views.obt_per(self.request.user)
+        # if views.verificar_permiso(perfil,'NotaDevolucion','borrar'):
+        #     instance=self.get_object()
+        #     if instance.instancia==perfil.instancia or perfil.tipo=='S':
+        #         DetalleNotaDevolucion.objects.filter(nota_devolucion=instance.id).delete()
+        #         instance.delete()
+        #         return Response(status=status.HTTP_204_NO_CONTENT)
+        #     else:
+        #         return Response(status=status.HTTP_403_FORBIDDEN)
+        # else:
+        #     return Response(status=status.HTTP_401_UNAUTHORIZED)
+    # Metodos de leer
+    def list(self,request):
+        try:
+            perfil=views.obt_per(self.request.user)
+            if views.verificar_permiso(perfil,self.permiso,'leer'):
+                instancia=perfil.instancia
+                # Filtrar los objetos
+                objetos=self.queryset if perfil.tipo=='S' else self.queryset.filter(perfil__instancia=instancia)
+                objetos=objetos.exclude(perfil__tipo__in=['A','S']) if perfil.tipo=='U' or perfil.tipo=='V' else objetos
+                # Paginacion
+                paginado=views.paginar(objetos,self.request.query_params.copy(),self.modelo)
+                # Data e Info de la paginacion
+                data=self.serializer_class(paginado['objetos'],many=True).data
+                # Respuesta
+                return Response({'objetos':data,'info':paginado['info']},status=status.HTTP_200_OK)
+            else:
+                raise
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+    def retrieve(self, request, pk=None):
+        try:
+            return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if views.verificar_permiso(views.obt_per(request.user),self.permiso,'leer') else User.objects.none()
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
+# Detalles de las notas de devolucion de la instancia
+class DetalleNotaDevolucionVS(viewsets.ModelViewSet):
+    # Permisos
+    permiso='NotaDevolucion'
+    permission_classes=[IsAuthenticated]
+    authentication_classes=[TokenAuthentication]
+    # Datos
+    modelo=DetalleNotaDevolucion
+    queryset=modelo.objects.all()
+    serializer_class=DetalleNotaDevolucionSerializer
+    # Metodo crear
+    def create(self,request):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        # perfil=views.obt_per(self.request.user)
+        # if views.verificar_permiso(perfil,'NotaDevolucion','escribir'):
+        #     datos=request.data
+        #     try:
+        #         datos['instancia']=views.obtener_instancia(perfil,request.data['instancia'])
+        #     except:
+        #         datos['instancia']=perfil.instancia.id
+        #     serializer=self.get_serializer(data=datos)
+        #     serializer.is_valid(raise_exception=True)
+        #     self.perform_create(serializer)
+        #     headers=self.get_success_headers(serializer.data)
+        #     return Response(serializer.data,status=status.HTTP_201_CREATED,headers=headers)
+        # else:
+        #     return Response(status=status.HTTP_401_UNAUTHORIZED)
+    def update(self,request,*args,**kwargs):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        # perfil=views.obt_per(self.request.user)
+        # if views.verificar_permiso(perfil,'NotaDevolucion','actualizar'):
+        #     partial=True
+        #     instance=self.get_object()
+        #     if instance.instancia==perfil.instancia or perfil.tipo=='S':
+        #         serializer=self.get_serializer(instance,data=request.data,partial=partial)
+        #         serializer.is_valid(raise_exception=True)
+        #         self.perform_update(serializer)
+        #         return Response(serializer.data,status=status.HTTP_200_OK)
+        #     else:
+        #         return Response(status=status.HTTP_403_FORBIDDEN)
+        # else:
+        #     return Response(status=status.HTTP_401_UNAUTHORIZED)
+    def destroy(self,request,*args,**kwargs):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        # perfil=views.obt_per(self.request.user)
+        # if views.verificar_permiso(perfil,'NotaDevolucion','borrar'):
+        #     instance=self.get_object()
+        #     inventario=Inventario.objects.get(id=instance.inventario.id)
+        #     inventario.disponible=inventario.disponible+instance.cantidada
+        #     if instance.instancia==perfil.instancia or perfil.tipo=='S':
+        #         instance.delete()
+        #         inventario.save()
+        #         return Response(status=status.HTTP_204_NO_CONTENT)
+        #     else:
+        #         return Response(status=status.HTTP_403_FORBIDDEN)
+        # else:
+        #     return Response(status=status.HTTP_401_UNAUTHORIZED)
+    # Metodos de leer
+    def list(self,request):
+        try:
+            perfil=views.obt_per(self.request.user)
+            if views.verificar_permiso(perfil,self.permiso,'leer'):
+                instancia=perfil.instancia
+                # Filtrar los objetos
+                objetos=self.queryset if perfil.tipo=='S' else self.queryset.filter(perfil__instancia=instancia)
+                objetos=objetos.exclude(perfil__tipo__in=['A','S']) if perfil.tipo=='U' or perfil.tipo=='V' else objetos
+                # Paginacion
+                paginado=views.paginar(objetos,self.request.query_params.copy(),self.modelo)
+                # Data e Info de la paginacion
+                data=self.serializer_class(paginado['objetos'],many=True).data
+                # Respuesta
+                return Response({'objetos':data,'info':paginado['info']},status=status.HTTP_200_OK)
+            else:
+                raise
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+    def retrieve(self, request, pk=None):
+        try:
+            return Response(self.serializer_class(get_object_or_404(self.queryset, pk=pk)).data) if views.verificar_permiso(views.obt_per(request.user),self.permiso,'leer') else User.objects.none()
+        except Exception as e:
+            return Response('%s'%(e),status=status.HTTP_401_UNAUTHORIZED)
+
+
+
+
+
+
+
+
+
+
+
+
+
 @api_view(["GET"])
 @csrf_exempt
 @authentication_classes([BasicAuthentication])
@@ -62,12 +259,12 @@ data_temporal = {'vendedor':0}
 @authentication_classes([BasicAuthentication])
 @permission_classes([AllowAny])
 def analisis_vencimiento(request):
-    params=request.query_params
+    params=request.query_params.copy()
     usuario = Token.objects.get(key=params.get('token').split(' ')[1]).user
     # if usuario:
-    data = request.data
+    data = int(params.get('vendedor'))
     if not data:
-        data=data_temporal
+        data=data_temporal['vendedor']
     perfil=Perfil.objects.get(usuario=1)
     if views.verificar_permiso(perfil,'Productos','leer'):
         response=HttpResponse(content_type='application/ms-excel')
@@ -76,17 +273,17 @@ def analisis_vencimiento(request):
         excel_wb=Workbook(encoding='utf-8')
         excel_ws=excel_wb.add_sheet('Hoja1') # ws es Work Sheet
         # Añadiendo estilo
-        excel_ws.col(0).width = 2700 # Tamaño columna numero Proforma
-        excel_ws.col(1).width = 3400 # Tamaño columna emision Proforma
-        excel_ws.col(2).width = 3400 # Tamaño columna despacho Proforma
-        excel_ws.col(3).width = 3900 # Tamaño columna monto total Proforma
-        excel_ws.col(4).width = 3900 # Tamaño columna saldo Proforma
+        excel_ws.col(0).width = 2700 # Tamaño columna numero NotaDevolucion
+        excel_ws.col(1).width = 3400 # Tamaño columna emision NotaDevolucion
+        excel_ws.col(2).width = 3400 # Tamaño columna despacho NotaDevolucion
+        excel_ws.col(3).width = 3900 # Tamaño columna monto total NotaDevolucion
+        excel_ws.col(4).width = 3900 # Tamaño columna saldo NotaDevolucion
         excel_ws.col(5).width = 1500 # Tamaño columna dias Despacho/Hoy
         bold=easyxf('font: bold 1')
         center=easyxf('align: wrap on, horiz center')
         right=easyxf('align: wrap on, horiz right')
         vendedores = Vendedor.objects.filter(instancia=Perfil.objects.get(usuario=usuario).instancia)
-        vendedores = vendedores.filter(id__exact=data['vendedor']) if data['vendedor'] != 0 else vendedores
+        vendedores = vendedores.filter(id__exact=data) if data != 0 else vendedores
         ahora = timezone.now()
         i = 0
         excel_ws.write(i,0,'ANALISIS DE VENCIMIENTO CTAS x COBRAR al: %s'%(ahora.date()),bold)
@@ -104,7 +301,7 @@ def analisis_vencimiento(request):
                         excel_ws.write(i,3,'RIF: %s'%(cliente.identificador),bold)
                         excel_ws.write(i,4,'Telf: %s'%(cliente.telefono),bold)
                         i += 1
-                        excel_ws.write(i,0,'Proforma',bold)
+                        excel_ws.write(i,0,'NotaDevolucion',bold)
                         excel_ws.write(i,1,'Fecha Emis',bold)
                         excel_ws.write(i,2,'Fecha Desp',bold)
                         excel_ws.write(i,3,'Monto Emis',bold)

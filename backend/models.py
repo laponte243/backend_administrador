@@ -312,7 +312,42 @@ class DetalleProforma(models.Model):
     inventario=models.ForeignKey(Inventario,null=True,blank=False,on_delete=models.DO_NOTHING,help_text="Inventario asociado")
     history=HistoricalRecords()
     def __str__(self):
-        return "Pedido: #%s,$%s (%s/%s)"%(self.proforma.id,self.total_producto,self.producto,self.lote)
+        return "Proforma: #%s,$%s (%s/%s)"%(self.proforma.id,self.total_producto,self.producto,self.lote)
+class NotaDevolucion(models.Model):
+    instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
+    proforma=models.ForeignKey(Proforma,null=True,blank=False,on_delete=models.DO_NOTHING,help_text="Pedido asociado")
+    empresa=models.ForeignKey(Empresa,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Empresa asociada")
+    cliente=models.ForeignKey(Cliente,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Cliente asociado")
+    vendedor=models.ForeignKey(Vendedor,null=True,blank=False,on_delete=models.DO_NOTHING,help_text="Vendedor asociado")
+    # Datos
+    precio_seleccionadoo=models.TextField(null= False,blank=False)
+    nombre_cliente=models.TextField(max_length=150,blank=False,null=False,help_text="Nombre del cliente de la proforma")
+    identificador_fiscal=models.TextField(max_length=150,blank=False,null=False,help_text="Identificador fiscal del cliente de la proforma")
+    direccion_cliente=models.TextField(max_length=150,blank=True,null=True,help_text="Direccion del cliente de la proforma")
+    telefono_cliente=models.TextField(max_length=150,blank=False,null=False,help_text="Telefono del cliente de la proforma")
+    total=models.TextField(null=False,default=0,blank=False,help_text="Total de la devolucion")
+    fecha_devolucion=models.TextField(help_text="Fecha de la devolucion")
+    numerologia=models.TextField(null=False,blank=True)
+    # Utiles
+    history=HistoricalRecords()
+    def __str__(self):
+        return "ID: #%s,$%s (%s/%s)"%(self.id,self.total,self.cliente.nombre,self.empresa.nombre)
+
+class DetalleNotaDevolucion(models.Model):
+    instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
+    nota_devolucion=models.ForeignKey(NotaDevolucion,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Proforma asociada")
+    producto=models.ForeignKey(Producto,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Producto asociado")
+    inventario=models.ForeignKey(Inventario,null=True,blank=False,on_delete=models.DO_NOTHING,help_text="Inventario asociado")
+    # Data
+    precio_seleccionado=models.FloatField(null= False,blank=False)
+    lote=models.TextField(max_length=150,blank=False,null=True,help_text="Lote del producto")
+    cantidada=models.IntegerField(null=False,default=0,blank=False,help_text="Cantidad devuelta")
+    total_producto=models.FloatField(null=False,default=0,blank=False,help_text="Precio por la cantidad del producto")
+    # Extra
+    history=HistoricalRecords()
+    def __str__(self):
+        return "NotaDevolucion: #%s,$%s (%s/%s)"%(self.nota_devolucion.id,self.total_producto,self.producto,self.lote)
+
 class Factura(models.Model):
     # Llaves foraneas
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
