@@ -19,7 +19,6 @@
         @page {
             margin: 0;
             padding: 0;
-            size: 214mm 153mm;
         }
         .container {
             /* margin-left: 5%;
@@ -49,8 +48,15 @@
         .item3 {
             /* FACTURA ID */
             position: absolute;
-            top: 25mm;
+            top: 38mm;
             left: 59mm;
+            text-align: right;
+        }
+        .item15 {
+            /* FACTURA ID */
+            position: absolute;
+            top: 38mm;
+            left: 90mm;
             text-align: right;
         }
         .item4 {
@@ -80,26 +86,26 @@
         .item8 {
             /* CONTENIDO */
             position: absolute;
-            top: 35mm;
+            top: 46mm;
             left: 5%;
             width: 90%;
         }
         .item8_b {
             /* SUB_TOTAL/EXENTO */
             position: absolute;
-            top: 122mm;
+            top: 123mm;
             left: 135mm;
         }
         .item8_c {
             /* IMPONIBLE,IMPUESTO */
             position: absolute;
-            top: 122mm;
-            left: 180mm;
+            top: 123mm;
+            left: 175mm;
         }
         .item8_d {
             /* TOTAL */
             position: absolute;
-            top: 131mm;
+            top: 134mm;
             left: 160mm;
         }
         .item9 {
@@ -160,7 +166,10 @@
                     </p>
                 </div> -->
                 <div class="item3" style="text-align: right">
-                    <strong><p> FACTURA: {{factura.id}} </p></strong>
+                    <strong><p> FACTURA: {{factura.numerologia}} </p></strong>
+                </div>
+                <div class="item15" style="text-align: right">
+                    <strong><p>E-{{correlativo_proforma}} </p></strong>
                 </div>
                 <div class="item8">
                     <p>
@@ -203,24 +212,25 @@
                         </div>
                     </div>-->
                 </div>
-                <div class="row" style="margin-top: 180px;">
+                <div class="row" style="margin-top: 205px;">
                     <div class="col-xs-12">
                         <table class="table table-responsive table-condensed" style="border-bottom: none;">
                             <thead style="border-bottom: none;">
                                 <tr style="border-bottom: none;">
-                                    <th style="width: 5%">ID</th>
-                                    <th style="width: 61%">PRODUCTO</th>
+                                    <th style="width: 6%;padding-left: 25px;">ID</th>
+                                    <th style="width: 56%">PRODUCTO</th>
                                     <!-- <th style="width: 16%;text-align: center;">LOTES</th> -->
                                     <!-- <th style="width: 12%">VENCIMIENTO</th> -->
-                                    <th style="width: 5%;text-align: center;">CANT.</th>
-                                    <th style="width: 17%;text-align: center;">P/UNIDAD</th>
-                                    <th style="width: 17%;text-align: right;">TOTAL</th>
+                                    <th style="width: 6%;text-align: center;">CANT.</th>
+                                    <th style="width: 14%;text-align: right;">P/UNIDAD</th>
+                                    <th style="width: 4%;text-align: center;"></th>
+                                    <th style="width: 14%;text-align: right;padding-right: 25px;">TOTAL</th>
                                 </tr>
                             </thead>
                             <tbody style="border-bottom: none; border-top: none;">
                                 {% for producto in productos %}
                                     <tr style="border-bottom: none; height: 28px;">
-                                        <td class="filaDetalle" style="text-align: left">{{forloop.counter}}</td>
+                                        <td class="filaDetalle" style="text-align: left;;padding-left: 25px;">{{forloop.counter}}</td>
                                         {% if producto.detalle and not producto.mostrar %}
                                             <td class="filaDetalle" style="text-align: left">{{producto.producto_nombre}}
                                                 <span style="font-size: 8px;">
@@ -231,8 +241,23 @@
                                             <td class="filaDetalle" style="text-align: left">{{producto.producto_nombre}}</td>
                                         {% endif %}
                                         <td class="filaDetalle" style="text-align: center"> {{producto.cantidad}}</td>
-                                        <td class="filaDetalle" style="text-align: center"> {{producto.precio}} Bs.S</td>
-                                        <td class="filaDetalle" style="text-align: right"> {{producto.total_producto}} Bs.S</td>
+                                            {% if producto.extra_cero_precio %}
+                                                <td class="filaDetalle" style="text-align: right"> {{producto.precio}}0
+                                            {% else %}
+                                                <td class="filaDetalle" style="text-align: right"> {{producto.precio}}
+                                            {% endif %}
+                                            Bs.</td>
+                                        <td class="filaDetalle" style="text-align: center">
+                                            {% if producto.exento %}
+                                                (E)
+                                            {% endif %}
+                                        </td>
+                                        {% if producto.extra_cero_total %}
+                                            <td class="filaDetalle" style="text-align: right;padding-right: 20px;"> {{producto.total_producto}}0
+                                        {% else %}
+                                            <td class="filaDetalle" style="text-align: right;padding-right: 20px;"> {{producto.total_producto}}
+                                        {% endif %}
+                                        Bs.</td>
                                     </tr>
                                     {% if producto.mostrar %}
                                         <tr style="visibility:visible;font-size: 8px; border-top: none; height: 20px;">
@@ -262,20 +287,45 @@
                 </div>
                 <div class="item8_b">
                     <p>
-                        Sub-Total: {{subtotal}} Bs.S <br>
-                        Mto. Exento: {{monto_exento}} Bs.S
+                        {% if producto.extra_cero_subtotal %}
+                        Sub-Total: {{subtotal}}0
+                        {% else %}
+                        Sub-Total: {{subtotal}}
+                        {% endif %}
+                        Bs. <br>
+                        {% if producto.extra_cero_monto_exento %}
+                        Mto. Exento: {{monto_exento}}0
+                        {% else %}
+                        Mto. Exento: {{monto_exento}}
+                        {% endif %}
+                        Bs.
                     </p>
                 </div>
                 <div class="item8_c">
                     <p>
-                        Imponible: {{imponible}} Bs.S <br>
-                        Impuesto: {{impuesto}} Bs.S
+                        {% if producto.extra_cero_imponible %}
+                        Imponible: {{imponible}}0
+                        {% else %}
+                        Imponible: {{imponible}}
+                        {% endif %}
+                        Bs. <br>
+                        {% if producto.extra_cero_impuesto %}
+                        Impuesto: {{impuesto}}0
+                        {% else %}
+                        Impuesto: {{impuesto}}
+                        {% endif %}
+                        Bs.
                     </p>
                 </div>
                 <div class="item8_d">
                     <!-- <div class="col-xs-4" style="text-align: right; bottom: 0"> -->
                         <p>
-                            Total: {{total}} Bs.S
+                            {% if producto.extra_cero_total_real %}
+                            Total: {{total}}0
+                            {% else %}
+                            Total: {{total}}
+                            {% endif %}
+                            Bs.
                         </p>
                     <!-- </div> -->
                 </div>

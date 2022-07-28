@@ -38,6 +38,7 @@ from django_renderpdf.views import PDFView
 from email import header
 from urllib import response
 from numpy import indices, safe_eval
+from decimal import *
 from xlwt import *
 import pandas as pd
 import csv
@@ -243,13 +244,115 @@ class DetalleNotaDevolucionVS(viewsets.ModelViewSet):
 
 
 
+@api_view(["POST"])
+@csrf_exempt
+@authentication_classes([BasicAuthentication])
+@permission_classes([AllowAny])
+def guardar_lista_precio(request):
+    data = request.data
+    print(data)
+    return Response('',status=status.HTTP_501_NOT_IMPLEMENTED)
+
 @api_view(["GET"])
 @csrf_exempt
 @authentication_classes([BasicAuthentication])
 @permission_classes([AllowAny])
-def lista_precio(request):
-    data = request.data
-    print(data)
+def generar_lista_precio(request):
+    params=request.query_params.copy()
+    token=params.get('token').split(' ')[1]
+    if Token.objects.get(key=token):
+        perfil=Perfil.objects.get(usuario=1)
+        if views.verificar_permiso(perfil,'Productos','leer'):
+            # Crear archivo temporal
+            response=HttpResponse(content_type='application/ms-excel')
+            response['Content-Disposition']='attachment;filename="lista_precios.xls"'
+            # Iniciar Excel
+            excel_wb=Workbook(encoding='utf-8')
+            excel_ws=excel_wb.add_sheet('Hoja1') # ws es Work Sheet
+            # Añadiendo estilo
+            excel_ws.col(0).width = 3500
+            excel_ws.col(1).width = 18000 # Tamaño columna codigo producto
+            excel_ws.col(2).width = 5000 # Tamaño columna marca producto
+            excel_ws.col(3).width = 5000 # Tamaño columna precio producto
+            excel_ws.col(4).width = 3000 # Tamaño columna iva producto
+            # Color cabezera
+            add_palette_colour("color_cabezera", 0x21)
+            excel_wb.set_colour_RGB(0x21, 200, 200, 200)
+            # Color nombre marca
+            add_palette_colour("color_marca", 0x22)
+            excel_wb.set_colour_RGB(0x22, 160, 160, 210)
+            # Estilo cabezeras
+            borders_a = 'borders:\
+                            top_color black, top thin,\
+                            right_color black, right thin,\
+                            bottom_color black, bottom 1,\
+                            left_color black, left thin;'
+            estilo_cabezera = easyxf('font: bold 1, height 260;\
+                                      align: wrap on, horiz center;\
+                                      %s\
+                                      pattern: pattern solid, fore_colour color_cabezera'%(borders_a))
+            lefted = easyxf('align: wrap on, horiz left;%s'%(borders_a))
+            centered = easyxf('align: wrap on, horiz center;%s'%(borders_a))
+            righted = easyxf('align: wrap on, horiz right;%s'%(borders_a))
+            estilo_nombre_marca = easyxf('font: bold 1, height 300; align: wrap on, horiz center; pattern: pattern solid, fore_colour color_marca')
+            i=4 # Saltador de fila
+            # Escribir nombres de las columnas
+            ahora = datetime.datetime.now()
+            estilo_dia = easyxf('font: bold 1, height 300; align: wrap on, horiz center')
+            celdas_nombre_marca = []
+            excel_ws.write(i,1,'LISTA DE PRECIOS AL: %s/%s/%s'%(ahora.day,ahora.month,ahora.year),estilo_dia)
+            celdas_nombre_marca.append(i)
+            i=i+2 # Saltador de fila    
+            excel_ws.write(i,1,'DESCRIPCIÓN',estilo_cabezera)
+            excel_ws.write(i,2,'MARCA',estilo_cabezera)
+            excel_ws.write(i,3,'PRECIO VTA $',estilo_cabezera)
+            excel_ws.write(i,4,'(I) = IVA',estilo_cabezera)
+            excel_ws.set_panes_frozen(True)
+            excel_ws.set_horz_split_pos(7)
+            # Ciclo por cada marca
+            marcas_elegidas = params.get('marcas').split(',')
+            for id_marca in marcas_elegidas if marcas_elegidas[0] != '0' else Marca.objects.all().values_list('id'):
+                marca = Marca.objects.get(id=id_marca if type(id_marca) != type(()) else id_marca[0])
+                i=i+2 # Saltar fila
+                # Ciclo por cada producto
+                excel_ws.write(i,1,marca.nombre,estilo_nombre_marca)
+                celdas_nombre_marca.append(i)
+                i=i+1 # Saltar fila
+                for p in Producto.objects.filter(marca=marca).values():
+                    i=i+1 # Saltar fila
+                    # Escribir productos
+                    # excel_ws.write(i,0,m['nombre']) # Nombre marca
+                    # excel_ws.write(i,1,p['sku']) # Codigo producto
+                    excel_ws.write(i,1,p['nombre'],lefted) # Nombre producto
+                    excel_ws.write(i,2,marca.nombre,centered) # Nombre producto
+                    precio = None
+                    # Precios del producto
+                    if params.get('precio') == 'precio_1':
+                        precio = round(p['precio_1'],2)
+                    elif params.get('precio') == 'precio_2':
+                        precio = round(p['precio_2'],2)
+                    elif params.get('precio') == 'precio_3':
+                        precio = round(p['precio_3'],2)
+                    elif params.get('precio') == 'precio_4':
+                        precio = round(p['precio_4'],2)
+                    extra_cero_precio = True if len(str(round(precio,2)).split('.')[1]) < 2 else False
+                    excel_ws.write(i,3,'%s'%(precio) if not extra_cero_precio else '%s0'%(precio),righted)
+                    if not p['exonerado']:
+                        iva = round(precio*(16/100),2)
+                        extra_cero_iva = True if len(str(round(iva,2)).split('.')[1]) < 2 else False
+                        excel_ws.write(i,4,'%s'%(iva) if not extra_cero_iva else '%s0'%(iva),righted)
+                    else:
+                        excel_ws.write(i,4,'',righted)
+            for row in range(i):
+                    excel_ws.row(row).height = 400 if row in celdas_nombre_marca else 320
+            # Guardar excel en el archivo temporal
+            excel_wb.save(response)
+            # Restornar archivo
+            return response
+        else:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+    else:
+        return Response(status=status.HTTP_403_FORBIDDEN)
     return Response('',status=status.HTTP_501_NOT_IMPLEMENTED)
 
 data_temporal = {'vendedor':0}

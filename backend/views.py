@@ -37,6 +37,7 @@ from django_renderpdf.views import PDFView
 from email import header
 from urllib import response
 from numpy import indices, safe_eval
+from decimal import *
 from xlwt import *
 import pandas as pd
 import csv
@@ -1191,10 +1192,10 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
                 if inventario:
                     if datos['tipo']=='Salida':
                         datos['tipo']='S'
-                        inventario.disponible-=float(datos['cantidad'])
+                        inventario.disponible-=Decimal(float(datos['cantidad']))
                     elif datos['tipo']=='Entrada':
                         datos['tipo']='E'
-                        inventario.disponible+=float(datos['cantidad'])
+                        inventario.disponible+=Decimal(float(datos['cantidad']))
                     else:
                         Response('Tipo de movimiento no aceptado',status=status.HTTP_406_NOT_ACCEPTABLE)
                 elif not inventario and datos['tipo']!='Salida':
@@ -2807,7 +2808,7 @@ class PedidoPDF(PDFView):
                 # Definicion de contenido extra para el template
                 pedido=Pedido.objects.get(id=kwargs['id_pedido'])
                 value={'data':[]}
-                agrupador=DetallePedido.objects.filter(pedido=pedido).values('producto').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada'))
+                agrupador=DetallePedido.objects.filter(pedido=pedido).values('id','producto').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada'))
                 # Ciclo para generar Json y data para el template
                 for dato in agrupador:
                     # Obtener producto
@@ -2822,12 +2823,12 @@ class PedidoPDF(PDFView):
                     if productox.lote==True and len(detallado) > 1: # Conficion para cuando se debe mostrar el lote, y hay varios detalles, del producto
                         for detalle in detallado:
                             valuex['datax'].append({'lote':detalle.lote  if detalle.lote else 'Sin lote','cantidad':detalle.cantidada,'vencimiento':detalle.inventario.fecha_vencimiento.date() if detalle.inventario else ''})
-                            total_cantidad += detalle.cantidada
+                            total_cantidad += int(detalle.cantidada)
                     else: # Conficion para cuando se debe mostrar el lote, y hay un solo detalle, del producto
                         mostrar=False
                         for detalle in detallado:
                             valuex['datax'] = {'lote':detalle.lote,'vencimiento':detalle.inventario.fecha_vencimiento.date() if detalle.inventario else ''}
-                            total_cantidad += detalle.cantidada
+                            total_cantidad += int(detalle.cantidada)
                     # else: # Conficion para cuando no se debe mostrar el lote del producto
                     #     mostrar=False
                     #     for detalle in detallado:
@@ -2865,7 +2866,7 @@ class ProformaPDF(PDFView):
                 total_exento=0
                 total_imponible=0
                 total_calculado=0
-                agrupador=DetalleProforma.objects.filter(proforma=proforma).values('producto','precio').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada'))
+                agrupador=DetalleProforma.objects.filter(proforma=proforma).values('id','producto','precio').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada'))
                 # Ciclo para generar Json y data para el template
                 for dato in agrupador:
                     # Obtener producto
@@ -2902,14 +2903,14 @@ class ProformaPDF(PDFView):
                     #         precio_unidad=round(detalle.precio,2)
                     #     valuex['datax']=None
                     # Obtener los costos totales
-                    costo_total=float(precio_unidad) * float(total_cantidad)
+                    costo_total=Decimal(float(precio_unidad)) * Decimal(float(total_cantidad))
                     total_calculado += round(costo_total,2)
                     # Agregar detalles al arreglo de detalles
-                    value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'mostrar':mostrar,'cantidad':total_cantidad,'precio':precio_unidad,'total_producto':round(costo_total,2)})
+                    value['data'].append({'producto_nombre':productox.nombre,'exento':productox.exonerado,'producto_sku':productox.sku,'detalle':valuex['datax'],'mostrar':mostrar,'cantidad':total_cantidad,'precio':precio_unidad,'total_producto':round(costo_total,2)})
                 # Sumatoria de los exentos valores
                 total_real=(total_imponible + total_exento)
                 # 16% (IVA)
-                iva=round(total_imponible*(16/100),2)
+                iva=round(total_imponible*Decimal(16/100),2)
                 if total_imponible:
                     total_real=total_real+iva
                 # Setear los valores al template
@@ -2922,7 +2923,8 @@ class ProformaPDF(PDFView):
                 context['total']=round(total_real,2)
                 # Setear los valores de la empresa
                 empresa=proforma.cliente.empresa
-                context['empresa']={'nombre':empresa.nombre.upper(),'logo':'media/'+empresa.logo.name.split('/')[2],'correo':empresa.correo,'telefono':empresa.telefono,'direccion':empresa.direccion}
+                context['empresa']=empresa
+                context['logo'] = self.request.build_absolute_uri(empresa.logo.url)
                 return context
             else:
                 raise Exception('Token del usuario invalido')
@@ -2942,19 +2944,19 @@ class FacturaPDF(PDFView):
             if Token.objects.get(key=kwargs['token']):
                 conversion=None
                 try:
-                    conversion=TasaConversion.objects.filter(fecha_tasa__date=datetime.datetime.today().date()).latest('fecha_tasa__date')
+                    conversion=TasaConversion.objects.filter(fecha_tasa__date=datetime.datetime.today().date()).first('fecha_tasa__date')
                 except:
                     conversion=TasaConversion.objects.latest('fecha_tasa')
                 context=super().get_context_data(*args,**kwargs)
                 factura=Factura.objects.get(id=kwargs['id_factura'])
-                subtotal=float(factura.subtotal)
-                total_costo=round(float(factura.total) * conversion.valor,2)
+                subtotal=Decimal(float(factura.subtotal))
+                total_costo=round(Decimal(float(factura.total)) * conversion.valor,2)
                 value={'data':[]}
                 total_exento=0
                 total_imponible=0
                 total_calculado=0
                 # Ciclo para generar Json y data para el template
-                for dato in DetalleFactura.objects.filter(factura=factura).values('producto','precio').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada')):
+                for dato in DetalleFactura.objects.filter(factura=factura).values('id','producto','precio').annotate(total=Sum('total_producto'),cantidad=Sum('cantidada')):
                     productox=Producto.objects.get(id=dato['producto'])
                     if productox.exonerado == False:
                         total_imponible += dato['total']
@@ -2970,23 +2972,25 @@ class FacturaPDF(PDFView):
                         for detalle in detallado:
                             valuex['datax'].append({'lote':detalle.lote if detalle.lote else 'Sin lote','cantidad':detalle.cantidada,'vencimiento':detalle.inventario.fecha_vencimiento.date() if detalle.inventario else ''})
                             total_cantidad += int(detalle.cantidada)
-                            precio_unidad=float(detalle.precio) * conversion.valor
+                            precio_unidad=Decimal(float(detalle.precio)) * conversion.valor
                     elif productox.lote==True and len(detallado)==1:
                         valuex['datax']=''
                         mostrar=False
                         for detalle in detallado:
                             valuex['datax'] = {'lote':detalle.lote,'vencimiento':detalle.inventario.fecha_vencimiento.date() if detalle.inventario else ''}
                             total_cantidad += int(detalle.cantidada)
-                            precio_unidad=float(detalle.precio) * conversion.valor
+                            precio_unidad=Decimal(float(detalle.precio)) * conversion.valor
                     else:
                         mostrar=False
                         for detalle in detallado:
                             total_cantidad += int(detalle.cantidada)
-                            precio_unidad=float(detalle.precio) * conversion.valor
+                            precio_unidad=Decimal(float(detalle.precio)) * conversion.valor
                         valuex['datax']=None
-                    costo_total=precio_unidad * float(total_cantidad)
+                    costo_total=precio_unidad * Decimal(float(total_cantidad))
                     total_calculado += costo_total
-                    value['data'].append({'producto_nombre':productox.nombre,'producto_sku':productox.sku,'detalle':valuex['datax'],'mostrar':mostrar,'cantidad':total_cantidad,'precio':round(precio_unidad,2),'total_producto':round(costo_total,2)})
+                    extra_cero_precio = True if len(str(round(precio_unidad,2)).split('.')[1]) < 2 else False
+                    extra_cero_total = True if len(str(round(costo_total,2)).split('.')[1]) < 2 else False
+                    value['data'].append({'producto_nombre':productox.nombre,'extra_cero_precio':extra_cero_precio,'extra_cero_total':extra_cero_total,'exento':productox.exonerado,'producto_sku':productox.sku,'detalle':valuex['datax'],'mostrar':mostrar,'cantidad':total_cantidad,'precio':round(precio_unidad,2),'total_producto':round(costo_total,2)})
                 subtotal_conversion=subtotal * conversion.valor
                 # Sumatoria de los no exentos (Imponible)
                 total_imponible = total_imponible * conversion.valor
@@ -2994,24 +2998,33 @@ class FacturaPDF(PDFView):
                 total_exento = total_exento * conversion.valor
                 total_real=(total_imponible + total_exento)
                 # 16% (IVA)
-                iva=round(total_imponible*(16/100),2)
+                iva=round(total_imponible*Decimal(16/100),2)
                 if total_imponible:
                     total_real=total_real+iva
                 # Setear los valores al template
                 context['productos']=value['data']
                 context['subtotal']=round(subtotal_conversion,2)
+                context['extra_cero_subtotal'] = True if len(str(round(subtotal_conversion,2)).split('.')[1]) < 2 else False
                 context['imponible']=round(total_imponible,2)
+                context['extra_cero_imponible'] = True if len(str(round(total_imponible,2)).split('.')[1]) < 2 else False
                 context['monto_exento']=round(total_exento,2)
+                context['extra_cero_monto_exento'] = True if len(str(round(total_exento,2)).split('.')[1]) < 2 else False
                 context['impuesto']=iva
+                context['extra_cero_impuesto'] = True if len(str(round(iva,2)).split('.')[1]) < 2 else False
                 context['total']=round(total_real,2)
+                context['extra_cero_total_real'] = True if len(str(round(total_real,2)).split('.')[1]) < 2 else False
                 context['factura']=factura
+                context['correlativo_proforma']=factura.proforma.numerologia
                 # Setear los valores de la empresa
                 empresa=factura.proforma.cliente.empresa
                 context['empresa']={'nombre':empresa.nombre.upper(),'logo':'media/'+empresa.logo.name.split('/')[2],'correo':empresa.correo,'telefono':empresa.telefono,'direccion':empresa.direccion}
+                # factura.impreso = True
+                # factura.save()
                 return context
             else:
                 raise Exception('Token del usuario invalido')
         except Exception as e:
+            print(e)
             context['error'] = e
             return context
 
@@ -3256,7 +3269,7 @@ def borrar_nota(request):
             nota=NotasPago.objects.get(id=payload['idNota'])
             for obj in DetalleNotasPago.objects.filter(notapago=nota):
                 proforma=Proforma.objects.get(id=obj.proforma.id)
-                proforma.saldo_proforma=float(proforma.saldo_proforma)+float(obj.monto)
+                proforma.saldo_proforma=Decimal(float(proforma.saldo_proforma))+Decimal(float(obj.monto))
                 proforma.save()
                 obj.delete()
             nota.delete()
@@ -3315,7 +3328,6 @@ def actualizar_pedido(request):
     info={'errores':[]}
     if verificar_permiso(perfil,'Pedido','actualizar'):
         # Cargar la data recibida
-        nuevos_detalles=request.data['detalles']
         try:
             # Obtener pedido
             pedido=Pedido.objects.get(id=request.data['id_pedido'])
@@ -3338,14 +3350,14 @@ def actualizar_pedido(request):
                 # Eliminar detalle
                 d.delete()
             # Guardar los nuevos detalles del pedido
-            for d in nuevos_detalles:
+            for d in request.data['detalles']:
                 try:
                     # Obtener inventario del nuevo pedido
                     inventario=None if not d['inventario'] else Inventario.objects.get(id=d['inventario'])
                     # Obtener producto
                     producto=Producto.objects.get(id=d["producto"])
                     # Obtener el precio seleccionado del producto y su cantidad en el pedido
-                    precio_seleccionado=float(d['precio_seleccionado'])
+                    precio_seleccionado=Decimal(float(d['precio_seleccionado']))
                     cantidad=int(d['cantidada'])
                     # Calcular el precio de cada producto segun la cantidad
                     total_producto=cantidad * precio_seleccionado
@@ -3455,7 +3467,7 @@ def validar_pedido(request):
                     )
                     nuevo_detalle.save()
                     nueva_proforma.total += deta.total_producto
-                    nueva_proforma.saldo_proforma=nueva_proforma.total
+                    nueva_proforma.saldo_proforma = nueva_proforma.total
                     nueva_proforma.save()
                 return Response(status=status.HTTP_200_OK)
         except ObjectDoesNotExist as e:
@@ -3626,9 +3638,9 @@ def actualizar_proforma(request):
                 instancia=Instancia.objects.get(perfil=perfil.id)
                 cantidad=int(i["cantidada"])
                 totalp=cantidad * precio_seleccionado
-                precio_unidad=float(precio_seleccionado) # Calcular el precio del producto en la venta
+                precio_unidad=Decimal(float(precio_seleccionado)) # Calcular el precio del producto en la venta
                 totalp=cantidad * precio_unidad # Calcular el precio final del detalle segun la cantidad
-                total_proforma += float(totalp)
+                total_proforma += Decimal(float(totalp))
                 proforma=proforma_id
                 nuevo_componente=DetalleProforma(proforma=proforma,lote=i["lote"],total_producto=totalp,precio_seleccionado=precio_seleccionado,precio=precio_unidad,instancia_id=instancia.id,cantidada=cantidad,producto=producto,inventario=inventario)
                 nuevo_componente.save()
@@ -3672,10 +3684,10 @@ def vista_xls(request):
             excel_ws.write(i,1,'CODIGO',estilo)
             excel_ws.write(i,2,'DESCRIPCIÓN',estilo)
             excel_ws.write(i,3,'COSTO',estilo)
-            excel_ws.write(i,4,'PRECIO 1',estilo)
-            excel_ws.write(i,5,'PRECIO 2',estilo)
-            excel_ws.write(i,6,'PRECIO 3',estilo)
-            excel_ws.write(i,7,'PRECIO 4',estilo)
+            excel_ws.write(i,4,'PRECIO1',estilo)
+            excel_ws.write(i,5,'PRECIO2',estilo)
+            excel_ws.write(i,6,'PRECIO3',estilo)
+            excel_ws.write(i,7,'PRECIO4',estilo)
             i=i+1 # Saltar fila
             # Ciclo por cada marca
             for m in Marca.objects.all().order_by('prioridad').values():
@@ -3700,6 +3712,64 @@ def vista_xls(request):
             return Response(status=status.HTTP_401_UNAUTHORIZED)
     else:
         return Response(status=status.HTTP_403_FORBIDDEN)
+
+
+# Funcion tipo vista para generar Excel de precios de productos
+@api_view(["GET"])
+@csrf_exempt
+def lista_precio_xls(request):
+    data=request.data
+    if not data.get('marcas',None):
+        data['marcas'] = Marca.objects.all().values('id')
+    params=request.query_params.copy()
+    # token=params.get('token').split(' ')[1]
+    # if Token.objects.get(key=token):
+    perfil=Perfil.objects.get(usuario=1)
+    if verificar_permiso(perfil,'Productos','leer'):
+        # Crear archivo temporal
+        response=HttpResponse(content_type='application/ms-excel')
+        response['Content-Disposition']='attachment;filename="productos.xls"'
+        # Iniciar Excel
+        excel_wb=Workbook(encoding='utf-8')
+        excel_ws=excel_wb.add_sheet('Hoja1') # ws es Work Sheet
+        # Añadiendo estilo
+        excel_ws.col(0).width = 11600 # Tamaño columna nombre marca
+        excel_ws.col(1).width = 8000 # Tamaño columna codigo producto
+        excel_ws.col(2).width = 13000 # Tamaño columna nombre producto
+        estilo=easyxf('font: bold 1')
+        i=0 # Saltador de fila
+        # Escribir nombres de las columnas
+        excel_ws.write(i,0,'MARCA',estilo)
+        excel_ws.write(i,1,'CODIGO',estilo)
+        excel_ws.write(i,2,'DESCRIPCIÓN',estilo)
+        excel_ws.write(i,3,'PRECIO1',estilo)
+        excel_ws.write(i,4,'PRECIO2',estilo)
+        excel_ws.write(i,5,'PRECIO3',estilo)
+        excel_ws.write(i,6,'PRECIO4',estilo)
+        i=i+1 # Saltar fila
+        # Ciclo por cada marca
+        for m in data['marcas']:
+            m = Marca.objects.get(id=m['id'])
+            # Ciclo por cada producto
+            for p in Producto.objects.filter(marca=m.id).values():
+                # Escribir productos
+                excel_ws.write(i,0,m.nombre) # Nombre marca
+                excel_ws.write(i,1,p['sku']) # Codigo producto
+                excel_ws.write(i,2,p['nombre']) # Nombre producto
+                # Precios del producto
+                excel_ws.write(i,3,p['precio_1'])
+                excel_ws.write(i,4,p['precio_2'])
+                excel_ws.write(i,5,p['precio_3'])
+                excel_ws.write(i,6,p['precio_4'])
+                i=i+1 # Saltar fila
+        # Guardar excel en el archivo temporal
+        excel_wb.save(response)
+        # Restornar archivo
+        return response
+    else:
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
+    # else:
+    #     return Response(status=status.HTTP_403_FORBIDDEN)
 
 # Funcion tipo vista para generar Excel de las comisiones
 @api_view(["POST","GET"])
@@ -3874,9 +3944,9 @@ def calcular_credito(request):
                     excel_ws.write(i,4,'Sin factura' if row.doc == 'proforma' else '')
                 # Calular total
                 if row.doc=='proforma':
-                    total+=round(float(row.monto.replace(',','.')),2) # Aumentar deuda
+                    total+=round(Decimal(float(row.monto.replace(',','.'))),2) # Aumentar deuda
                 elif row.doc=='not_pago':
-                    total-=round(float(row.monto.replace(',','.')),2) # Disminuir deuda
+                    total-=round(Decimal(float(row.monto.replace(',','.'))),2) # Disminuir deuda
         i+=1 # Salto de linea
         excel_ws.write(i,1,'%s'%('Saldo pendiente:'),estilo)
         excel_ws.write(i,2,'%s'%(str(total).replace('.',',')))
@@ -3925,7 +3995,8 @@ def ventas_totales(request):
         mucho_antes=mucho_antes.replace(day=1)
         total_anterior=Proforma.objects.filter(fecha_proforma__range=(mucho_antes,antes)).aggregate(cantidad=Round(Sum('total')))
         total={'actual':{'fecha':antes,'total':total_actual,},'anterior':{'fecha':mucho_antes,'total':total_anterior,},}
-        return Response(total,status=status.HTTP_200_OK)
+        # return Response(total,status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_503_SERVICE_UNAVAILABLE)
     except Exception as e:
         return Response('%s'%(e),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -4077,7 +4148,7 @@ def subir_xls2(request):
                 instancia = Instancia.objects.get(id=perfil.instancia)
             except:
                 pass
-            marca, created = Marca.objects.get_or_create(nombre=row['MARCA'], defaults={'instancia':instancia,'nombre': row['MARCA']})
+            marca, created = Marca.objects.get_or_create(nombre__exact=row['MARCA'], defaults={'instancia':instancia,'nombre': row['MARCA']})
             marca.save()
             exonerado = True
             venta_sin_inventario= True
@@ -4104,10 +4175,10 @@ def subir_xls2(request):
                 defaults={
                     'instancia':instancia,
                     'costo':row['COSTO'],
-                    'precio_1':row['PRECIO 1'],
-                    'precio_2':row['PRECIO 2'],
-                    'precio_3':row['PRECIO 3'],
-                    'precio_4':row['PRECIO 4'],
+                    'precio_1':row['PRECIO1'],
+                    'precio_2':row['PRECIO2'],
+                    'precio_3':row['PRECIO3'],
+                    'precio_4':row['PRECIO4'],
                     'lote': lote,
                     'exonerado':exonerado,
                     'venta_sin_inventario':venta_sin_inventario,
@@ -4120,10 +4191,10 @@ def subir_xls2(request):
                 nuevo_producto.save()
             else:
                 nuevo_producto.costo=row['COSTO']
-                nuevo_producto.precio_1=row['PRECIO 1']
-                nuevo_producto.precio_2=row['PRECIO 2']
-                nuevo_producto.precio_3=row['PRECIO 3']
-                nuevo_producto.precio_4=row['PRECIO 4']
+                nuevo_producto.precio_1=row['PRECIO1']
+                nuevo_producto.precio_2=row['PRECIO2']
+                nuevo_producto.precio_3=row['PRECIO3']
+                nuevo_producto.precio_4=row['PRECIO4']
                 nuevo_producto.save()
     return Response('Carga de productos terminada',status=status.HTTP_200_OK)
 
@@ -4433,9 +4504,9 @@ def paginas_totales(modelo,cantidad,filtros):
 
 # Obtener correlativo
 def verificar_numerologia(datos,modelo):
-    if modelo == Pedido:
+    if modelo == Proforma:
         tipo='E'
-    elif modelo == Proforma:
+    elif modelo == Pedido:
         tipo='P'
     elif modelo == Factura:
         tipo='F'
@@ -4453,3 +4524,19 @@ def verificar_numerologia(datos,modelo):
     instancia=Instancia.objects.get(id=datos['instancia'])
     configuracion, creado = ConfiguracionPapeleria.objects.get_or_create(instancia=instancia,empresa=empresa,tipo=tipo,defaults={'valor':1})
     return configuracion
+
+# def borrar_productos_extras(request):
+#     productos = Producto.objects.all()
+#     for p in productos:
+#         encontrado = Producto.objects.filter(codigo=p.codigo).exclude(id=p.id)
+#         if encontrado.count() != 0:
+#             encontrado.delete
+
+@api_view(["GET"])
+@csrf_exempt
+@authentication_classes([BasicAuthentication])
+@permission_classes([AllowAny])
+def reiniciar_prioridad(req):
+    for m in Marca.objects.all():
+        m.prioridad = 0
+        m.save()

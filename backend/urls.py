@@ -90,9 +90,13 @@ urlpatterns = [
     # Excels
     path('xls-generador/', views.vista_xls),
     path('subir-archivo/', views.subir_xls2),
+    path('lista-precio/', views.lista_precio_xls),
     path('calcular-credito/', views.calcular_credito),
     path('analisis-vencimiento/', views_2.analisis_vencimiento),
+    path('generar-lista-precio/', views_2.generar_lista_precio),
+    path('guardar-lista-precio/', views_2.guardar_lista_precio),
     # Login
+    # path('reiniciar-prioridad/', views.reiniciar_prioridad),
     path('auth/login/', LoginView.as_view(), name='knox_login'),
     path('auth/logout/', knox_views.LogoutView.as_view(), name='knox_logout'),
     path('auth/password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),]

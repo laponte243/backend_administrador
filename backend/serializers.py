@@ -7,6 +7,7 @@ from django.contrib.auth.forms import PasswordResetForm
 from django.conf import settings
 from django.utils.translation import gettext as _
 # Raiz
+from decimal import *
 from .models import *
 """ Mixins modificados """
 class GroupMSerializer(serializers.ModelSerializer):
@@ -73,7 +74,6 @@ class NotaPagoMSerializer(serializers.ModelSerializer):
     pre_num =  serializers.SerializerMethodField('ObtenerNumero')
     def ObtenerNumero(self, obj):
         correlativo=ConfiguracionPapeleria.objects.get(empresa=obj.cliente.empresa,tipo="N")
-        print(correlativo)
         return "%s-%s"%(correlativo.prefijo if correlativo.prefijo else 'N',obj.numerologia)
 class DetalleNotaPagoMSerializer(serializers.ModelSerializer):
     class Meta:
@@ -192,23 +192,29 @@ class MarcaSerializer(serializers.ModelSerializer):
     nombreInstancia = serializers.SerializerMethodField('LoadNombreInstancia')
     def LoadNombreInstancia(self, obj):
         return obj.instancia.nombre
+    check = serializers.SerializerMethodField('LoadCheck')
+    def LoadCheck(self, obj):
+        return False
 class ProductoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Producto
         fields = '__all__'
-    precio_1 = serializers.SerializerMethodField('LoadPrecio1')
-    def LoadPrecio1(self, obj):
-        return round(obj.precio_1,2)
-    precio_2 = serializers.SerializerMethodField('LoadPrecio2')
-    def LoadPrecio2(self, obj):
-        return round(obj.precio_2,2)
-    precio_3 = serializers.SerializerMethodField('LoadPrecio3')
-    def LoadPrecio3(self, obj):
-        return round(obj.precio_3,2)
-    precio_4 = serializers.SerializerMethodField('LoadPrecio4')
-    def LoadPrecio4(self, obj):
-        return round(obj.precio_4,2)
-    nombreMarca = serializers.SerializerMethodField('LoadNombreMarca')
+    # precio_1 = serializers.SerializerMethodField('LoadPrecio1')
+    # def LoadPrecio1(self, obj):
+    #     # data = self.data
+    #     # if data:
+    #     #     return round(self.data.precio_1,2)
+    #     return round(obj.precio_1,2)
+    # precio_2 = serializers.SerializerMethodField('LoadPrecio2')
+    # def LoadPrecio2(self, obj):
+    #     return round(obj.precio_2,2)
+    # precio_3 = serializers.SerializerMethodField('LoadPrecio3')
+    # def LoadPrecio3(self, obj):
+    #     return round(obj.precio_3,2)
+    # precio_4 = serializers.SerializerMethodField('LoadPrecio4')
+    # def LoadPrecio4(self, obj):
+    #     return round(obj.precio_4,2)
+    # nombreMarca = serializers.SerializerMethodField('LoadNombreMarca')
     def LoadNombreMarca(self, obj):
         return obj.marca.nombre
     nombreCodigo = serializers.SerializerMethodField('nombreCodigoo')
@@ -302,11 +308,11 @@ class ClienteSerializer(serializers.ModelSerializer):
         return obj.instancia.nombre
     saldo_pendiente = serializers.SerializerMethodField('loadSaldo')
     def loadSaldo(self, obj):
-            proforma = Proforma.objects.filter(cliente=obj.id)
-            saldo = 0.0
-            for i in proforma:
-                saldo += i.saldo_proforma
-            return saldo
+        proforma = Proforma.objects.filter(cliente=obj.id)
+        saldo = Decimal(0.0)
+        for i in proforma:
+            saldo += i.saldo_proforma
+        return saldo
 class ContactoClienteSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactoCliente
