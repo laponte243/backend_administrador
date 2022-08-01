@@ -313,6 +313,11 @@ class ClienteSerializer(serializers.ModelSerializer):
         for i in proforma:
             saldo += i.saldo_proforma
         return saldo
+    nuevo = serializers.SerializerMethodField('loadEstado')
+    def loadEstado(self, obj):
+        if Proforma.objects.filter(cliente=obj.id).count() > 0:
+            return False
+        return True
 class ContactoClienteSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactoCliente

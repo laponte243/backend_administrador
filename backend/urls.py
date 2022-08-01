@@ -85,6 +85,7 @@ urlpatterns = [
     path('pdf-pedido/<int:id_pedido>/<str:token>/', views.PedidoPDF.as_view()),
     path('pdf-proforma/<int:id_proforma>/<str:token>/', views.ProformaPDF.as_view()),
     path('pdf-factura/<int:id_factura>/<str:token>/', views.FacturaPDF.as_view()),
+    path('pdf-factura-grande/<int:id_factura>/<str:token>/', views.FacturaGrandePDF.as_view()),
     path('pdf-nota-pago/<int:id_notapago>/<str:token>/', views.NotaPagoPDF.as_view()),
     path('pdf-proforma-guardar/', views.guardar_pdf),
     # Excels

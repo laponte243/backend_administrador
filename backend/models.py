@@ -93,6 +93,7 @@ class Empresa(models.Model):
     correo=models.CharField(max_length=150,blank=False,null=False,help_text="Correo de la empresa")
     direccion=models.TextField(blank=False,null=False,help_text="Direccion fiscal de la empresa")
     telefono=models.CharField(max_length=32,null=False,help_text="Telefono de la empresa")
+    factura_grande=models.BooleanField(default=False,help_text="Formato de factura")
     #logo=models.TextField(null=True,help_text="Logo de la empresa")
     logo=models.FileField(null=True)
     history=HistoricalRecords()
@@ -380,6 +381,7 @@ class Factura(models.Model):
     nombre_empresa=models.TextField(max_length=150,null=False,blank=False,help_text="empresa asociada")
     telefonocontacto_empresa=models.TextField(max_length=150,null=False,blank=False,help_text="empresa asociada")
     direccion_empresa=models.TextField(max_length=150,null=False,blank=False,help_text="empresa asociada")
+    formato_grande=models.BooleanField(default=False,help_text="empresa asociada")
     # Vendedor
     nombre_vendedor=models.TextField(max_length=150,null=True,blank=False,help_text="Nombre del vendedor asociado")
     codigo_vendedor=models.TextField(blank=False,null=False,help_text="Codigo del vendedor asociado")

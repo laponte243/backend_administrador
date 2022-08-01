@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+
+{% load static %}
+{% load l10n %}
+{% localize on %}
+    {{ value }}
+{% endlocalize %}
+
+<html lang="es">
+    <head>
+        <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script> 
+        <title>Factura</title>
+    </head>
+    <style>
+        @page {
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            /* margin-left: 5%;
+            margin-right: 5%; */
+            font-size: 11px;
+            background: rgb(255, 255, 255);
+        }
+        .item1 {
+            /* LOGO */
+            position: absolute;
+            font-weight: 700;
+            font-size: 7mm;
+            top: 12mm;
+            left: 12mm;
+        }
+        .item2 {
+            /* DIRECION Y DATOS DE LA EMPRESA */
+            font-size: 3mm;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            position: absolute;
+            top: 12mm;
+            left: 59mm;
+            width: 110mm;
+            text-align: center;
+        }
+        .item3 {
+            /* FACTURA ID */
+            position: absolute;
+            top: 37.5mm;
+            left: 178mm;
+            text-align: right;
+        }
+        .item15 {
+            /* FACTURA ID */
+            position: absolute;
+            top: 37.5mm;
+            left: 162mm;
+            text-align: right;
+        }
+        .item4 {
+            /* Nº CONTROL */
+            position: absolute;
+            top: 12mm;
+            left: 175mm;
+            width: 30mm;
+        }
+        .item5 {
+            /* RIF EMPRESA */
+            position: absolute;
+            top: 25mm;
+            left: 104mm;
+        }
+        .item6 {
+            /* Nº CONTROL ID */
+            position: absolute;
+            top: 23mm;
+            left: 162mm;
+        }
+        .item7 {
+            /* DIVIDER */
+            position: relative;
+            top: 27mm;
+        }
+        .item8 {
+            /* CONTENIDO */
+            position: absolute;
+            top: 46mm;
+            left: 5%;
+            width: 90%;
+        }
+        .item8_b {
+            /* SUB_TOTAL/EXENTO */
+            position: absolute;
+            top: 123mm;
+            left: 135mm;
+        }
+        .item8_c {
+            /* IMPONIBLE,IMPUESTO */
+            position: absolute;
+            top: 123mm;
+            left: 175mm;
+        }
+        .item8_d {
+            /* TOTAL */
+            position: absolute;
+            top: 134mm;
+            left: 160mm;
+        }
+        .item9 {
+            /* DATOS DE FACTURA */
+            position: absolute;
+            top: 135mm;
+            left: 9mm;
+        }
+        .item10 {
+            /* INFO DEL IMPRESOR */
+            font-size: 2.5mm;
+            position: absolute;
+            top: 139mm;
+            left: 9mm;
+        }
+        .item11 {
+            /* VALORIZACIOn */
+            position: absolute;
+            top: 145mm;
+            left: 9mm;
+        }
+        .item12 {
+            /* BANCO ORIGINAL */
+            position: absolute;
+            top: 145mm;
+            left: 166mm;
+        }
+        .item13 {
+            /* DIRECCION EMPRESA */
+            position: absolute;
+            top: 37.5mm;
+            left: 10mm;
+        }
+        .bold {
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        hr.solid {
+            border-top: 2px solid rgb(0, 0, 0);
+            width: 194mm;
+        }
+        hr.dashed {
+            border-top: 1px dashed #bbb;
+        }
+        .table>thead>tr>th {
+            border-bottom: 2px solid rgb(184, 184, 184);
+        }
+        .filaDetalle {
+            border-bottom:1px solid rgb(224, 224, 224);
+            border-top:1px solid rgb(202, 202, 202);
+        }
+    </style>
+    <body>
+        <div class="container">
+            {% if error != 'None' %}
+                <div class="item13" style="text-align: right">
+                    {{ empresa.direccion }}
+                </div>
+                <div class="item3" style="text-align: right">
+                    <strong><p> FACTURA: {{factura.numerologia}}</p></strong>
+                </div>
+                <div class="item15" style="text-align: right">
+                    <strong><p>E-{{correlativo_proforma}} </p></strong>
+                </div>
+                <div class="item8">
+                    <p>
+                        <strong>Cliente:</strong> {{factura.codigo_cliente}} - {{factura.nombre_cliente}}, 
+                        <strong>Fecha:</strong> {{factura.fecha_factura|date:"d/m/Y"}}, 
+                        <strong>Direccion fiscal:</strong> {{factura.direccion_cliente}}, 
+                        <strong>Email:</strong> {{factura.correo_cliente}}, 
+                        <strong>RIF:</strong> {{factura.identificador_fiscal}}, 
+                        <strong>Telefono:</strong> {{factura.telefono_cliente}},
+                        <strong>Vendedor:</strong> {{factura.codigo_vendedor}} - {{factura.nombre_vendedor}},
+                        <strong>Condicion:</strong> Contado. 
+                    </p>
+                <!-- <div class="row">
+                    <div class="col-xs-12">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 45%">Cliente</th>
+                                    <th style="width: 10%">Fecha</th>
+                                    <th style="width: 35%;text-align: center">Vendedor</th>
+                                    <th style="width: 10%">Condicion</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>{{proforma.cliente.codigo}} - {{proforma.cliente.nombre}}</td>
+                                    <td>{{proforma.fecha_proforma|date:"d/m/Y"}}</td>
+                                    <td style="text-align: center">{{proforma.vendedor.codigo}} - {{proforma.vendedor.nombre}}</td>
+                                    <td><strong>Contado</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="row" style="margin-top: 1%">
+                            <div class="col-xs-8">Direccion fiscal: {{proforma.cliente.ubicacion}}</div>
+                            <div class="col-xs-4" style="text-align: right">RIF: {{proforma.cliente.identificador}}</div>
+                        </div>
+                        <div class="row" style="margin-top: 1%">
+                            <div class="col-xs-8">Email: {{proforma.cliente.mail}}</div>
+                            <div class="col-xs-4" style="text-align: right">Telefono: {{proforma.cliente.telefono}}</div>
+                        </div>
+                    </div>-->
+                </div>
+                <div class="row" style="margin-top: 205px;">
+                    <div class="col-xs-12">
+                        <table class="table table-responsive table-condensed" style="border-bottom: none;">
+                            <thead style="border-bottom: none;">
+                                <tr style="border-bottom: none;">
+                                    <th style="width: 6%;padding-left: 25px;">ID</th>
+                                    <th style="width: 56%">PRODUCTO</th>
+                                    <!-- <th style="width: 16%;text-align: center;">LOTES</th> -->
+                                    <!-- <th style="width: 12%">VENCIMIENTO</th> -->
+                                    <th style="width: 6%;text-align: center;">CANT.</th>
+                                    <th style="width: 14%;text-align: right;">P/UNIDAD</th>
+                                    <th style="width: 4%;text-align: center;"></th>
+                                    <th style="width: 14%;text-align: right;padding-right: 25px;">TOTAL</th>
+                                </tr>
+                            </thead>
+                            <tbody style="border-bottom: none; border-top: none;">
+                                {% for producto in productos %}
+                                    <tr style="border-bottom: none; height: 28px;">
+                                        <td class="filaDetalle" style="text-align: left;;padding-left: 25px;">{{forloop.counter}}</td>
+                                        {% if producto.detalle and not producto.mostrar %}
+                                            <td class="filaDetalle" style="text-align: left">{{producto.producto_nombre}}
+                                                <span style="font-size: 8px;">
+                                                    || Lote: {{producto.detalle.lote}} (Vence: {{producto.detalle.vencimiento|date:"d/m/Y"}})
+                                                </span>
+                                            </td>
+                                        {% else %}
+                                            <td class="filaDetalle" style="text-align: left">{{producto.producto_nombre}}</td>
+                                        {% endif %}
+                                        <td class="filaDetalle" style="text-align: center"> {{producto.cantidad}}</td>
+                                            {% if producto.extra_cero_precio %}
+                                                <td class="filaDetalle" style="text-align: right"> {{producto.precio}}0
+                                            {% else %}
+                                                <td class="filaDetalle" style="text-align: right"> {{producto.precio}}
+                                            {% endif %}
+                                            Bs.</td>
+                                        <td class="filaDetalle" style="text-align: center">
+                                            {% if producto.exento %}
+                                                (E)
+                                            {% endif %}
+                                        </td>
+                                        {% if producto.extra_cero_total %}
+                                            <td class="filaDetalle" style="text-align: right;padding-right: 20px;"> {{producto.total_producto}}0
+                                        {% else %}
+                                            <td class="filaDetalle" style="text-align: right;padding-right: 20px;"> {{producto.total_producto}}
+                                        {% endif %}
+                                        Bs.</td>
+                                    </tr>
+                                    {% if producto.mostrar %}
+                                        <tr style="visibility:visible;font-size: 8px; border-top: none; height: 20px;">
+                                            <td colspan="1" style="text-align:center; border-top: none; border-bottom: none;">
+
+                                            </td>
+                                            <td colspan="4" style="text-align:left; border-top: none; border-bottom: none;">
+                                                {% for subdeta in producto.detalle %}
+                                                    {% if forloop.counter == 1 %}
+                                                        -
+                                                    {% else %}
+                                                        ||
+                                                    {% endif %}
+                                                    {% if subdeta.vencimiento != '' %}
+                                                        {{subdeta.cantidad}} - Lote: {{subdeta.lote}} (Vence: {{subdeta.vencimiento|date:"d/m/Y"}})
+                                                    {% else %}
+                                                        {{subdeta.cantidad}} - Lote: {{subdeta.lote}}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </td>
+                                        </tr> 
+                                    {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="item8_b">
+                    <p>
+                        {% if producto.extra_cero_subtotal %}
+                        Sub-Total: {{subtotal}}0
+                        {% else %}
+                        Sub-Total: {{subtotal}}
+                        {% endif %}
+                        Bs. <br>
+                        {% if producto.extra_cero_monto_exento %}
+                        Mto. Exento: {{monto_exento}}0
+                        {% else %}
+                        Mto. Exento: {{monto_exento}}
+                        {% endif %}
+                        Bs.
+                    </p>
+                </div>
+                <div class="item8_c">
+                    <p>
+                        {% if producto.extra_cero_imponible %}
+                        Imponible: {{imponible}}0
+                        {% else %}
+                        Imponible: {{imponible}}
+                        {% endif %}
+                        Bs. <br>
+                        {% if producto.extra_cero_impuesto %}
+                        Impuesto: {{impuesto}}0
+                        {% else %}
+                        Impuesto: {{impuesto}}
+                        {% endif %}
+                        Bs.
+                    </p>
+                </div>
+                <div class="item8_d">
+                    <!-- <div class="col-xs-4" style="text-align: right; bottom: 0"> -->
+                        <p>
+                            {% if producto.extra_cero_total_real %}
+                            Total: {{total}}0
+                            {% else %}
+                            Total: {{total}}
+                            {% endif %}
+                            Bs.
+                        </p>
+                    <!-- </div> -->
+                </div>
+            {% else %}
+                    <div>
+                        {{ error }}
+                    </div>
+            {% endif %}
+        </div>
+    </body>
+</html>

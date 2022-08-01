@@ -48,11 +48,11 @@ REST_KNOX = {
   'EXPIRY_DATETIME_FORMAT': api_settings.DATETIME_FORMAT,}
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        # 'rest_framework.authentication.TokenAuthentication',
-        # 'rest_framework.authentication.SessionAuthentication',
-        'knox.auth.TokenAuthentication'
-    ),
+        'DEFAULT_AUTHENTICATION_CLASSES': (
+            # 'rest_framework.authentication.TokenAuthentication',
+            # 'rest_framework.authentication.SessionAuthentication',
+            'knox.auth.TokenAuthentication'
+        ),
     'DATETIME_FORMAT': "%d/%m/%Y %H:%M:%S",
     'DATE_INPUT_FORMATS': ["%d-%m-%Y",'%Y-%m-%d'],
     'DATE_FORMAT':["%d-%m-%Y",'%Y-%m-%d'],
