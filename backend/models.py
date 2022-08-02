@@ -295,7 +295,7 @@ class DetallePedido(models.Model):
     def __str__(self):
         return "Pedido: #%s,$%s (%s/%s)"%(self.pedido.id,self.total_producto,self.producto,self.lote)
 class Proforma(models.Model):
-    impreso=models.BooleanField(default=False,help_text="Esta impreso?")
+    # impreso=models.BooleanField(default=False,help_text="Esta impreso?")
     instancia=models.ForeignKey(Instancia,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="Instancia asociada")
     pedido=models.ForeignKey(Pedido,null=True,blank=False,on_delete=models.DO_NOTHING,help_text="pedido asociado")
     empresa=models.ForeignKey(Empresa,null=False,blank=False,on_delete=models.DO_NOTHING,help_text="empresa asociada")
@@ -309,6 +309,7 @@ class Proforma(models.Model):
     telefono_cliente=models.TextField(max_length=150,blank=False,null=False,help_text="fecha de generacion de la proforma")
     saldo_proforma=models.DecimalField(max_digits=10,decimal_places=2,default=Decimal(0.0),null=False,help_text="saldo pendiente de la proforma")
     total=models.DecimalField(max_digits=10,decimal_places=2,default=Decimal(0.0),null=False,help_text="total de la proforma")
+    total_iva=models.DecimalField(max_digits=10,decimal_places=2,default=Decimal(0.0),null=False,help_text="total de la proforma")
     fecha_proforma=models.DateTimeField(auto_now_add=True,help_text="fecha de generacion del pedido")
     numerologia=models.TextField(null=False,blank=True)
     fecha_despacho=models.DateTimeField(null=True,blank=True,default=None)
@@ -396,7 +397,8 @@ class Factura(models.Model):
     credito=models.TextField(default=False,help_text="La venta se realizo a credito?")
     dias_credito=models.TextField(null=True,default=0,help_text="dias de credito?")
     # Utiles
-    impreso=models.BooleanField(default=False,help_text="Esta impreso?")
+    # impreso=models.BooleanField(default=False,help_text="Esta impreso?")
+    pdf=models.FileField(upload_to='facturacion/pdfs',null=True)
     fecha_factura=models.DateTimeField(auto_now_add=True,help_text="fecha de generacion del pedido")
     numerologia=models.TextField(null=False,blank=False)
     control=models.TextField(null=False,blank=False)

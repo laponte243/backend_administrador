@@ -48,14 +48,14 @@
         .item3 {
             /* FACTURA ID */
             position: absolute;
-            top: 37.5mm;
+            top: 34mm;
             left: 178mm;
             text-align: right;
         }
         .item15 {
             /* FACTURA ID */
             position: absolute;
-            top: 37.5mm;
+            top: 34mm;
             left: 162mm;
             text-align: right;
         }
@@ -86,32 +86,32 @@
         .item8 {
             /* CONTENIDO */
             position: absolute;
-            top: 46mm;
+            top: 45mm;
             left: 5%;
             width: 90%;
         }
         .item8_b {
             /* SUB_TOTAL/EXENTO */
             position: absolute;
-            top: 123mm;
+            top: 240mm;
             left: 135mm;
         }
         .item8_c {
             /* IMPONIBLE,IMPUESTO */
             position: absolute;
-            top: 123mm;
+            top: 240mm;
             left: 175mm;
         }
         .item8_d {
             /* TOTAL */
             position: absolute;
-            top: 134mm;
+            top: 249mm;
             left: 160mm;
         }
         .item9 {
             /* DATOS DE FACTURA */
             position: absolute;
-            top: 135mm;
+            top: 255mm;
             left: 9mm;
         }
         .item10 {
@@ -136,8 +136,18 @@
         .item13 {
             /* DIRECCION EMPRESA */
             position: absolute;
-            top: 37.5mm;
+            top: 38.5mm;
             left: 10mm;
+        }
+        .item14 {
+            /* DIRECCION EMPRESA */
+            margin-top: 42.5mm;
+            border-top: 1px solid rgb(100, 100, 100);
+        }
+        .item16 {
+            /* DIRECCION EMPRESA */
+            margin-top: 14mm;
+            border-top: 1px dotted rgb(126, 126, 126);
         }
         .bold {
             font-weight: 600;
@@ -170,6 +180,7 @@
                 <div class="item15" style="text-align: right">
                     <strong><p>E-{{correlativo_proforma}} </p></strong>
                 </div>
+                <hr class="item14">
                 <div class="item8">
                     <p>
                         <strong>Cliente:</strong> {{factura.codigo_cliente}} - {{factura.nombre_cliente}}, 
@@ -211,7 +222,8 @@
                         </div>
                     </div>-->
                 </div>
-                <div class="row" style="margin-top: 205px;">
+                <hr class="item16">
+                <div class="row">
                     <div class="col-xs-12">
                         <table class="table table-responsive table-condensed" style="border-bottom: none;">
                             <thead style="border-bottom: none;">

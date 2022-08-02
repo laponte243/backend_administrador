@@ -488,6 +488,11 @@ class FacturaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Factura
         fields = '__all__'
+    pdf =  serializers.SerializerMethodField('LoadPDF')
+    def LoadPDF(self, obj):
+        if obj.pdf:
+            return True
+        return False
     date =  serializers.SerializerMethodField('LoadDate')
     def LoadDate(self, obj):
        return obj.fecha_factura.date()

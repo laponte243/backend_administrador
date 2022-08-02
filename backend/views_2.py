@@ -24,12 +24,14 @@ from .serializers import *
 from .models import *
 from .menu import *
 from . import views
+from .utils import render_to_pdf
 # from .vistas import *
 # Recuperar contraseña
 from knox.views import LoginView as KnoxLoginView
 from django.conf import settings
 from django.dispatch import receiver
 from django.core.mail import EmailMessage
+from django.core.files import File
 from django_rest_passwordreset.signals import reset_password_token_created
 from django.urls import reverse
 from django.template.loader import render_to_string
@@ -38,6 +40,7 @@ from django_renderpdf.views import PDFView
 from email import header
 from urllib import response
 from numpy import indices, safe_eval
+from io import BytesIO
 from decimal import *
 from xlwt import *
 import pandas as pd
@@ -338,7 +341,7 @@ def generar_lista_precio(request):
                     extra_cero_precio = True if len(str(round(precio,2)).split('.')[1]) < 2 else False
                     excel_ws.write(i,3,'%s'%(precio) if not extra_cero_precio else '%s0'%(precio),righted)
                     if not p['exonerado']:
-                        iva = round(precio*(16/100),2)
+                        iva = Decimal(precio*(Decimal(16)/Decimal(100)))
                         extra_cero_iva = True if len(str(round(iva,2)).split('.')[1]) < 2 else False
                         excel_ws.write(i,4,'%s'%(iva) if not extra_cero_iva else '%s0'%(iva),righted)
                     else:
@@ -443,3 +446,197 @@ def analisis_vencimiento(request):
     return Response('',status=status.HTTP_501_NOT_IMPLEMENTED)
     # else:
     #     return Response(status=status.HTTP_403_FORBIDDEN)
+
+
+# def crear_factura(context,kwargs):
+#     context['error'] = None
+#     try:
+#         if Token.objects.get(key=kwargs['token']):
+#             conversion=None
+#             try:
+#                 conversion=TasaConversion.objects.filter(fecha_tasa__date=datetime.datetime.today().date()).first('fecha_tasa__date')
+#             except:
+#                 conversion=TasaConversion.objects.latest('fecha_tasa')
+#             factura=Factura.objects.get(id=kwargs['id_factura'])
+#             subtotal=Decimal(float(factura.subtotal))
+#             total_costo=round(Decimal(float(factura.total)) * conversion.valor, 2)
+#             value={'data':[]}
+#             total_exento=0
+#             total_imponible=0
+#             total_calculado=0
+#             # Ciclo para generar Json y data para el template
+#             for dato in DetalleFactura.objects.filter(factura=factura).values('id', 'producto', 'precio').annotate(total=Sum('total_producto'), cantidad=Sum('cantidada')):
+#                 productox=Producto.objects.get(id=dato['producto'])
+#                 if productox.exonerado == False:
+#                     total_imponible +=dato['total']
+#                 else:
+#                     total_exento +=dato['total']
+#                 valuex={'datax':[]}
+#                 total_cantidad=0
+#                 precio_unidad=0.0
+#                 costo_total=0.0
+#                 mostrar=True
+#                 detallado=DetalleFactura.objects.filter(factura=factura, producto=productox).order_by('producto__id')
+#                 if productox.lote==True and len(detallado) > 1:
+#                     for detalle in detallado:
+#                         valuex['datax'].append({'lote':detalle.lote if detalle.lote else 'Sin lote', 'cantidad':detalle.cantidada, 'vencimiento':detalle.inventario.fecha_vencimiento.date() if detalle.inventario else ''})
+#                         total_cantidad +=int(detalle.cantidada)
+#                         precio_unidad=Decimal(float(detalle.precio)) * conversion.valor
+#                 elif productox.lote==True and len(detallado)==1:
+#                     valuex['datax']=''
+#                     mostrar=False
+#                     for detalle in detallado:
+#                         valuex['datax'] = {'lote':detalle.lote, 'vencimiento':detalle.inventario.fecha_vencimiento.date() if detalle.inventario else ''}
+#                         total_cantidad +=int(detalle.cantidada)
+#                         precio_unidad=Decimal(float(detalle.precio)) * conversion.valor
+#                 else:
+#                     mostrar=False
+#                     for detalle in detallado:
+#                         total_cantidad +=int(detalle.cantidada)
+#                         precio_unidad=Decimal(float(detalle.precio)) * conversion.valor
+#                     valuex['datax']=None
+#                 costo_total=precio_unidad * Decimal(float(total_cantidad))
+#                 total_calculado +=costo_total
+#                 extra_cero_precio = True if len(str(round(precio_unidad, 2)).split('.')[1]) < 2 else False
+#                 extra_cero_total = True if len(str(round(costo_total, 2)).split('.')[1]) < 2 else False
+#                 value['data'].append({'producto_nombre':productox.nombre, 'extra_cero_precio':extra_cero_precio, 'extra_cero_total':extra_cero_total, 'exento':productox.exonerado, 'producto_sku':productox.sku, 'detalle':valuex['datax'], 'mostrar':mostrar, 'cantidad':total_cantidad, 'precio':round(precio_unidad, 2), 'total_producto':round(costo_total, 2)})
+#             subtotal_conversion=subtotal * conversion.valor
+#             # Sumatoria de los no exentos (Imponible)
+#             total_imponible = total_imponible * conversion.valor
+#             # Sumatoria de los exentos (Exonerados)
+#             total_exento = total_exento * conversion.valor
+#             total_real=(total_imponible + total_exento)
+#             # 16% (IVA)
+#             iva=round(total_imponible*Decimal(16/100), 2)
+#             if total_imponible:
+#                 total_real=total_real + iva
+#             # Setear los valores al template
+#             context['productos']=value['data']
+#             context['subtotal']=round(subtotal_conversion, 2)
+#             context['extra_cero_subtotal'] = True if len(str(round(subtotal_conversion, 2)).split('.')[1]) < 2 else False
+#             context['imponible']=round(total_imponible, 2)
+#             context['extra_cero_imponible'] = True if len(str(round(total_imponible, 2)).split('.')[1]) < 2 else False
+#             context['monto_exento']=round(total_exento, 2)
+#             context['extra_cero_monto_exento'] = True if len(str(round(total_exento, 2)).split('.')[1]) < 2 else False
+#             context['impuesto']=iva
+#             context['extra_cero_impuesto'] = True if len(str(round(iva, 2)).split('.')[1]) < 2 else False
+#             context['total']=round(total_real, 2)
+#             context['extra_cero_total_real'] = True if len(str(round(total_real, 2)).split('.')[1]) < 2 else False
+#             context['factura']=factura
+#             context['correlativo_proforma']=factura.proforma.numerologia
+#             # Setear los valores de la empresa
+#             empresa=factura.proforma.cliente.empresa
+#             context['empresa']={'nombre':empresa.nombre.upper(), 'correo':empresa.correo, 'telefono':empresa.telefono, 'direccion':empresa.direccion}
+#             return context
+#         else:
+#             raise Exception('Token del usuario invalido')
+#     except Exception as e:
+#         print('error',e)
+#         context['error'] = e
+#         return context
+
+@api_view(["GET"])
+@csrf_exempt
+@authentication_classes([BasicAuthentication])
+@permission_classes([AllowAny])
+def generar_pdf_factura(request, *args, **kwargs):
+    context = {}
+    context['error'] = None
+    try:
+        if Token.objects.get(key=kwargs['token']):
+            # Obtener factura
+            factura = Factura.objects.get(id=kwargs['id_factura'])
+            # Obtener tasa conversion
+            conversion=None
+            try: conversion=TasaConversion.objects.filter(fecha_tasa__date=datetime.datetime.today().date()).first('fecha_tasa__date')
+            except: conversion=TasaConversion.objects.latest('fecha_tasa')
+            # Valores iniciales factura
+            subtotal=Decimal(float(factura.subtotal))
+            total_costo=round(Decimal(float(factura.total)) * conversion.valor, 2)
+            value={'data':[]}
+            total_exento=0
+            total_imponible=0
+            total_calculado=0
+            # Ciclo para generar Json y data para el template
+            for dato in DetalleFactura.objects.filter(factura=factura).values('id', 'producto', 'precio').annotate(total=Sum('total_producto'), cantidad=Sum('cantidada')):
+                # Obtener producto del detalle
+                productox=Producto.objects.get(id=dato['producto'])
+                # Productos con IVA
+                if productox.exonerado == False: total_imponible += dato['total']
+                else: total_exento += dato['total']
+                # Valores iniciales del detalle
+                valuex={'datax':[]}
+                total_cantidad=0
+                precio_unidad=0.0
+                costo_total=0.0
+                mostrar=True
+                # Obtener detalle
+                detallado=DetalleFactura.objects.filter(factura=factura, producto=productox).order_by('producto__id')
+                # Detalle con varios lotes visibles
+                if productox.lote == True and len(detallado) > 1:
+                    for detalle in detallado:
+                        valuex['datax'].append({'lote':detalle.lote if detalle.lote else 'Sin lote', 'cantidad':detalle.cantidada, 'vencimiento':detalle.inventario.fecha_vencimiento.date() if detalle.inventario else ''})
+                        total_cantidad +=int(detalle.cantidada)
+                        precio_unidad=Decimal(float(detalle.precio)) * conversion.valor
+                # Detalle con un lote visible
+                elif productox.lote==True and len(detallado)==1:
+                    valuex['datax']=''
+                    mostrar=False
+                    for detalle in detallado:
+                        valuex['datax'] = {'lote':detalle.lote, 'vencimiento':detalle.inventario.fecha_vencimiento.date() if detalle.inventario else ''}
+                        total_cantidad +=int(detalle.cantidada)
+                        precio_unidad=Decimal(float(detalle.precio)) * conversion.valor
+                # Detalle sin lote visible
+                else:
+                    mostrar=False
+                    for detalle in detallado:
+                        total_cantidad +=int(detalle.cantidada)
+                        precio_unidad=Decimal(float(detalle.precio)) * conversion.valor
+                    valuex['datax']=None
+                # Obtener costo total del detalle
+                costo_total=precio_unidad * Decimal(float(total_cantidad))
+                # Sumar costo toital al total calculado
+                total_calculado += costo_total
+                # Añadir cero en el template
+                extra_cero_precio = True if len(str(round(precio_unidad, 2)).split('.')[1]) < 2 else False
+                extra_cero_total = True if len(str(round(costo_total, 2)).split('.')[1]) < 2 else False
+                # Agregar detalle al array del context
+                value['data'].append({'producto_nombre':productox.nombre, 'extra_cero_precio':extra_cero_precio, 'extra_cero_total':extra_cero_total, 'exento':productox.exonerado, 'producto_sku':productox.sku, 'detalle':valuex['datax'], 'mostrar':mostrar, 'cantidad':total_cantidad, 'precio':round(precio_unidad, 2), 'total_producto':round(costo_total, 2)})
+            # Obtener sub total
+            subtotal_conversion=subtotal * conversion.valor
+            # Sumatoria de los no exentos (Imponible)
+            total_imponible = total_imponible * conversion.valor
+            # Sumatoria de los exentos (Exonerados)
+            total_exento = total_exento * conversion.valor
+            total_real=(total_imponible + total_exento)
+            # 16% (IVA)
+            iva=round(total_imponible*Decimal(16/100), 2)
+            if total_imponible:
+                total_real=total_real + iva
+            # Setear los valores del template
+            context['productos']=value['data']
+            context['subtotal']=round(subtotal_conversion, 2)
+            context['extra_cero_subtotal'] = True if len(str(round(subtotal_conversion, 2)).split('.')[1]) < 2 else False
+            context['imponible']=round(total_imponible, 2)
+            context['extra_cero_imponible'] = True if len(str(round(total_imponible, 2)).split('.')[1]) < 2 else False
+            context['monto_exento']=round(total_exento, 2)
+            context['extra_cero_monto_exento'] = True if len(str(round(total_exento, 2)).split('.')[1]) < 2 else False
+            context['impuesto']=iva
+            context['extra_cero_impuesto'] = True if len(str(round(iva, 2)).split('.')[1]) < 2 else False
+            context['total']=round(total_real, 2)
+            context['extra_cero_total_real'] = True if len(str(round(total_real, 2)).split('.')[1]) < 2 else False
+            context['factura']=factura
+            context['correlativo_proforma']=factura.proforma.numerologia
+            # Setear los valores de la empresa
+            empresa=factura.proforma.cliente.empresa
+            context['empresa']={'nombre':empresa.nombre.upper(), 'correo':empresa.correo, 'telefono':empresa.telefono, 'direccion':empresa.direccion}
+            pdf = render_to_pdf('/home/backend/Documentos/administrador/backend_administrador/media_root/facturacion/pdfs/template.html', context)
+            filename = "factura_{}.pdf" %(factura.id)
+            factura.pdf.save(filename, File(BytesIO(pdf.content)))
+            return Response('Factura creada', status=status.HTTP_201_CREATED)
+        else:
+            raise Exception('Token del usuario invalido')
+    except Exception as e:
+        print('error',e)
+        context['error'] = e
+        return context

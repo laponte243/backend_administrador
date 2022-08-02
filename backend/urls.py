@@ -79,7 +79,8 @@ urlpatterns = [
     path('actualizar-pedido/', views.actualizar_pedido),
     path('actualizar-proforma/', views.actualizar_proforma),
     path('validar-pedido/', views.validar_pedido),
-    path('generar-factura/', views.generar_factura),
+    path('generar-pdf-factura/<int:id_factura>/<str:token>/', views_2.generar_pdf_factura),
+    path('generar-factura/', views.crear_objeto_factura),
     path('anular-factura/', views.anular_factura),
     # Mostrar PDFs 
     path('pdf-pedido/<int:id_pedido>/<str:token>/', views.PedidoPDF.as_view()),
