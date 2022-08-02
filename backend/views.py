@@ -4522,20 +4522,21 @@ def generar_libro_venta(request):
                 excel_ws.write(i, 5, 'Nº de control', estilo)
                 excel_ws.write(i, 6, 'Total documento', estilo)
                 excel_ws.write(i, 7, 'Total exento', estilo)
-                excel_ws.write(i, 7, 'Total imponible', estilo)
-                excel_ws.write(i, 8, 'Total impuesto', estilo)
+                excel_ws.write(i, 8, 'Total imponible', estilo)
+                excel_ws.write(i, 9, 'Total impuesto', estilo)
                 i=i + 1
                 # Creador de filas
                 for f in facturas:
                     excel_ws.write(i, 0, '%s' % (f.fecha_factura))
                     excel_ws.write(i, 1, '%s' % (f.identificador_fiscal))
-                    excel_ws.write(i, 2, 'FACTURA' )
-                    excel_ws.write(i, 3, '%s' % (f.numerologia))
-                    excel_ws.write(i, 4, '%s' % (f.control))
-                    excel_ws.write(i, 5, '%s' % (f.total))
-                    excel_ws.write(i, 6, '%s' % (f.monto_exento))
-                    excel_ws.write(i, 7, '%s' % (round(float(f.total)-float(f.monto_exento),2)))
-                    excel_ws.write(i, 8, '%s' % (f.impuesto))
+                    excel_ws.write(i, 2, '%s' % (f.nombre_cliente))
+                    excel_ws.write(i, 3, 'FACTURA' )
+                    excel_ws.write(i, 4, '%s' % (f.numerologia))
+                    excel_ws.write(i, 5, '%s' % (f.control))
+                    excel_ws.write(i, 6, '%s' % (f.total))
+                    excel_ws.write(i, 7, '%s' % (f.monto_exento))
+                    excel_ws.write(i, 8, '%s' % (round(float(f.total)-float(f.monto_exento),2)))
+                    excel_ws.write(i, 9, '%s' % (f.impuesto))
                     
                 excel_wb.save(response)
                 return response
