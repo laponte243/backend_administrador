@@ -4472,3 +4472,77 @@ def reiniciar_prioridad(req):
     for m in Marca.objects.all():
         m.prioridad = 0
         m.save()
+
+
+# Funcion tipo vista para generar Excel con el libro de venta en base a una fecha inicio, fecha fin
+@api_view(["POST", "GET"])
+@csrf_exempt
+def generar_libro_venta(request):
+    params=request.query_params.copy()
+    token=params.get('token').split(' ')[1]
+    user = Token.objects.get(key=token).user
+    if user:
+        data={'fecha_inicio':params.get('fecha_inicio'), 'fecha_fin':params.get('fecha_fin')}
+        perfil=Perfil.objects.get(usuario=user)
+        try:
+            if verificar_permiso(perfil, 'LibroVenta', 'leer'):
+                """ Data inicial """
+                # Obtner el rango de fechas para el filtro
+                ini=data['fecha_inicio'].split('/')
+                fecha_inicio=ini[0] + '-' + ini[1] + '-' + ini[2] # Formateando Date inicial para timezone
+                fin=data['fecha_fin'].split('/')
+                fecha_fin=fin[0] + '-' + fin[1] + '-' + fin[2] # Formateando Date final para timezone
+                rango=[fecha_inicio, fecha_fin] # Rango
+                tardio=timezone.now()-timezone.timedelta(weeks=4) # Tiempo maximo de 30 dias
+                # Filtrar Facturas
+                facturas=Factura.objects.filter(fecha_factura__date__range=rango)
+                # Excel
+                i=0
+                response=HttpResponse(content_type='application/ms-excel')
+                response['Content-Disposition']='attachment;filename="libro venta %s&%s.xls"' % (fecha_inicio, fecha_fin)
+                excel_wb=Workbook(encoding='utf-8')
+                excel_ws=excel_wb.add_sheet('Libro1') # ws es Work Sheet
+                # Añadiendo estilo
+                excel_ws.col(0).width = 2500 # Tamaño columna fecha documento
+                excel_ws.col(1).width = 3500 # Tamaño columna Rif Cliente
+                excel_ws.col(2).width = 5000 # Tamaño columna Nombre Cliente
+                excel_ws.col(3).width = 2500 # Tamaño columna Tipo Documento
+                excel_ws.col(4).width = 5000 # Tamaño columna Numero de documento
+                excel_ws.col(5).width = 5000 # Tamaño columna Numero de control
+                excel_ws.col(6).width = 5000 # Tamaño columna Total documento
+                excel_ws.col(7).width = 3500 # Tamaño columna total imponible
+                excel_ws.col(8).width = 3500 # Tamaño columna total impuesto
+                estilo=easyxf('font: bold 1')
+                # Primera fila del excel
+                excel_ws.write(i, 0, 'Fecha', estilo)
+                excel_ws.write(i, 1, 'Nº Rif', estilo)
+                excel_ws.write(i, 2, 'Nombre o razón social', estilo)
+                excel_ws.write(i, 3, 'Tipo de documento', estilo)
+                excel_ws.write(i, 4, 'Nº de documento', estilo)
+                excel_ws.write(i, 5, 'Nº de control', estilo)
+                excel_ws.write(i, 6, 'Total documento', estilo)
+                excel_ws.write(i, 7, 'Total exento', estilo)
+                excel_ws.write(i, 7, 'Total imponible', estilo)
+                excel_ws.write(i, 8, 'Total impuesto', estilo)
+                i=i + 1
+                # Creador de filas
+                for f in facturas:
+                    excel_ws.write(i, 0, '%s' % (f.fecha_factura))
+                    excel_ws.write(i, 1, '%s' % (f.identificador_fiscal))
+                    excel_ws.write(i, 2, 'FACTURA' )
+                    excel_ws.write(i, 3, '%s' % (f.numerologia))
+                    excel_ws.write(i, 4, '%s' % (f.control))
+                    excel_ws.write(i, 5, '%s' % (f.total))
+                    excel_ws.write(i, 6, '%s' % (f.monto_exento))
+                    excel_ws.write(i, 7, '%s' % (round(float(f.total)-float(f.monto_exento),2)))
+                    excel_ws.write(i, 8, '%s' % (f.impuesto))
+                    
+                excel_wb.save(response)
+                return response
+            else:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+        except Exception as e:
+            print(e)
+            return Response('%s' % (e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    else:
+        return Response(status=status.HTTP_403_FORBIDDEN)

@@ -97,6 +97,7 @@ urlpatterns = [
     path('analisis-vencimiento/', views_2.analisis_vencimiento),
     path('generar-lista-precio/', views_2.generar_lista_precio),
     path('guardar-lista-precio/', views_2.guardar_lista_precio),
+    path('libro-venta/', views.generar_libro_venta),
     # Login
     # path('reiniciar-prioridad/', views.reiniciar_prioridad),
     path('auth/login/', LoginView.as_view(), name='knox_login'),
