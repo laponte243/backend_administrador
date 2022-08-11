@@ -73,15 +73,18 @@ urlpatterns = [
     path('paginas-totales/', views.paginas_totales),
     path('calcular-comision/', views.comision),
     path('ubop/', views.ubop),
+    path('hurt/', views_2.hurt),
     # Guardado de registros
     path('borrar-nota/', views.borrar_nota),
     path('actualizar-nota/', views.actualizar_nota),
     path('actualizar-pedido/', views.actualizar_pedido),
     path('actualizar-proforma/', views.actualizar_proforma),
     path('validar-pedido/', views.validar_pedido),
-    path('generar-pdf-factura/<int:id_factura>/<str:token>/', views_2.generar_pdf_factura),
+    # path('generar-pdf-factura/<int:id_factura>/<str:token>/', views_2.generar_pdf_factura),
     path('generar-factura/', views.crear_objeto_factura),
     path('anular-factura/', views.anular_factura),
+    path('guardar-configuracion-lista-precio/', views_2.guardar_configuracion_lista_precio),
+    
     # Mostrar PDFs 
     path('pdf-pedido/<int:id_pedido>/<str:token>/', views.PedidoPDF.as_view()),
     path('pdf-proforma/<int:id_proforma>/<str:token>/', views.ProformaPDF.as_view()),
@@ -96,7 +99,6 @@ urlpatterns = [
     path('calcular-credito/', views.calcular_credito),
     path('analisis-vencimiento/', views_2.analisis_vencimiento),
     path('generar-lista-precio/', views_2.generar_lista_precio),
-    path('guardar-lista-precio/', views_2.guardar_lista_precio),
     path('libro-venta/', views.generar_libro_venta),
     # Login
     # path('reiniciar-prioridad/', views.reiniciar_prioridad),

@@ -585,3 +585,22 @@ class NotaCompraSerializer(serializers.ModelSerializer):
     class Meta:
         model = NotaCompra
         fields = '__all__'
+
+class TemporalProformasSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Proforma
+        fields = ['id','saldo_proforma','monto_exento','iva','total','detalles']
+    detalles = serializers.SerializerMethodField('Loaddetalles')
+    def Loaddetalles(self, obj):
+        detalles = []
+        for d in DetalleProforma.objects.filter(proforma__id__exact = obj.id):
+            detalle = {
+                'id':d.id,
+                'cantidada':d.cantidada,
+                'precio':d.precio,
+                'iva':d.iva,
+                'total_producto':d.total_producto,
+                'id':d.producto.nombre,
+            }
+            detalles.append(detalle)
+        return detalles

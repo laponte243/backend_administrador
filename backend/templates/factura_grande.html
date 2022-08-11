@@ -92,15 +92,17 @@
         }
         .item8_b {
             /* SUB_TOTAL/EXENTO */
+            text-align: right;
             position: absolute;
-            top: 240mm;
-            left: 135mm;
+            top: 250mm;
+            left: 155mm;
         }
         .item8_c {
             /* IMPONIBLE,IMPUESTO */
+            text-align: right;
             position: absolute;
-            top: 240mm;
-            left: 175mm;
+            top: 250mm;
+            left: 185mm;
         }
         .item8_d {
             /* TOTAL */
@@ -298,38 +300,49 @@
                 </div>
                 <div class="item8_b">
                     <p>
-                        {% if producto.extra_cero_subtotal %}
-                        Sub-Total: {{subtotal}}0
-                        {% else %}
-                        Sub-Total: {{subtotal}}
-                        {% endif %}
-                        Bs. <br>
-                        {% if producto.extra_cero_monto_exento %}
-                        Mto. Exento: {{monto_exento}}0
-                        {% else %}
-                        Mto. Exento: {{monto_exento}}
-                        {% endif %}
-                        Bs.
+                        Sub-total:<br>
+                        Monto Exento:<br>
+                        B. Imponible:<br>
+                        Impuesto (IVA):<br>
+                        Monto Total:<br>
                     </p>
                 </div>
                 <div class="item8_c">
                     <p>
-                        {% if producto.extra_cero_imponible %}
-                        Imponible: {{imponible}}0
+                        {% if producto.extra_cero_subtotal %}
+                            {{subtotal}}0
                         {% else %}
-                        Imponible: {{imponible}}
+                            {{subtotal}}
+                        {% endif %}
+                        Bs. <br>
+                        {% if producto.extra_cero_monto_exento %}
+                            {{monto_exento}}0
+                        {% else %}
+                            {{monto_exento}}
+                        {% endif %}
+                        Bs. <br>
+                        {% if producto.extra_cero_imponible %}
+                            {{imponible}}0
+                        {% else %}
+                            {{imponible}}
                         {% endif %}
                         Bs. <br>
                         {% if producto.extra_cero_impuesto %}
-                        Impuesto: {{impuesto}}0
+                            {{impuesto}}0
                         {% else %}
-                        Impuesto: {{impuesto}}
+                            {{impuesto}}
                         {% endif %}
-                        Bs.
+                        Bs. <br>
+                        {% if producto.extra_cero_total_real %}
+                            {{total}}0
+                        {% else %}
+                            {{total}}
+                        {% endif %}
+                        Bs. <br>
                     </p>
                 </div>
-                <div class="item8_d">
-                    <!-- <div class="col-xs-4" style="text-align: right; bottom: 0"> -->
+                <!-- <div class="item8_d">
+                    <div class="col-xs-4" style="text-align: right; bottom: 0">
                         <p>
                             {% if producto.extra_cero_total_real %}
                             Total: {{total}}0
@@ -338,12 +351,12 @@
                             {% endif %}
                             Bs.
                         </p>
-                    <!-- </div> -->
-                </div>
-            {% else %}
-                    <div>
-                        {{ error }}
                     </div>
+                </div> -->
+            {% else %}
+                <div>
+                    {{ error }}
+                </div>
             {% endif %}
         </div>
     </body>
