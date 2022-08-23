@@ -73,8 +73,8 @@ class NotaPagoMSerializer(serializers.ModelSerializer):
         return obj.cliente.codigo + ' - ' + obj.cliente.nombre
     pre_num =  serializers.SerializerMethodField('ObtenerNumero')
     def ObtenerNumero(self, obj):
-        correlativo=ConfiguracionPapeleria.objects.get(empresa=obj.cliente.empresa,tipo="N")
-        return "%s-%s"%(correlativo.prefijo if correlativo.prefijo else 'N',obj.numerologia)
+        correlativo=Correlativo.objects.get(empresa=obj.cliente.empresa,tipo="N")
+        return "%s-%s"%(correlativo.prefijo if correlativo.prefijo else 'N',obj.correlativo)
 class DetalleNotaPagoMSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetalleNotasPago
@@ -87,11 +87,11 @@ class DetalleNotaPagoMSerializer(serializers.ModelSerializer):
         return obj.proforma.cliente.id
     pre_num =  serializers.SerializerMethodField('ObtenerNumero')
     def ObtenerNumero(self, obj):
-        correlativo=ConfiguracionPapeleria.objects.get(empresa=obj.proforma.empresa,tipo="E")
-        return "%s-%s"%(correlativo.prefijo,obj.proforma.numerologia)
+        correlativo=Correlativo.objects.get(empresa=obj.proforma.empresa,tipo="E")
+        return "%s-%s"%(correlativo.prefijo,obj.proforma.correlativo)
     num_pro =  serializers.SerializerMethodField('ObtenerNumeroPro')
     def ObtenerNumeroPro(self, obj):
-        return "%s"%(obj.proforma.numerologia)
+        return "%s"%(obj.proforma.correlativo)
 class ModuloSerializer(serializers.ModelSerializer):
     class Meta:
         model = Modulo
@@ -158,9 +158,9 @@ class TasaConversionSerializer(serializers.ModelSerializer):
     date =  serializers.SerializerMethodField('LoadDate')
     def LoadDate(self, obj):
        return obj.fecha_tasa.date()
-class ConfiguracionPapeleriaSerializer(serializers.ModelSerializer):
+class CorrelativoSerializer(serializers.ModelSerializer):
     class Meta:
-        model = ConfiguracionPapeleria
+        model = Correlativo
         fields = '__all__'
     nombreEmpresa = serializers.SerializerMethodField('LoadNombreEmpresa')
     def LoadNombreEmpresa(self, obj):
@@ -364,8 +364,8 @@ class PedidoSerializer(serializers.ModelSerializer):
         return obj.fecha_pedido.time()
     pre_num =  serializers.SerializerMethodField('ObtenerNumero')
     def ObtenerNumero(self, obj):
-        correlativo=ConfiguracionPapeleria.objects.get(empresa=obj.empresa,tipo="P")
-        return "%s-%s"%(correlativo.prefijo,obj.numerologia)
+        correlativo=Correlativo.objects.get(empresa=obj.empresa,tipo="P")
+        return "%s-%s"%(correlativo.prefijo,obj.correlativo)
 class DetallePedidoSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetallePedido
@@ -423,8 +423,8 @@ class ProformaSerializer(serializers.ModelSerializer):
         return ''
     pre_num =  serializers.SerializerMethodField('ObtenerNumero')
     def ObtenerNumero(self, obj):
-        correlativo=ConfiguracionPapeleria.objects.get(empresa=obj.empresa,tipo="E")
-        return "%s-%s"%(correlativo.prefijo,obj.numerologia)
+        correlativo=Correlativo.objects.get(empresa=obj.empresa,tipo="E")
+        return "%s-%s"%(correlativo.prefijo,obj.correlativo)
 class DetalleProformaSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetalleProforma
@@ -469,8 +469,8 @@ class NotaDevolucionSerializer(serializers.ModelSerializer):
         return obj.vendedor.codigo
     pre_num =  serializers.SerializerMethodField('ObtenerNumero')
     def ObtenerNumero(self, obj):
-        correlativo=ConfiguracionPapeleria.objects.get(empresa=obj.empresa,tipo="E")
-        return "%s-%s"%(correlativo.prefijo,obj.numerologia)
+        correlativo=Correlativo.objects.get(empresa=obj.empresa,tipo="E")
+        return "%s-%s"%(correlativo.prefijo,obj.correlativo)
 class DetalleNotaDevolucionSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetalleNotaDevolucion
@@ -502,8 +502,8 @@ class FacturaSerializer(serializers.ModelSerializer):
             proforma = Proforma.objects.get(id=obj.origen)
         else:
             proforma = Proforma.objects.filter(id=obj.proforma.id).first()
-        correlativo=ConfiguracionPapeleria.objects.get(empresa=proforma.empresa,tipo="F")
-        return "%s%s"%(correlativo.prefijo+'-',obj.numerologia)
+        correlativo=Correlativo.objects.get(empresa=proforma.empresa,tipo="F")
+        return "%s%s"%(correlativo.prefijo+'-',obj.correlativo)
 class DetalleFacturaSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetalleFactura
@@ -526,13 +526,6 @@ class DetalleFacturaSerializer(serializers.ModelSerializer):
 class ImpuestosFacturaSerializer(serializers.ModelSerializer):
     class Meta:
         model = ImpuestosFactura
-        fields = '__all__'
-    nombreFactura = serializers.SerializerMethodField('LoadNombreFactura')
-    def LoadNombreProducto(self, obj):
-        return obj.venta.nombre
-class NumerologiaFacturaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = NumerologiaFactura
         fields = '__all__'
     nombreFactura = serializers.SerializerMethodField('LoadNombreFactura')
     def LoadNombreProducto(self, obj):
@@ -589,7 +582,7 @@ class NotaCompraSerializer(serializers.ModelSerializer):
 class TemporalProformasSerializer(serializers.ModelSerializer):
     class Meta:
         model = Proforma
-        fields = ['id','saldo_proforma','monto_exento','iva','total','detalles']
+        fields = ['id','saldo_proforma','exento','iva','total','detalles']
     detalles = serializers.SerializerMethodField('Loaddetalles')
     def Loaddetalles(self, obj):
         detalles = []

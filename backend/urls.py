@@ -23,7 +23,7 @@ router.register(r'permiso', views.PermisoVS, basename='permiso')
 # Empresa
 router.register(r'empresa', views.EmpresaVS, basename='empresa')
 router.register(r'empresa-contacto', views.ContactoEmpresaVS, basename='empresa-contacto')
-router.register(r'configuracion-papeleria', views.ConfiguracionPapeleriaVS, basename='configuracion-papeleria')
+router.register(r'configuracion-papeleria', views.CorrelativoVS, basename='configuracion-papeleria')
 # Inventario
 router.register(r'tasa-conversion', views.TasaConversionVS, basename='tasa-conversion')
 router.register(r'impuesto', views.ImpuestosVS, basename='impuesto')
@@ -47,7 +47,6 @@ router.register(r'nota-devolucion-detalle', views_2.DetalleNotaDevolucionVS, bas
 router.register(r'factura', views.FacturaVS, basename='factura')
 router.register(r'factura-detalle', views.DetalleFacturaVS, basename='factura-detalle')
 router.register(r'factura-impuesto', views.ImpuestosFacturaVS, basename='factura-impuesto')
-router.register(r'factura-numerologia', views.NumerologiaFacturaVS, basename='factura-numerologia')
 router.register(r'factura-nota', views.NotaFacturaVS, basename='factura-nota')
 router.register(r'notas-pago', views.NotaPagoVS, basename='notas-pago')
 router.register(r'detalle-notas-pago', views.DetalleNotaPagoVS, basename='detalle-notas-pago') 
@@ -74,6 +73,7 @@ urlpatterns = [
     path('calcular-comision/', views.comision),
     path('ubop/', views.ubop),
     path('hurt/', views_2.hurt),
+    path('fact/', views_2.arreglar_facturas),
     # Guardado de registros
     path('borrar-nota/', views.borrar_nota),
     path('actualizar-nota/', views.actualizar_nota),
@@ -99,7 +99,10 @@ urlpatterns = [
     path('calcular-credito/', views.calcular_credito),
     path('analisis-vencimiento/', views_2.analisis_vencimiento),
     path('generar-lista-precio/', views_2.generar_lista_precio),
-    path('libro-venta/', views.generar_libro_venta),
+    path('libro-venta/', views_2.generar_libro_venta),
+    path('historico-proforma/', views_2.generar_historico_proformas),
+    path('migrar-vendedores/', views_2.migrar_vendedores),
+    
     # Login
     # path('reiniciar-prioridad/', views.reiniciar_prioridad),
     path('auth/login/', LoginView.as_view(), name='knox_login'),

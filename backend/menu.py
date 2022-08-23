@@ -156,11 +156,6 @@ modelosMENU = {'modelos':[
     #     "orden":2
     # },
     # # {
-    #     "router": "NumerologiaFactura",
-    #     "parent":14,
-    #     "orden":3
-    # },
-    # # {
     #     "router": "NotaFactura",
     #     "parent":14,
     #     "orden":4
@@ -201,7 +196,7 @@ modelosMENU = {'modelos':[
         "orden":3
     },
     {
-        "router": "ConfiguracionPapeleria",
+        "router": "Correlativo",
         "parent":"Avanzado",
         "orden":1
     },

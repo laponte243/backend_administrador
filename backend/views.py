@@ -439,8 +439,8 @@ class PerfilVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -522,8 +522,8 @@ class PermisoVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -603,8 +603,8 @@ class EmpresaVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -680,8 +680,8 @@ class ContactoEmpresaVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -699,18 +699,18 @@ class ContactoEmpresaVS(viewsets.ModelViewSet):
             return Response('%s' % (e), status = status.HTTP_401_UNAUTHORIZED)
 
 # Configuracion de papelerias
-class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
-    permiso = 'Empresa'
+class CorrelativoVS(viewsets.ModelViewSet):
+    permiso = 'Correlativo'
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
     # Datos
-    modelo = ConfiguracionPapeleria
+    modelo = Correlativo
     queryset = modelo.objects.all()
-    serializer_class = ConfiguracionPapeleriaSerializer
+    serializer_class = CorrelativoSerializer
     # Metodo crear
     def create(self, request):
         perfil = obt_per(self.request.user)
-        if verificar_permiso(perfil, 'Empresa', 'escribir'):
+        if verificar_permiso(perfil, self.permiso, 'escribir'):
             datos = request.data
             try:
                 datos['instancia'] = obtener_instancia(perfil, request.data['instancia'])
@@ -725,7 +725,7 @@ class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
             return Response(status = status.HTTP_401_UNAUTHORIZED)
     def update(self, request, *args, **kwargs):
         perfil = obt_per(self.request.user)
-        if verificar_permiso(perfil, 'Empresa', 'actualizar'):
+        if verificar_permiso(perfil, self.permiso, 'actualizar'):
             partial = True
             instance = self.get_object()
             if instance.instancia == perfil.instancia or perfil.tipo == 'S':
@@ -739,7 +739,7 @@ class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
             return Response(status = status.HTTP_401_UNAUTHORIZED)
     def destroy(self, request, *args, **kwargs):
         perfil = obt_per(self.request.user)
-        if verificar_permiso(perfil, 'Empresa', 'borrar'):
+        if verificar_permiso(perfil, self.permiso, 'borrar'):
             instance = self.get_object()
             if instance.instancia == perfil.instancia or perfil.tipo == 'S':
                 instance.delete()
@@ -756,8 +756,8 @@ class ConfiguracionPapeleriaVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -787,7 +787,7 @@ class TasaConversionVS(viewsets.ModelViewSet):
     # Metodo crear
     def create(self, request):
         perfil = obt_per(self.request.user)
-        if verificar_permiso(perfil, 'TasaConversion', 'escribir'):
+        if verificar_permiso(perfil, self.permiso, 'escribir'):
             datos = request.data
             try:
                 datos['instancia'] = obtener_instancia(perfil, request.data['instancia'])
@@ -802,7 +802,7 @@ class TasaConversionVS(viewsets.ModelViewSet):
             return Response(status = status.HTTP_401_UNAUTHORIZED)
     def update(self, request, *args, **kwargs):
         perfil = obt_per(self.request.user)
-        if verificar_permiso(perfil, 'TasaConversion', 'actualizar'):
+        if verificar_permiso(perfil, self.permiso, 'actualizar'):
             partial = True
             instance = self.get_object()
             if instance.instancia == perfil.instancia or perfil.tipo == 'S':
@@ -816,7 +816,7 @@ class TasaConversionVS(viewsets.ModelViewSet):
             return Response(status = status.HTTP_401_UNAUTHORIZED)
     def destroy(self, request, *args, **kwargs):
         perfil = obt_per(self.request.user)
-        if verificar_permiso(perfil, 'TasaConversion', 'borrar'):
+        if verificar_permiso(perfil, self.permiso, 'borrar'):
             instance = self.get_object()
             if instance.instancia == perfil.instancia or perfil.tipo == 'S':
                 instance.delete()
@@ -833,8 +833,8 @@ class TasaConversionVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -847,7 +847,7 @@ class TasaConversionVS(viewsets.ModelViewSet):
             return Response('%s' % (e), status = status.HTTP_401_UNAUTHORIZED)
     def retrieve(self, request, pk = None):
         try:
-            return Response(self.serializer_class(get_object_or_404(self.queryset, pk = pk)).data) if verificar_permiso(obt_per(request.user), self.permiso, 'leer') else User.objects.none()
+            return Response(self.serializer_class(get_object_or_404(self.queryset, pk = pk)).data) if verificar_permiso(obt_per(self.request.user), self.permiso, 'leer') else TasaConversion.objects.none()
         except Exception as e:
             return Response('%s' % (e), status = status.HTTP_401_UNAUTHORIZED)
 
@@ -910,8 +910,8 @@ class ImpuestosVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -987,8 +987,8 @@ class MarcaVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -1061,8 +1061,8 @@ class ProductoVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -1194,8 +1194,8 @@ class AlmacenVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -1294,8 +1294,8 @@ class MovimientoInventarioVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -1370,7 +1370,7 @@ class DetalleInventarioVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
                 excluir = []
                 for o in objetos:
                     if not o.bloqueado and not o.disponible:
@@ -1451,8 +1451,8 @@ class VendedorVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -1528,8 +1528,8 @@ class ClienteVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 codigo = None
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
@@ -1626,8 +1626,8 @@ class ContactoClienteVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -1663,8 +1663,8 @@ class PedidoVS(viewsets.ModelViewSet):
                 datos['instancia'] = obtener_instancia(perfil, request.data['instancia'])
             except:
                 datos['instancia'] = perfil.instancia.id
-            configuracion = verificar_numerologia(datos, self.modelo)
-            datos['numerologia'] = configuracion.valor
+            configuracion = verificar_correlativo(datos, self.modelo)
+            datos['correlativo'] = configuracion.valor
             serializer = self.get_serializer(data = datos)
             serializer.is_valid(raise_exception = True)
             self.perform_create(serializer)
@@ -1712,8 +1712,8 @@ class PedidoVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -1794,8 +1794,8 @@ class DetallePedidoVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -1831,8 +1831,8 @@ class ProformaVS(viewsets.ModelViewSet):
                 datos['instancia'] = obtener_instancia(perfil, request.data['instancia'])
             except:
                 datos['instancia'] = perfil.instancia.id
-            configuracion = verificar_numerologia(datos, self.modelo)
-            datos['numerologia'] = configuracion.valor
+            configuracion = verificar_correlativo(datos, self.modelo)
+            datos['correlativo'] = configuracion.valor
             serializer = self.get_serializer(data = datos)
             serializer.is_valid(raise_exception = True)
             self.perform_create(serializer)
@@ -1881,8 +1881,8 @@ class ProformaVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -1961,8 +1961,8 @@ class DetalleProformaVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -2000,12 +2000,12 @@ class NotaPagoVS(viewsets.ModelViewSet):
                 datos['instancia'] = obtener_instancia(perfil, request.data['instancia'])
             except:
                 datos['instancia'] = perfil.instancia.id
-            configuracion = verificar_numerologia(datos, self.modelo)
+            configuracion = verificar_correlativo(datos, self.modelo)
             # Arreglar fecha
             fecha = datos['fecha_comprobante'].split('/')
             datos['fecha_comprobante'] = timezone.datetime(year = int(fecha[0]), month = int(fecha[1]), day = int(fecha[2]))
             # Serializar
-            datos['numerologia'] = configuracion.valor
+            datos['correlativo'] = configuracion.valor
             serializer = self.get_serializer(data = datos)
             serializer.is_valid(raise_exception = True)
             self.perform_create(serializer)
@@ -2051,7 +2051,7 @@ class NotaPagoVS(viewsets.ModelViewSet):
                 instancia = perfil.instancia
                 # Filtrar los objetos
                 objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
-                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                # # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 parametros = self.request.query_params.copy()
                 excluidos = ['p_pagina', 'p_ordenar', 'p_cantidad'] # Añadir aqui los parametros a excluir
@@ -2147,8 +2147,8 @@ class DetalleNotaPagoVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -2184,9 +2184,9 @@ class FacturaVS(viewsets.ModelViewSet):
                 datos['instancia'] = obtener_instancia(perfil, request.data['instancia'])
             except:
                 datos['instancia'] = perfil.instancia.id
-            configuracion = verificar_numerologia(datos, self.modelo)
-            configuracion_control = verificar_numerologia(datos, 'NotaControl')
-            datos['numerologia'] = configuracion.valor
+            configuracion = verificar_correlativo(datos, self.modelo)
+            configuracion_control = verificar_correlativo(datos, 'NotaControl')
+            datos['correlativo'] = configuracion.valor
             datos['control'] = configuracion_control.valor
             serializer = self.get_serializer(data = datos)
             serializer.is_valid(raise_exception = True)
@@ -2230,8 +2230,8 @@ class FacturaVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -2307,8 +2307,8 @@ class DetalleFacturaVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -2384,85 +2384,8 @@ class ImpuestosFacturaVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
-                # Paginacion
-                paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
-                # Data e Info de la paginacion
-                data = self.serializer_class(paginado['objetos'], many = True).data
-                # Respuesta
-                return Response({'objetos': data, 'info': paginado['info']}, status = status.HTTP_200_OK)
-            else:
-                raise
-        except Exception as e:
-            return Response('%s' % (e), status = status.HTTP_401_UNAUTHORIZED)
-    def retrieve(self, request, pk = None):
-        try:
-            return Response(self.serializer_class(get_object_or_404(self.queryset, pk = pk)).data) if verificar_permiso(obt_per(request.user), self.permiso, 'leer') else User.objects.none()
-        except Exception as e:
-            return Response('%s' % (e), status = status.HTTP_401_UNAUTHORIZED)
-
-# Numerologia de las facturas de la instancia
-class NumerologiaFacturaVS(viewsets.ModelViewSet):
-    # Permisos
-    permiso = 'Factura'
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]
-    # Datos
-    modelo = NumerologiaFactura
-    queryset = modelo.objects.all()
-    serializer_class = NumerologiaFacturaSerializer
-    # Metodo crear
-    def create(self, request):
-        perfil = obt_per(self.request.user)
-        if verificar_permiso(perfil, 'Factura', 'escribir'):
-            datos = request.data
-            try:
-                datos['instancia'] = obtener_instancia(perfil, request.data['instancia'])
-            except:
-                datos['instancia'] = perfil.instancia.id
-            serializer = self.get_serializer(data = datos)
-            serializer.is_valid(raise_exception = True)
-            self.perform_create(serializer)
-            headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status = status.HTTP_201_CREATED, headers = headers)
-        else:
-            return Response(status = status.HTTP_401_UNAUTHORIZED)
-    def update(self, request, *args, **kwargs):
-        perfil = obt_per(self.request.user)
-        if verificar_permiso(perfil, 'Factura', 'actualizar'):
-            partial = True
-            instance = self.get_object()
-            if instance.instancia == perfil.instancia or perfil.tipo == 'S':
-                serializer = self.get_serializer(instance, data = request.data, partial = partial)
-                serializer.is_valid(raise_exception = True)
-                self.perform_update(serializer)
-                return Response(serializer.data, status = status.HTTP_200_OK)
-            else:
-                return Response(status = status.HTTP_403_FORBIDDEN)
-        else:
-            return Response(status = status.HTTP_401_UNAUTHORIZED)
-    def destroy(self, request, *args, **kwargs):
-        perfil = obt_per(self.request.user)
-        if verificar_permiso(perfil, 'Factura', 'borrar'):
-            instance = self.get_object()
-            if instance.instancia == perfil.instancia or perfil.tipo == 'S':
-                instance.delete()
-                return Response(status = status.HTTP_204_NO_CONTENT)
-            else:
-                return Response(status = status.HTTP_403_FORBIDDEN)
-        else:
-            return Response(status = status.HTTP_401_UNAUTHORIZED)
-
-    # Metodos de leer
-    def list(self, request):
-        try:
-            perfil = obt_per(self.request.user)
-            if verificar_permiso(perfil, self.permiso, 'leer'):
-                instancia = perfil.instancia
-                # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -2538,8 +2461,8 @@ class NotaFacturaVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -2615,8 +2538,8 @@ class ProveedorVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -2692,8 +2615,8 @@ class CompraVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -2767,8 +2690,8 @@ class DetalleCompraVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -2844,8 +2767,8 @@ class NotaCompraVS(viewsets.ModelViewSet):
             if verificar_permiso(perfil, self.permiso, 'leer'):
                 instancia = perfil.instancia
                 # Filtrar los objetos
-                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(perfil__instancia = instancia)
-                objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
+                objetos = self.queryset if perfil.tipo == 'S' else self.queryset.filter(instancia = instancia)
+                # objetos = objetos.exclude(perfil__tipo__in = ['A', 'S']) if perfil.tipo == 'U' or perfil.tipo == 'V' else objetos
                 # Paginacion
                 paginado = paginar(objetos, self.request.query_params.copy(), self.modelo)
                 # Data e Info de la paginacion
@@ -2904,7 +2827,7 @@ class PedidoPDF(PDFView):
                     # Agregar detalles al arreglo de detalles
                     value['data'].append({'producto_nombre': productox.nombre, 'producto_sku': productox.sku, 'detalle': valuex['datax'], 'mostrar': mostrar, 'cantidad': total_cantidad})
                 # Setear los valores al template
-                context['precio'] = pedido.precio_seleccionadoo[-1]
+                context['precio'] = pedido.precio_seleccionado[-1]
                 context['productos'] = value['data']
                 context['pedido'] = pedido
                 # Setear los valores de la empresa
@@ -2983,12 +2906,12 @@ class ProformaPDF(PDFView):
                 if total_imponible:
                     total_real = total_real + iva
                 # Setear los valores al template
-                context['precio'] = proforma.precio_seleccionadoo[-1]
+                context['precio'] = proforma.precio_seleccionado[-1]
                 context['productos'] = value['data']
                 context['proforma'] = proforma
                 context['subtotal'] = round(total_calculado, 2)
                 context['imponible'] = round(total_imponible, 2)
-                context['monto_exento'] = round(total_exento, 2)
+                context['exento'] = round(total_exento, 2)
                 context['impuesto'] = iva
                 context['total'] = round(total_real, 2)
                 # Setear los valores de la empresa
@@ -3382,7 +3305,7 @@ def actualizar_pedido(request):
                 except Exception as e:
                     info['errores'].append({'code': '404', 'error': str(e)})
             # Modificar total y guardar pedido
-            pedido.monto_exento = exento
+            pedido.exento = exento
             pedido.iva = imponible
             pedido.total = total
             pedido.save()
@@ -3440,10 +3363,10 @@ def validar_pedido(request):
             else:
                 pedido.estatus = 'A'
                 pedido.save()
-                configuracion = verificar_numerologia({'empresa': pedido.empresa.id, 'instancia': pedido.instancia.id}, Proforma)
+                configuracion = verificar_correlativo({'empresa': pedido.empresa.id, 'instancia': pedido.instancia.id}, Proforma)
                 # Se crea una nueva proforma, en base a los datos del pedido
                 nueva_proforma = Proforma(pedido = pedido, instancia = instancia)
-                nueva_proforma.numerologia = configuracion.valor
+                nueva_proforma.correlativo = configuracion.valor
                 nueva_proforma.cliente = pedido.cliente
                 nueva_proforma.vendedor = pedido.vendedor
                 nueva_proforma.empresa = pedido.empresa
@@ -3451,8 +3374,8 @@ def validar_pedido(request):
                 nueva_proforma.identificador_fiscal = pedido.cliente.identificador
                 nueva_proforma.direccion_cliente = pedido.cliente.ubicacion
                 nueva_proforma.telefono_cliente = pedido.cliente.telefono
-                nueva_proforma.precio_seleccionadoo = pedido.precio_seleccionadoo
-                nueva_proforma.monto_exento = pedido.monto_exento
+                nueva_proforma.precio_seleccionado = pedido.precio_seleccionado
+                nueva_proforma.exento = pedido.exento
                 nueva_proforma.iva = pedido.iva
                 nueva_proforma.save()
                 configuracion.valor += 1
@@ -3480,7 +3403,7 @@ def validar_pedido(request):
                     )
                     nuevo_detalle.save()
                     nueva_proforma.total += deta.total_producto
-                nueva_proforma.saldo_proforma = nueva_proforma.iva + nueva_proforma.monto_exento
+                nueva_proforma.saldo_proforma = nueva_proforma.iva + nueva_proforma.exento
                 nueva_proforma.save()
                 return Response(status = status.HTTP_200_OK)
         except ObjectDoesNotExist as e:
@@ -3512,13 +3435,14 @@ def crear_objeto_factura(request):
                 factura.save()
             # Obtener detalles de la proforma
             detasheproforma = DetalleProforma.objects.filter(proforma = proforma)
-            # Obtener correlativo/configuracion/numerologia/papeleria del la factura y la nota de control
-            configuracion = verificar_numerologia({'empresa': proforma.empresa.id, 'instancia': proforma.instancia.id}, Factura)
-            configuracion_control = verificar_numerologia({'empresa': proforma.empresa.id, 'instancia': proforma.instancia.id}, 'NotaControl')
+            # Obtener correlativo/configuracion/correlativo/papeleria del la factura y la nota de control
+            configuracion = verificar_correlativo({'empresa': proforma.empresa.id, 'instancia': proforma.instancia.id}, Factura)
+            configuracion_control = verificar_correlativo({'empresa': proforma.empresa.id, 'instancia': proforma.instancia.id}, 'NotaControl')
             # Iniciar factura
-            nueva_factura = Factura(proforma = proforma, origen = proforma.id, instancia = instancia)
+            tasa = TasaConversion.objects.latest('id')
+            nueva_factura = Factura(proforma = proforma, origen = proforma.id, instancia = instancia, tasa_c = tasa)
             # Definir correlativos
-            nueva_factura.numerologia = configuracion.valor
+            nueva_factura.correlativo = configuracion.valor
             nueva_factura.control = configuracion_control.valor
             # Definir valores de la empresa
             nueva_factura.nombre_empresa = empresa.nombre
@@ -3570,6 +3494,7 @@ def crear_objeto_factura(request):
                     fecha_vencimiento = vencimiento,
                     producto = deta.producto,
                     producto_fijo = deta.producto.nombre,
+                    iva = deta.iva,
                     precio = deta.precio_seleccionado,
                     total_producto = round(deta.total_producto, 2),
                     instancia = instancia)
@@ -3582,7 +3507,7 @@ def crear_objeto_factura(request):
                 else:
                     exento += nuevo_detalle.total_producto
             # Calcular valor total
-            nueva_factura.monto_exento = exento
+            nueva_factura.exento = exento
             nueva_factura.iva = imponible
             subtotal = round(imponible, 2) + round(exento, 2)
             total_real = round(subtotal, 2)
@@ -3850,8 +3775,8 @@ def comision(request):
                 total_comision = 0
                 # Creador de filas
                 for n in notas:
-                    correlativo_nota = ConfiguracionPapeleria.objects.get(empresa = n.cliente.empresa, tipo = "N")
-                    excel_ws.write(i, 0, '%s%s' % (correlativo_nota.prefijo + '-' if correlativo_nota.prefijo else '', n.numerologia))
+                    correlativo_nota = Correlativo.objects.get(empresa = n.cliente.empresa, tipo = "N")
+                    excel_ws.write(i, 0, '%s%s' % (correlativo_nota.prefijo + '-' if correlativo_nota.prefijo else '', n.correlativo))
                     excel_ws.write(i, 1, '%s' % (n.comprobante))
                     excel_ws.write(i, 2, '%s' % (n.fecha_comprobante.date()))
                     detalle = DetalleNotasPago.objects.filter(notapago = n)
@@ -3859,25 +3784,25 @@ def comision(request):
                         comision = 0
                         # Añadir detalle de la nota
                         proforma = d.proforma
-                        correlativo_prof = ConfiguracionPapeleria.objects.get(empresa = proforma.empresa, tipo = "E")
-                        excel_ws.write(i, 3, '%s%s' % (correlativo_prof.prefijo + '-' if correlativo_prof.prefijo else '', proforma.numerologia))
+                        correlativo_prof = Correlativo.objects.get(empresa = proforma.empresa, tipo = "E")
+                        excel_ws.write(i, 3, '%s%s' % (correlativo_prof.prefijo + '-' if correlativo_prof.prefijo else '', proforma.correlativo))
                         excel_ws.write(i, 4, '%s' % (proforma.fecha_despacho.date() if proforma.fecha_despacho else 'S/D' ))
-                        excel_ws.write(i, 5, '%s' % (proforma.precio_seleccionadoo))
+                        excel_ws.write(i, 5, '%s' % (proforma.precio_seleccionado))
                         sum_iva_indivial = round(DetalleProforma.objects.filter(proforma=proforma).aggregate(Sum('iva'))['iva__sum'], 2)
-                        sub_total = round(proforma.monto_exento + (proforma.iva - sum_iva_indivial) , 2)
+                        sub_total = round(proforma.exento + (proforma.iva - sum_iva_indivial) , 2)
                         excel_ws.write(i, 6, '%s' % (sub_total))
                         excel_ws.write(i, 7, '%s' % (sum_iva_indivial))
-                        excel_ws.write(i, 8, '%s' % (proforma.monto_exento + proforma.iva))
+                        excel_ws.write(i, 8, '%s' % (proforma.exento + proforma.iva))
                         excel_ws.write(i, 9, '%s' % (d.monto))
-                        total_proforma = proforma.iva + proforma.monto_exento
+                        total_proforma = proforma.iva + proforma.exento
                         # Calcular comision
                         dias_diferencia = 0
                         if proforma.fecha_despacho and n.fecha_comprobante:
                             dias_diferencia = (n.fecha_comprobante.date() - proforma.fecha_despacho.date()).days
                         if proforma.fecha_despacho:
                             if dias_diferencia < 30: # Verifircar que sea menos de 30 dias
-                                if proforma.precio_seleccionadoo in ['precio_1', 'precio_2', 'precio_4']:
-                                    if proforma.iva and detalle.last() == d and d.monto >= proforma.monto_exento:
+                                if proforma.precio_seleccionado in ['precio_1', 'precio_2', 'precio_4']:
+                                    if proforma.iva and detalle.last() == d and d.monto >= proforma.exento:
                                         comision = round(((5*sub_total)/100), 2)
                                     else:
                                         comision = round(((5*d.monto)/100), 2)
@@ -3916,19 +3841,19 @@ def calcular_credito(request):
         # Obtener cliente
         cliente = Cliente.objects.get(id = params.get('id'))
         # Obtener correlativo proforma
-        correlativo_pro = ConfiguracionPapeleria.objects.get(empresa = cliente.empresa, tipo = "E")
+        correlativo_pro = Correlativo.objects.get(empresa = cliente.empresa, tipo = "E")
         # Obtener proformas
         p = []
         for pro in Proforma.objects.filter(cliente = cliente):
             factura = Factura.objects.filter(proforma = pro)
-            p.append({'doc': 'proforma', 'fecha': pro.fecha_proforma, 'pre_doc': correlativo_pro.prefijo if correlativo_pro.prefijo else '', 'num_doc': pro.numerologia, 'monto_exento': pro.monto_exento, 'iva': pro.iva, 'saldo': pro.saldo_proforma, 'fecha_b': pro.fecha_despacho.date() if pro.fecha_despacho else '', 'factura': factura.values_list('id') if factura else None})
+            p.append({'doc': 'proforma', 'fecha': pro.fecha_proforma, 'pre_doc': correlativo_pro.prefijo if correlativo_pro.prefijo else '', 'num_doc': pro.correlativo, 'exento': pro.exento, 'iva': pro.iva, 'saldo': pro.saldo_proforma, 'fecha_b': pro.fecha_despacho.date() if pro.fecha_despacho else '', 'factura': factura.values_list('id') if factura else None})
         # Obtener correlativo nota de pago
-        correlativo_npa = ConfiguracionPapeleria.objects.get(empresa = cliente.empresa, tipo = "N")
+        correlativo_npa = Correlativo.objects.get(empresa = cliente.empresa, tipo = "N")
         # Obtener notas de pago
         n = []
         for npa in NotasPago.objects.filter(cliente = cliente):
             factura = None
-            n.append({'doc': 'not_pago', 'fecha': npa.fecha, 'pre_doc': correlativo_npa.prefijo if correlativo_npa.prefijo else '', 'num_doc': npa.numerologia, 'total': npa.total, 'saldo': None, 'fecha_b': npa.fecha_comprobante.date(), 'factura': '*' if factura else None})
+            n.append({'doc': 'not_pago', 'fecha': npa.fecha, 'pre_doc': correlativo_npa.prefijo if correlativo_npa.prefijo else '', 'num_doc': npa.correlativo, 'total': npa.total, 'saldo': None, 'fecha_b': npa.fecha_comprobante.date(), 'factura': '*' if factura else None})
         # Generar Dataframes
         data_excel = pd.DataFrame(p)
         data_excel_2 = pd.DataFrame(n)
@@ -3978,14 +3903,14 @@ def calcular_credito(request):
                 excel_ws.write(i, 4, 'Sin despachar')
             if row.factura:
                 fac = Factura.objects.filter(id__in = row.factura).first()
-                correlativo_fac = ConfiguracionPapeleria.objects.get(empresa = cliente.empresa, tipo = "F")
-                excel_ws.write(i, 5, '%s%s (%s)' % (correlativo_fac.prefijo + '-' if correlativo_fac.prefijo else '', fac.numerologia if fac else '', fac.fecha_factura.date()))
+                correlativo_fac = Correlativo.objects.get(empresa = cliente.empresa, tipo = "F")
+                excel_ws.write(i, 5, '%s%s (%s)' % (correlativo_fac.prefijo + '-' if correlativo_fac.prefijo else '', fac.correlativo if fac else '', fac.fecha_factura.date()))
             else:
                 excel_ws.write(i, 5, 'Sin factura' if row.doc  == 'proforma' else '')
             # Calular total
             if row.doc == 'proforma':
-                excel_ws.write(i, 2, (row.monto_exento + row.iva), number_style)
-                total += (row.monto_exento + row.iva) # Aumentar deuda
+                excel_ws.write(i, 2, (row.exento + row.iva), number_style)
+                total += (row.exento + row.iva) # Aumentar deuda
             elif row.doc == 'not_pago':
                 excel_ws.write(i, 2, row.total, number_style)
                 total-= row.total # Disminuir deuda
@@ -4546,7 +4471,7 @@ def paginas_totales(modelo, cantidad, filtros):
         return {'error': [{'code': 406, 'valor': '%s' % (e)}]}
 
 # Obtener correlativo
-def verificar_numerologia(datos, modelo):
+def verificar_correlativo(datos, modelo):
     if modelo  == Proforma:
         tipo = 'E'
     elif modelo  == Pedido:
@@ -4565,7 +4490,7 @@ def verificar_numerologia(datos, modelo):
     #     tipo = 'D'
     empresa = Empresa.objects.get(id = datos['empresa'])
     instancia = Instancia.objects.get(id = datos['instancia'])
-    configuracion, creado = ConfiguracionPapeleria.objects.get_or_create(instancia = instancia, empresa = empresa, tipo = tipo, defaults = {'valor': 1})
+    configuracion, creado = Correlativo.objects.get_or_create(instancia = instancia, empresa = empresa, tipo = tipo, defaults = {'valor': 1})
     return configuracion
 
 # def borrar_productos_extras(request):
@@ -4584,80 +4509,3 @@ def reiniciar_prioridad(req):
         m.prioridad = 0
         m.save()
 
-
-# Funcion tipo vista para generar Excel con el libro de venta en base a una fecha inicio, fecha fin
-@api_view(["POST", "GET"])
-@csrf_exempt
-def generar_libro_venta(request):
-    params = request.query_params.copy()
-    token = params.get('token').split(' ')[1]
-    user = Token.objects.get(key = token).user
-    if user:
-        data = {'fecha_inicio': params.get('fecha_inicio'), 'fecha_fin': params.get('fecha_fin')}
-        perfil = Perfil.objects.get(usuario = user)
-        try:
-            if verificar_permiso(perfil, 'LibroVenta', 'leer'):
-                """ Data inicial """
-                # Obtner el rango de fechas para el filtro
-                ini = data['fecha_inicio'].split('/')
-                fecha_inicio = ini[0] + '-' + ini[1] + '-' + ini[2] # Formateando Date inicial para timezone
-                fin = data['fecha_fin'].split('/')
-                fecha_fin = fin[0] + '-' + fin[1] + '-' + fin[2] # Formateando Date final para timezone
-                rango = [fecha_inicio, fecha_fin] # Rango
-                tardio = timezone.now()-timezone.timedelta(weeks = 4) # Tiempo maximo de 30 dias
-                # Filtrar Facturas
-                facturas = Factura.objects.filter(fecha_factura__date__range = rango)
-                # Excel
-                i = 0
-                response = HttpResponse(content_type = 'application/ms-excel')
-                response['Content-Disposition'] = 'attachment;filename = "libro venta %s&%s.xls"' % (fecha_inicio, fecha_fin)
-                excel_wb = Workbook(encoding = 'utf-8')
-                excel_ws = excel_wb.add_sheet('Libro1') # ws es Work Sheet
-                # Añadiendo estilo
-                excel_ws.col(0).width = 3500 # Tamaño columna fecha documento
-                excel_ws.col(1).width = 3500 # Tamaño columna Rif Cliente
-                excel_ws.col(2).width = 16000 # Tamaño columna Nombre Cliente
-                excel_ws.col(3).width = 2600 # Tamaño columna Tipo Documento
-                excel_ws.col(4).width = 2600 # Tamaño columna Numero de documento
-                excel_ws.col(5).width = 2600 # Tamaño columna Numero de control
-                excel_ws.col(6).width = 2600 # Tamaño columna Total documento
-                excel_ws.col(7).width = 2600 # Tamaño columna total imponible
-                excel_ws.col(8).width = 2600 # Tamaño columna total impuesto
-                estilo = easyxf('font: bold 1')
-                lefted = easyxf('align: wrap on, horiz left')
-                centered = easyxf('align: wrap on, horiz center')
-                righted = easyxf('align: wrap on, horiz right')
-                # Primera fila del excel
-                excel_ws.write(i, 0, 'Fecha', estilo)
-                excel_ws.write(i, 1, 'Nº Rif', estilo)
-                excel_ws.write(i, 2, 'Nombre o razón social', estilo)
-                excel_ws.write(i, 3, 'Tipo Doc.', estilo)
-                excel_ws.write(i, 4, 'Nº Doc.', estilo)
-                excel_ws.write(i, 5, 'Nº Control', estilo)
-                excel_ws.write(i, 6, 'Total Doc.', estilo)
-                excel_ws.write(i, 7, 'Total Exento', estilo)
-                excel_ws.write(i, 8, 'Total Imponible', estilo)
-                excel_ws.write(i, 9, 'Total Impuesto', estilo)
-                i = i + 1
-                # Creador de filas
-                for f in facturas:
-                    excel_ws.write(i, 0, '%s' % (f.fecha_factura.date()),centered)
-                    excel_ws.write(i, 1, '%s' % (f.identificador_fiscal),)
-                    excel_ws.write(i, 2, '%s' % (f.nombre_cliente),)
-                    excel_ws.write(i, 3, 'FACTURA',)
-                    excel_ws.write(i, 4, '%s' % (f.numerologia),centered)
-                    excel_ws.write(i, 5, '%s' % (f.control),centered)
-                    excel_ws.write(i, 6, '%s' % (f.total),righted)
-                    excel_ws.write(i, 7, '%s' % (f.monto_exento),righted)
-                    excel_ws.write(i, 8, '%s' % (round(float(f.total)-float(f.monto_exento),2)),righted)
-                    excel_ws.write(i, 9, '%s' % (f.iva),centered)
-                    i = i + 1
-                excel_wb.save(response)
-                return response
-            else:
-                return Response(status = status.HTTP_401_UNAUTHORIZED)
-        except Exception as e:
-            print(e)
-            return Response('%s' % (e), status = status.HTTP_500_INTERNAL_SERVER_ERROR)
-    else:
-        return Response(status = status.HTTP_403_FORBIDDEN)

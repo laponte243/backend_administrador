@@ -94,14 +94,14 @@
             /* SUB_TOTAL/EXENTO */
             text-align: right;
             position: absolute;
-            top: 116mm;
+            top: 125mm;
             left: 155mm;
         }
         .item8_c {
             /* IMPONIBLE,IMPUESTO */
             text-align: right;
             position: absolute;
-            top: 116mm;
+            top: 125mm;
             left: 185mm;
         }
         .item8_d {
@@ -168,7 +168,7 @@
                     </p>
                 </div> -->
                 <div class="item3" style="text-align: right">
-                    <strong><p> FACTURA: {{factura.numerologia}} </p></strong>
+                    <strong><p> FACTURA: {{factura.correlativo}} </p></strong>
                 </div>
                 <div class="item15" style="text-align: right">
                     <strong><p>E-{{correlativo_proforma}} </p></strong>
@@ -304,10 +304,10 @@
                             {{subtotal}}
                         {% endif %}
                         Bs. <br>
-                        {% if producto.extra_cero_monto_exento %}
-                            {{monto_exento}}0
+                        {% if producto.extra_cero_exento %}
+                            {{exento}}0
                         {% else %}
-                            {{monto_exento}}
+                            {{exento}}
                         {% endif %}
                         Bs. <br>
                         {% if producto.extra_cero_imponible %}
